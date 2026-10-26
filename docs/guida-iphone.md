@@ -44,6 +44,12 @@ Limite: funziona solo con il PC acceso e sulla stessa rete. Per averla sempre, s
 3. Scegli **Aggiungi alla schermata Home**, poi **Aggiungi**.
 4. Apri l'app dall'icona dell'acero.
 
+### Il nostro repository
+
+- Repository: https://github.com/xXGiacopardiXx/giardino-bonsai
+- App online: **https://xxgiacopardixx.github.io/giardino-bonsai/**
+- Sul PC di lavoro passano da un proxy aziendale e c'è già un account GitHub salvato (quello di lavoro). Per questo il collegamento include il nome utente (`https://xXGiacopardiXx@github.com/...`): Git usa così l'account personale. Il `git push` va lanciato in un terminale normale, dove il proxy può chiedere le credenziali.
+
 ### Aggiornamenti
 
 A ogni `git push` l'app online si aggiorna da sola. Sul telefono la nuova versione arriva alla riapertura successiva (a volte serve chiudere l'app e riaprirla due volte).
