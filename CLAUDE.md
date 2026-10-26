@@ -7,12 +7,14 @@ Gioco mobile rilassante sulla cura di bonsai digitali in un giardino giapponese.
 - `docs/game-design.md`: tutte le decisioni di design (tempo, cure, trascuratezza, economia, stile, architettura, roadmap). **È la fonte di riferimento**: leggerlo prima di proporre o modificare qualcosa.
 - `prototipo/giardino-bonsai.html`: prototipo di stile della homepage, scena 3D in Three.js in un'unica pagina HTML.
 - `app/`: l'app vera (PWA), Three.js + Vite in JavaScript semplice. Codice della scena in `app/src/scena/`, interfaccia in `app/src/interfaccia.js`, avvio in `app/src/main.js`.
+- `app/src/gioco/`: il motore senza grafica (tempo compresso, stato della partita, salvataggio in `localStorage`) con i test in `stato.test.js`. Le funzioni ricevono l'ora come parametro; la scena si disegna solo da `vista(stato)`.
+- `app/src/pannello-prova.js`: pannello per far passare il tempo, si apre con 3 tocchi sulla stagione.
 - `docs/guida-iphone.md`: come provare e installare l'app sull'iPhone, gratis.
 - `.github/workflows/pubblica.yml`: pubblica `app/` su GitHub Pages a ogni push su `main`.
 
 ## App
 
-- Comandi (dalla cartella `app`): `npm run dev` (server di sviluppo, raggiungibile anche dal telefono in Wi-Fi), `npm run build`, `npm run preview`, `npm run icone` (rigenera le icone provvisorie in `public/icone`).
+- Comandi (dalla cartella `app`): `npm run dev` (server di sviluppo, raggiungibile anche dal telefono in Wi-Fi), `npm run build`, `npm run preview`, `npm test` (test del motore), `npm run icone` (rigenera le icone provvisorie in `public/icone`).
 - Three.js r186 con la gestione del colore disattivata e le intensità delle luci moltiplicate per PI: così la scena ha gli stessi colori del prototipo (r128). Mantenerlo quando si aggiungono luci o materiali.
 - `base: './'` in `vite.config.js`: l'app deve funzionare in una sottocartella (GitHub Pages).
 - I numeri casuali della scena vengono da un'unica sequenza con seme fisso: l'ordine di costruzione in `main.js` conta.

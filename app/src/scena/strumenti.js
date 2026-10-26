@@ -58,7 +58,7 @@ export function foliage(parent, pads, o) {
     for (let i = 0; i < n; i++) {
       const a = rnd() * PI * 2, d = Math.sqrt(rnd()) * r, dn = d / r;
       const dome = (1 - dn * dn) * r * .34 * (.45 + rnd() * .75);
-      items.push({ p: [x + Math.cos(a) * d, y + dome - .04, z + Math.sin(a) * d * .9], s: r * o.size * (.75 + rnd() * .5) * (1 - .35 * dn), h: dome / (r * .34) * .8 + (1 - dn) * .25 });
+      items.push({ p: [x + Math.cos(a) * d, y + dome - .04, z + Math.sin(a) * d * .9], s: r * o.size * (.75 + rnd() * .5) * (1 - .35 * dn), h: dome / (r * .34) * .8 + (1 - dn) * .25, dn });
     }
   });
   const m = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, o.detail), toon({ color: 0xffffff }), items.length);
@@ -75,5 +75,6 @@ export function foliage(parent, pads, o) {
     m.setColorAt(i, c);
   });
   parent.add(m);
-  return { m, healthy, stressed };
+  // periferia: 0 al centro del ciuffo, 1 sul bordo (i rametti esterni si perdono per primi)
+  return { m, healthy, stressed, periferia: items.map(it => it.dn) };
 }

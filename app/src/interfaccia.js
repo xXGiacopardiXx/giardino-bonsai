@@ -1,4 +1,4 @@
-// Interfaccia sopra la scena 3D: etichette delle piante, messaggi, Semi, sfida del giorno.
+// Interfaccia sopra la scena 3D: etichette delle piante, messaggi, Semi, serie, stagione, sfida del giorno.
 import * as THREE from 'three';
 
 const $ = (id) => document.getElementById(id);
@@ -16,9 +16,9 @@ export function creaInterfaccia(screenEl, camera, trees) {
 
   const toastEl = $('toast');
   let toastT;
-  function toast(msg) {
+  function toast(msg, durata = 2800) {
     toastEl.textContent = msg; toastEl.classList.add('show');
-    clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2800);
+    clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), durata);
   }
 
   function floatText(txt, x, y) {
@@ -28,25 +28,54 @@ export function creaInterfaccia(screenEl, camera, trees) {
   }
 
   const seedsEl = $('seeds');
-  let seeds = 1240;
-  function aggiungiSemi(n, daPianta) {
+  let semiMostrati = null, semiAnimati = false;
+  // i Semi guadagnati salgono dalla pianta al contatore, che cresce a poco a poco
+  function guadagnaSemi(n, totale, daPianta) {
     const [x, y] = toScreen(trees[daPianta].tag); floatText('+' + n, x, y - 20);
     const r = seedsEl.getBoundingClientRect(), s = screenEl.getBoundingClientRect();
     setTimeout(() => floatText('+' + n, r.left - s.left + r.width / 2, r.top - s.top + r.height + 8), 300);
-    // il contatore sale a poco a poco
-    const from = seeds; seeds += n; const t0 = performance.now();
-    (function tick(now) { const k = Math.min(1, (now - t0) / 700); seedsEl.textContent = fmt(Math.round(from + (seeds - from) * k)); if (k < 1) requestAnimationFrame(tick); })(t0);
+    const from = semiMostrati ?? totale - n, t0 = performance.now();
+    semiAnimati = true;
+    (function tick(now) {
+      const k = Math.min(1, (now - t0) / 700);
+      semiMostrati = Math.round(from + (totale - from) * k); seedsEl.textContent = fmt(semiMostrati);
+      if (k < 1) requestAnimationFrame(tick); else semiAnimati = false;
+    })(t0);
   }
 
+  const settimanaEl = $('settimana'), questEl = $('quest');
   return {
     toast,
-    aggiungiSemi,
-    sfidaCompletata() {
-      $('quest').classList.add('done');
-      $('qfill').style.width = '100%'; $('qtxt').textContent = '1/1';
+    guadagnaSemi,
+    // ridisegna l'interfaccia a partire dalla vista calcolata dal motore (gioco/stato.js)
+    aggiorna(v, { annaffiando = false } = {}) {
+      $('stagione').textContent = v.nomeStagione;
+      settimanaEl.setAttribute('aria-label', `Giorno ${v.giornoStagione} di 7`);
+      [...settimanaEl.children].forEach((el, i) => { el.className = i + 1 < v.giornoStagione ? 'on' : i + 1 === v.giornoStagione ? 'now' : ''; });
+      // durante l'annaffiatura il contatore aspetta l'animazione dei Semi guadagnati
+      if (!semiAnimati && !annaffiando) { semiMostrati = v.semi; seedsEl.textContent = fmt(v.semi); }
+      $('serie').textContent = v.serie;
+
+      questEl.style.display = v.sfida ? '' : 'none';
+      if (v.sfida) {
+        questEl.classList.toggle('done', v.sfida.fatta);
+        $('qfill').style.width = v.sfida.fatta ? '100%' : '0';
+        $('qtxt').textContent = v.sfida.fatta ? '1/1' : '0/1';
+      }
+
+      const salute = Math.round(v.salute * 100) + '%';
+      $('pino-fase').textContent = v.nomeFase;
+      $('pino-salute').textContent = salute;
+      $('pino-barra').style.width = salute;
+      if (!annaffiando) {
+        $('alert').classList.toggle('hide', !v.haSete);
+        $('alert').style.display = v.haSete ? '' : 'none';
+        $('ok').classList.toggle('show', !v.haSete && v.sfida?.fatta === true);
+        $('t-water').classList.toggle('needs', v.haSete);
+      }
     },
     nascondiAvvisoSete() { $('alert').classList.add('hide'); },
-    mostraIdratato() { $('ok').classList.add('show'); },
+    mostraIdratato() { $('alert').style.display = 'none'; $('ok').classList.add('show'); },
     // le etichette seguono le piante quando si ruota la scena
     aggiornaEtichette() {
       for (const k in tagEls) {

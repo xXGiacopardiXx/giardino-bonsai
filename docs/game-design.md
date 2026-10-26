@@ -113,6 +113,16 @@ Tempi riferiti all'estate; in inverno si allungano di circa 2 volte.
 | 14+ giorni | Sopravvivenza | Quasi spoglia, ma resta **una gemma verde** ben visibile | Gran parte della ramificazione fine |
 | 30+ giorni | Sopravvivenza stabile | Come sopra, **non peggiora più** | Tronco e rami principali **sempre conservati** |
 
+### 6.1.1 Numeri del motore (MVP)
+
+Valori iniziali, in `app/src/gioco/stato.js` e `tempo.js`, da ritoccare con i test sul telefono.
+
+- **Giorni di sete:** giorni reali senza acqua pesati per la stagione di gioco: estate 1, primavera 0,8, autunno 0,7, inverno 0,5. Le fasi della tabella sopra si leggono su questo valore.
+- **Ha sete** da 1 giorno di sete; si può annaffiare da 0,5 (prima il terriccio è umido e l'acqua non viene assorbita).
+- **Chioma (salute):** da 1 (piena) a 0,2 (minimo garantito). Da 4 giorni di sete si dirada verso 0,85 a 7 giorni, 0,45 a 14 e 0,2 a 30, perdendo al massimo 0,08 al giorno: spariscono prima i ciuffi esterni. Con la pianta annaffiata (sotto i 2 giorni di sete) ricresce di 0,15 al giorno: da quasi spoglia a piena in 5–6 giorni.
+- **Nuova partita:** inizia il primo giorno di primavera, con 50 Semi e la pianta un po' assetata, così la prima azione è annaffiarla.
+- **Ritorno da 7+ giorni di sete:** messaggio *"Ti stava aspettando"*.
+
 ### 6.2 Ritorno dopo una lunga assenza
 
 - All'apertura una breve sequenza: la gemma verde in evidenza e il messaggio *"Ti stava aspettando"*. Nessun rimprovero.
@@ -305,7 +315,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 
 1. **Game design scritto** (questo documento). ✅
 2. **Progetto dell'app e PWA:** prototipo portato in `app/`, a schermo intero, installabile sull'iPhone da GitHub Pages. ✅ (manca solo la messa online, vedi `docs/guida-iphone.md`)
-3. **Motore senza grafica:** stato dell'albero, tempo trascorso calcolato all'apertura, salvataggio, cursore "avanti di N giorni" per i test di trascuratezza e stagioni.
+3. **Motore senza grafica:** stato dell'albero, tempo trascorso calcolato all'apertura, salvataggio, cursore "avanti di N giorni" per i test di trascuratezza e stagioni. ✅ Il pannello di prova si apre toccando 3 volte la stagione. Per ora il motore guida il pino del prototipo; la scena resta autunnale anche se la stagione cambia (si sistema nella fase 5 con l'acero).
 4. **Potatura:** toccare un germoglio, tagliarlo, vedere le gemme ricrescere. È la parte che decide se il gioco è divertente.
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni.
 6. **Test** con amici tramite il link della PWA (gratis).

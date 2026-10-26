@@ -23,12 +23,15 @@ export function creaAnnaffiatura(scene, pino, eventi) {
 
   const potTop = pino.potTop, tipW = new THREE.Vector3();
   let w = -1, assorbita = false, completata = false, emitAcc = 0;
+  let sete0 = 1, terriccio0 = 1; // aspetto della pianta all'inizio dell'annaffiatura
 
   return {
+    get attiva() { return w >= 0; },
     // restituisce false se un'annaffiatura è già in corso
     avvia() {
       if (w >= 0) return false;
       w = 0; assorbita = false; completata = false;
+      sete0 = pino.thirst; terriccio0 = pino.soilDry;
       return true;
     },
     aggiorna(dt) {
@@ -50,8 +53,8 @@ export function creaAnnaffiatura(scene, pino, eventi) {
             d.on = true; d.m.visible = true;
           }
         }
-        pino.setThirst(1 - smooth((w - 1.0) / 3.0));
-        pino.setSoil(1 - smooth((w - .9) / 1.0));
+        pino.setThirst(sete0 * (1 - smooth((w - 1.0) / 3.0)));
+        pino.setSoil(terriccio0 * (1 - smooth((w - .9) / 1.0)));
         if (w > .9 && !assorbita) { assorbita = true; eventi.assorbita(); }
         if (w > 1.2) pino.ring.visible = false;
         if (w > 3.3 && !completata) { completata = true; eventi.completata(); }

@@ -23,7 +23,7 @@
       <div class="tag" id="tag-pino">
         <div class="alert" id="alert"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C16 8 18.5 11.5 18.5 14.5a6.5 6.5 0 0 1-13 0C5.5 11.5 8 8 12 3Z" fill="#5db4f0" stroke="#1d4f7a" stroke-width="2"/></svg>Ha sete!</div>
         <div class="ok" id="ok">Idratato</div>
-        <div class="plate"><span class="nm">Pino nero</span><span class="st"><span>Shakan</span><span>35%</span></span><div class="bar"><i style="width:35%"></i></div></div>
+        <div class="plate"><span class="nm">Pino nero</span><span class="st"><span id="pino-fase">Sta bene</span><span id="pino-salute">100%</span></span><div class="bar"><i id="pino-barra" style="width:100%"></i></div></div>
       </div>
     </div>
 
@@ -31,18 +31,18 @@
       <div class="row">
         <div class="pill season">
           <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2 6 6-2-3 5 5 2-6 2 1 6-5-4-5 4 1-6-6-2 5-2-3-5 6 2z" fill="#d9481f" stroke="#3b2716" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 17v5" stroke="#3b2716" stroke-width="1.8" stroke-linecap="round"/></svg></span>
-          <b>Autunno</b>
-          <span class="week" aria-label="Giorno 3 di 7"><i class="on"></i><i class="on"></i><i class="now"></i><i></i><i></i><i></i><i></i></span>
+          <b id="stagione">Primavera</b>
+          <span class="week" id="settimana" aria-label="Giorno 1 di 7"><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         </div>
         <div class="pill seeds">
           <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="1.8"/><path d="M10 9c-1 2-1.4 4-1 6" stroke="#f3c77a" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></span>
-          <b id="seeds">1.240</b>
+          <b id="seeds">50</b>
           <button class="plus" id="plus" aria-label="Ottieni semi">+</button>
         </div>
       </div>
       <div class="pill streak">
         <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 0-2-1-5 0-7Z" fill="#ff8a2a" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13c1.2 1.4 2 2.4 2 3.4a2 2 0 0 1-4 0c0-1 .8-2 2-3.4Z" fill="#ffe07a"/></svg></span>
-        <b>12</b><span>giorni di fila</span>
+        <b id="serie">0</b><span>giorni di fila</span>
       </div>
       <div class="quest" id="quest">
         <span class="qt">Sfida del giorno</span>

@@ -67,10 +67,24 @@ export function creaAlberi(world) {
     trees.pino = { g: tr, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
 
     const tmpC = new THREE.Color();
+    // ordine in cui spariscono i ciuffi quando la chioma si dirada: prima quelli esterni
+    const originali = f.m.instanceMatrix.array.slice();
+    const ordine = f.periferia.map((dn, i) => [dn + ((i * 0.618) % 1) * .35, i]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
     pino = {
       ring,
       thirst: 1,
+      soilDry: 1,
       potTop: new THREE.Vector3(2.1, .63, 2.0),
+      // 1 = chioma piena, 0,2 = quasi spoglia (resta sempre qualche ciuffo)
+      setSalute(v) {
+        const nascosti = Math.round((1 - v) / .8 * ordine.length * .85);
+        ordine.forEach((idx, k) => {
+          if (k < nascosti) f.m.setMatrixAt(idx, zero);
+          else f.m.instanceMatrix.array.set(originali.subarray(idx * 16, idx * 16 + 16), idx * 16);
+        });
+        f.m.instanceMatrix.needsUpdate = true;
+      },
       // 0 = idratato, 1 = assetato: sfuma il colore di ogni ciuffo verso il giallo
       setThirst(v) {
         this.thirst = v;
@@ -78,7 +92,7 @@ export function creaAlberi(world) {
         f.m.instanceColor.needsUpdate = true;
       },
       // 0 = terriccio umido (scuro), 1 = secco (chiaro)
-      setSoil(v) { soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
+      setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
     };
     pino.setThirst(1);
   }

@@ -16,6 +16,10 @@ import { creaAlberi } from './scena/alberi.js';
 import { creaGiardino } from './scena/giardino.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaInterfaccia } from './interfaccia.js';
+import { creaPannelloProva } from './pannello-prova.js';
+import { GIORNO } from './gioco/tempo.js';
+import { nuovoStato, avanza, annaffia, vista } from './gioco/stato.js';
+import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
 THREE.ColorManagement.enabled = false;
@@ -75,20 +79,73 @@ function avvia() {
   }).observe(screenEl);
 
   const ui = creaInterfaccia(screenEl, camera, alberi.trees);
+  // Per ora la pianta del motore è il pino, l'unico con i colori della sete.
+  // Nella fase 5 diventerà l'acero, unica specie dell'MVP.
   const pino = alberi.pino;
 
+  // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
+  let stato = carica(Date.now());
+  const ora = () => Date.now() + stato.debug.spostamento;
+  avanza(stato, ora());
+  salva(stato);
+
+  let pannello;
+  // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
+  function disegna() {
+    const giorniAnteprima = pannello?.anteprima ?? 0;
+    const base = giorniAnteprima > 0 ? avanza(structuredClone(stato), ora() + giorniAnteprima * GIORNO) : stato;
+    const v = vista(base);
+    const annaffiando = annaffiatura.attiva;
+    ui.aggiorna(v, { annaffiando });
+    if (!annaffiando) {
+      pino.setThirst(v.ingiallimento);
+      pino.setSoil(v.terriccio);
+      pino.ring.visible = v.haSete;
+    }
+    pino.setSalute(v.salute);
+    pannello?.mostra(v, base.aggiornato);
+  }
+  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
+
   const waterBtn = document.getElementById('t-water');
+  let ultimoEsito = null;
   const annaffiatura = creaAnnaffiatura(scene, pino, {
     assorbita: () => ui.nascondiAvvisoSete(),
     completata: () => {
-      ui.mostraIdratato(); ui.sfidaCompletata(); ui.aggiungiSemi(5, 'pino');
-      ui.toast('Il pino si sta riprendendo. Torna domani per la prossima annaffiatura.');
+      ui.mostraIdratato();
+      const { semi, bonusSerie } = ultimoEsito;
+      if (semi) ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'pino');
+      if (bonusSerie) setTimeout(() => ui.guadagnaSemi(bonusSerie, stato.semi, 'pino'), 900);
+      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : 'Il pino si sta riprendendo. Tornerà ad avere sete tra un giorno o due.');
+      disegna();
     },
   });
   waterBtn.addEventListener('click', () => {
-    if (pino.thirst < .05) { ui.toast('Il pino è già idratato. Troppa acqua fa marcire le radici.'); return; }
-    if (annaffiatura.avvia()) waterBtn.classList.remove('needs');
+    if (annaffiatura.attiva) return;
+    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
+    const esito = annaffia(stato, ora());
+    if (esito.esito === 'umido') { ui.toast('Il terriccio è ancora umido: l\'acqua non viene assorbita. Riprova più tardi.'); return; }
+    ultimoEsito = esito;
+    salva(stato);
+    annaffiatura.avvia();
+    waterBtn.classList.remove('needs');
+    disegna();
   });
+
+  pannello = creaPannelloProva({
+    anteprima: () => disegna(),
+    applica: (giorni) => { stato.debug.spostamento += giorni * GIORNO; aggiornaStato(); },
+    azzera: () => { cancella(); stato = nuovoStato(Date.now()); aggiornaStato(); },
+  });
+
+  disegna();
+  // ritorno dopo una lunga assenza: nessun rimprovero (game-design.md, sezione 6.2)
+  if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere.', 4500);
+
+  // l'app può restare aperta a lungo: il tempo si aggiorna ogni 30 secondi e al ritorno sull'app
+  setInterval(aggiornaStato, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') aggiornaStato(); else salva(stato); });
+  window.addEventListener('pagehide', () => salva(stato));
 
   // Strumenti non ancora attivi
   const prossimamente = {
