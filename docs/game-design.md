@@ -1,7 +1,7 @@
 # Giardino Bonsai: documento di game design
 
 Ultimo aggiornamento: 26/10/2026
-Stato: concept validato, prototipo di stile della homepage completato.
+Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
 
@@ -45,7 +45,7 @@ Il bisogno d'acqua si misura in **giorni reali**, non in giorni di gioco (altrim
 
 ### 3.3 Regole tecniche sul tempo
 
-- L'orario di riferimento arriva **dal server**, mai dall'orologio del telefono, per impedire di imbrogliare.
+- L'orario di riferimento arriva **dal server**, mai dall'orologio del telefono, per impedire di imbrogliare. **Nell'MVP si usa l'orologio del telefono:** è un gioco per una persona sola e barare non danneggia nessuno. Il server arriverà con account e parte social.
 - La pianta **non viene simulata ad app chiusa**. All'apertura si calcola il tempo trascorso e si ricostruisce lo stato in un solo passaggio.
 
 ## 4. Azioni di cura
@@ -124,6 +124,8 @@ Tempi riferiti all'estate; in inverno si allungano di circa 2 volte.
 
 Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e marciume, che si curano saltando l'acqua per un giorno. Serve a evitare che la strategia migliore sia premere il pulsante dell'acqua a ogni apertura.
 
+**Nell'MVP:** niente marciume. Se il terriccio è ancora umido l'acqua non viene assorbita e compare un messaggio gentile.
+
 ### 6.4 Parassiti
 
 - Compaiono **in modo casuale**, più spesso in primavera ed estate o se la pianta è sotto stress.
@@ -141,7 +143,7 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 
 ### 7.2 Serie di giorni consecutivi
 
-- Conta un'azione di cura al giorno.
+- Conta un'azione di cura al giorno. Nell'MVP vale l'acqua oppure la potatura; per questo ogni giorno spunta almeno un germoglio da cimare, anche quando l'acqua non serve.
 - **Giorno di riposo:** guadagnabile, protegge la serie una volta a settimana.
 - Se la serie si interrompe **si dimezza** invece di azzerarsi (40 diventa 20).
 
@@ -246,10 +248,16 @@ L'albero è salvato come **struttura di rami** (grafo: ogni ramo con punto di pa
 
 ### 11.4 Tecnologie
 
-- **Prototipi di design:** pagina web con Three.js (veloce da modificare e condividere).
-- **App da pubblicare:** Unity consigliato (prestazioni 3D su telefono, una base di codice per iOS e Android, AR Foundation per la realtà aumentata futura). Alternativa: Godot.
-- **Backend:** Firebase o Supabase per account, salvataggi, orario del server, notifiche e parte social.
-- **Notifiche:** al massimo una al giorno, tono gentile (es. *"Il tuo acero ha sete"* al 2° giorno).
+Decisione del 26/10/2026: si resta sul web, riusando il prototipo. Vincoli: sviluppatore unico alle prime armi, budget quasi zero fino all'app funzionante sul proprio iPhone.
+
+- **App:** Three.js + Vite, JavaScript semplice, nella cartella `app/`.
+- **Sul telefono, gratis:** **PWA** (app web installabile). Si apre in Safari e si aggiunge alla schermata Home: icona, schermo intero, funziona anche offline. Non servono Mac, Xcode né account sviluppatore.
+- **Hosting gratuito:** GitHub Pages, aggiornato in automatico a ogni invio del codice.
+- **Salvataggio:** sul telefono (`localStorage`), con esportazione e importazione di un file di backup.
+- **Store (più avanti, a pagamento):** la stessa app impacchettata con **Capacitor**. Android: 25 $ una tantum per Google Play. iPhone: 99 $ l'anno per l'Apple Developer Program, più un Mac o un servizio di compilazione online.
+- **Unity o Godot:** solo se in futuro serviranno realtà aumentata o scansione.
+- **Backend:** non serve nell'MVP. Più avanti Firebase o Supabase per account, salvataggi nel cloud e parte social.
+- **Notifiche:** al massimo una al giorno, tono gentile (es. *"Il tuo acero ha sete"* al 2° giorno). Nella PWA su iPhone le notifiche richiedono un server di invio, quindi arrivano dopo l'MVP; con Capacitor diventano notifiche locali, senza server.
 
 ## 12. Monetizzazione
 
@@ -276,16 +284,36 @@ Rimandata. Promessa corretta: *"ricrea il tuo bonsai nel giardino"*, non *"copia
 
 ## 14. Roadmap
 
-1. **Game design scritto** (questo documento). ✅
-2. **Prototipo potatura e crescita** nel prototipo web: toccare un ramo, tagliarlo, vedere i nuovi germogli nei giorni successivi.
-3. **Prototipo trascuratezza e stagioni:** cursore del tempo per vedere le fasi della sezione 6 e i cambi di stagione.
-4. **Scelta definitiva della tecnologia** e avvio del progetto Unity.
-5. **Bibbia visiva con un artista** (pino completo nei 4 livelli di zoom).
-6. **MVP:** 3 specie, acqua, potatura e filo, stagioni reali, diario fotografico, notifiche. Test con 50–100 persone.
-7. **Versione 1.0:** giardino con decorazioni, più specie, negozio, realtà aumentata, scansione livello 1.
-8. **Versione 2.0:** social, mostre, scansione livello 2, promemoria per piante vere.
+### 14.1 MVP: poche meccaniche, fatte bene
 
-Squadra minima: uno sviluppatore Unity con esperienza di grafica procedurale, un artista 3D/2D, un game designer anche part-time. Per la scansione di livello 2 serve esperienza di computer vision.
+Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a costo zero.
+
+| Nell'MVP | Rimandato |
+|---|---|
+| **Una specie: l'acero giapponese.** Cambia aspetto in ogni stagione (verde, rosso, spoglio), e da spoglio in inverno mostra i rami da potare | Pino, ginepro, altre specie |
+| **Acqua e Pota** | Filo, Cura, Rinvaso, parassiti, troppa acqua |
+| Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
+| Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
+| Un solo albero in primo piano, il giardino come cornice | Più alberi, zoom a 4 livelli |
+| Salvataggio sul telefono | Account, server, notifiche, social |
+
+Al posto della percentuale di stile, l'etichetta mostra l'**età dell'albero** in anni di gioco.
+
+Crescita semplificata (al posto di L-system e *space colonization*): tronco e rami principali fissi, germogli sulle punte. Tagliando una punta, sotto il taglio spuntano 2 gemme che crescono nei giorni successivi.
+
+### 14.2 Fasi
+
+1. **Game design scritto** (questo documento). ✅
+2. **Progetto dell'app e PWA:** prototipo portato in `app/`, a schermo intero, installabile sull'iPhone da GitHub Pages.
+3. **Motore senza grafica:** stato dell'albero, tempo trascorso calcolato all'apertura, salvataggio, cursore "avanti di N giorni" per i test di trascuratezza e stagioni.
+4. **Potatura:** toccare un germoglio, tagliarlo, vedere le gemme ricrescere. È la parte che decide se il gioco è divertente.
+5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni.
+6. **Test** con amici tramite il link della PWA (gratis).
+7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico.
+9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
+
+Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.
 
 ## 15. Questioni aperte
 
@@ -294,5 +322,4 @@ Squadra minima: uno sviluppatore Unity con esperienza di grafica procedurale, un
 - Bilanciamento numerico dell'economia.
 - Quante piante può avere il giardino iniziale e quanto costa ogni ampliamento.
 - Come si calcola la percentuale di stile (confronto della forma con un modello dello stile).
-- Comportamento delle stagioni nell'emisfero sud: calendario reale locale o unico per tutti.
 - Ora delle notifiche: fissa o scelta dal giocatore.
