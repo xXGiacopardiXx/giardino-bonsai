@@ -121,6 +121,7 @@ export function creaGiardino(world, { reduce }) {
   // Foglie d'acero a terra e foglie che cadono
   const leafGeo = new THREE.PlaneGeometry(.15, .12);
   const leafCols = ['#b83a28', '#cc4f2c', '#de6a2f', '#e88535', '#f0a744'];
+  let foglieATerra;
   {
     const N = 80, im = new THREE.InstancedMesh(leafGeo, toon({ color: 0xffffff, side: THREE.DoubleSide }), N); im.receiveShadow = true;
     const d = new THREE.Object3D();
@@ -132,6 +133,7 @@ export function creaGiardino(world, { reduce }) {
       d.rotation.set(-PI / 2, 0, R(0, 6)); d.updateMatrix(); im.setMatrixAt(i, d.matrix); im.setColorAt(i, new THREE.Color(leafCols[i % 5]));
     }
     world.add(im);
+    foglieATerra = im;
   }
   const falling = [];
   if (!reduce) for (let i = 0; i < 12; i++) {
@@ -141,6 +143,12 @@ export function creaGiardino(world, { reduce }) {
   }
 
   return {
+    // le foglie d'acero cadono da metà autunno all'inizio dell'inverno e restano a terra ancora un po'
+    // (p: punto dell'anno, 0 = inizio primavera, 2 = autunno, 3 = inverno)
+    setStagione(p) {
+      falling.forEach(L => { L.m.visible = p >= 2.4 && p < 3.4; });
+      foglieATerra.visible = p >= 2.5 && p < 3.7;
+    },
     aggiorna(dt, clock) {
       falling.forEach(L => {
         L.ph += dt; L.m.position.y -= L.sp * dt; L.m.position.x += Math.sin(L.ph * 1.6) * .35 * dt; L.m.position.z += Math.cos(L.ph * 1.1) * .2 * dt;

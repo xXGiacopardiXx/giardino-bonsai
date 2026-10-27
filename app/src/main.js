@@ -81,10 +81,9 @@ function avvia() {
   }).observe(screenEl);
 
   const ui = creaInterfaccia(screenEl, camera, alberi.trees);
-  // Per ora la pianta del motore è il pino, l'unico con i colori della sete.
-  // Nella fase 5 diventerà l'acero, unica specie dell'MVP.
-  const pino = alberi.pino;
-  const germogli = creaGermogli(scene, pino);
+  // La pianta del motore è l'acero, unica specie da curare nell'MVP (game-design.md, sezione 14.1)
+  const acero = alberi.acero;
+  const germogli = creaGermogli(scene, acero);
 
   // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
   let stato = carica(Date.now());
@@ -101,11 +100,14 @@ function avvia() {
     const annaffiando = annaffiatura.attiva;
     ui.aggiorna(v, { annaffiando });
     if (!annaffiando) {
-      pino.setThirst(v.ingiallimento);
-      pino.setSoil(v.terriccio);
-      pino.ring.visible = v.haSete;
+      acero.setThirst(v.ingiallimento);
+      acero.setSoil(v.terriccio);
+      acero.ring.visible = v.haSete;
     }
-    pino.setSalute(v.salute);
+    acero.setSalute(v.salute);
+    // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
+    const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
+    acero.setStagione(pAnno); giardino.setStagione(pAnno);
     germogli.sincronizza(v.germogli, v.gemme);
     pannello?.mostra(v, base.aggiornato);
   }
@@ -113,14 +115,14 @@ function avvia() {
 
   const waterBtn = document.getElementById('t-water');
   let ultimoEsito = null;
-  const annaffiatura = creaAnnaffiatura(scene, pino, {
+  const annaffiatura = creaAnnaffiatura(scene, acero, {
     assorbita: () => ui.nascondiAvvisoSete(),
     completata: () => {
       ui.mostraIdratato();
       const { semi, bonusSerie } = ultimoEsito;
-      if (semi) ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'pino');
-      if (bonusSerie) setTimeout(() => ui.guadagnaSemi(bonusSerie, stato.semi, 'pino'), 900);
-      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : 'Il pino si sta riprendendo. Tornerà ad avere sete tra un giorno o due.');
+      if (semi) ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'acero');
+      if (bonusSerie) setTimeout(() => ui.guadagnaSemi(bonusSerie, stato.semi, 'acero'), 900);
+      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.');
       disegna();
     },
   });
@@ -160,7 +162,7 @@ function avvia() {
   for (const id in prossimamente) document.getElementById(id).addEventListener('click', () => ui.toast(prossimamente[id]));
   document.getElementById('plus').addEventListener('click', () => ui.toast(prossimamente['t-shop']));
 
-  // --- Potatura: Pota avvicina la telecamera al pino, un tocco su un germoglio lo taglia ---
+  // --- Potatura: Pota avvicina la telecamera all'acero, un tocco su un germoglio lo taglia ---
   const pruneBtn = document.getElementById('t-prune');
   const volo = { t: 1, daT: new THREE.Vector3(), aT: new THREE.Vector3(), daD: 0, aD: 0 };
   const centro = target.clone();
@@ -177,7 +179,7 @@ function avvia() {
     if (on) {
       distanzaPrima = camera.position.distanceTo(controls.target);
       controls.minDistance = baseDist * .2;
-      vola(pino.fuoco, baseDist * .27);
+      vola(acero.fuoco, baseDist * .27);
     } else {
       vola(centro, Math.max(distanzaPrima, baseDist * .45));
       controls.minDistance = baseDist * .45;
@@ -212,7 +214,7 @@ function avvia() {
     germogli.taglia(id);
     salva(stato);
     disegna();
-    if (esito.bonusSerie) ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'pino');
+    if (esito.bonusSerie) ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero');
     ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
       : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
     // finiti i germogli da tagliare, la telecamera torna indietro da sola

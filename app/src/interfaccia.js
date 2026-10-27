@@ -76,9 +76,9 @@ export function creaInterfaccia(screenEl, camera, trees) {
       primoAggiornamento = false;
 
       const salute = Math.round(v.salute * 100) + '%';
-      $('pino-fase').textContent = v.nomeFase;
-      $('pino-salute').textContent = salute;
-      $('pino-barra').style.width = salute;
+      $('acero-fase').textContent = v.nomeFase;
+      $('acero-salute').textContent = salute;
+      $('acero-barra').style.width = salute;
       if (!annaffiando) {
         $('alert').classList.toggle('hide', !v.haSete);
         $('alert').style.display = v.haSete ? '' : 'none';

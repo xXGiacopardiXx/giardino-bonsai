@@ -66,25 +66,26 @@ export function foliage(parent, pads, o) {
   // o.geo: forma del singolo ciuffo (aghi, foglie); senza, una pallina sfaccettata
   const m = new THREE.InstancedMesh(o.geo || new THREE.IcosahedronGeometry(1, o.detail), toon({ color: 0xffffff, side: o.geo ? THREE.DoubleSide : THREE.FrontSide }), items.length);
   m.castShadow = true; m.receiveShadow = true;
-  const d = new THREE.Object3D(), healthy = [], stressed = [];
+  const d = new THREE.Object3D(), healthy = [], stressed = [], toni = [];
   items.forEach((it, i) => {
     d.position.set(it.p[0], it.p[1], it.p[2]);
     d.rotation.set(R(-.2, .2), R(0, PI * 2), R(-.2, .2));
     d.scale.set(it.s, it.s * o.flat, it.s);
     d.updateMatrix(); m.setMatrixAt(i, d.matrix);
     const f = Math.min(1, Math.max(0, it.h * .7 + rnd() * .38)), c = new THREE.Color(o.palette[Math.round(f * (o.palette.length - 1))]);
-    healthy.push(c);
+    healthy.push(c); toni.push(f);
     stressed.push(o.stress && rnd() < o.stressRatio ? new THREE.Color(o.stress[Math.floor(rnd() * o.stress.length)]) : c.clone());
     m.setColorAt(i, c);
   });
   parent.add(m);
   // periferia: 0 al centro del ciuffo, 1 sul bordo (i rametti esterni si perdono per primi)
-  return { m, healthy, stressed, periferia: items.map(it => it.dn) };
+  // toni: posizione di ogni ciuffo nella tavolozza (0 = primo colore), per ricolorarlo con le stagioni
+  return { m, healthy, stressed, toni, periferia: items.map(it => it.dn) };
 }
 
 // --- Dettagli realistici dei bonsai: aghi, foglie palmate, corteccia ---
 // Usano una sequenza casuale propria, così la sequenza col seme della scena non cambia.
-function sequenza(s) { return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
+export function sequenza(s) { return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
 
 // Le normali puntano verso l'esterno del ciuffo: la luce lo modella come un cuscinetto morbido,
 // mentre il contorno mostra i singoli aghi o le singole foglie.

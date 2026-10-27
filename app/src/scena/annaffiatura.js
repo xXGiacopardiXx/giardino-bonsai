@@ -1,5 +1,5 @@
 // Animazione dell'annaffiatura: l'annaffiatoio compare, si inclina, versa le gocce sul vaso
-// e il pino torna verde a poco a poco.
+// e la pianta torna sana a poco a poco.
 import * as THREE from 'three';
 import { PI, R, M, mesh } from './strumenti.js';
 
@@ -7,7 +7,7 @@ const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const backOut = t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 
 // eventi.assorbita(): l'acqua arriva al terriccio; eventi.completata(): fine, si dà la ricompensa
-export function creaAnnaffiatura(scene, pino, eventi) {
+export function creaAnnaffiatura(scene, pianta, eventi) {
   const can = new THREE.Group(); can.visible = false; scene.add(can);
   const body = 0x5f9e92;
   mesh(new THREE.CylinderGeometry(.24, .27, .42, 20), M(body), can, 0, 0, 0);
@@ -21,7 +21,7 @@ export function creaAnnaffiatura(scene, pino, eventi) {
   const dropGeo = new THREE.SphereGeometry(.035, 8, 6), dropMat = new THREE.MeshBasicMaterial({ color: 0x7cc6f0 });
   for (let i = 0; i < 70; i++) { const m = new THREE.Mesh(dropGeo, dropMat); m.visible = false; scene.add(m); drops.push({ m, v: new THREE.Vector3(), on: false }); }
 
-  const potTop = pino.potTop, tipW = new THREE.Vector3();
+  const potTop = pianta.potTop, posto = pianta.annaffiatoio, tipW = new THREE.Vector3();
   let w = -1, assorbita = false, completata = false, emitAcc = 0;
   let sete0 = 1, terriccio0 = 1; // aspetto della pianta all'inizio dell'annaffiatura
 
@@ -31,13 +31,13 @@ export function creaAnnaffiatura(scene, pino, eventi) {
     avvia() {
       if (w >= 0) return false;
       w = 0; assorbita = false; completata = false;
-      sete0 = pino.thirst; terriccio0 = pino.soilDry;
+      sete0 = pianta.thirst; terriccio0 = pianta.soilDry;
       return true;
     },
     aggiorna(dt) {
       if (w >= 0) {
         w += dt;
-        can.position.set(potTop.x - 1.25, potTop.y - .03 + 1.55, potTop.z + .6);
+        can.position.copy(potTop).add(posto);
         const sIn = w < .35 ? backOut(w / .35) : w > 3.0 ? Math.max(0, 1 - (w - 3.0) / .3) : 1;
         can.scale.setScalar(Math.max(.001, sIn)); can.visible = w < 3.3;
         can.rotation.set(0, -.35, w < .35 ? 0 : w < .7 ? -.8 * smooth((w - .35) / .35) : w < 2.6 ? -.8 + Math.sin(w * 6) * .04 : -.8 * (1 - smooth((w - 2.6) / .4)));
@@ -53,12 +53,12 @@ export function creaAnnaffiatura(scene, pino, eventi) {
             d.on = true; d.m.visible = true;
           }
         }
-        pino.setThirst(sete0 * (1 - smooth((w - 1.0) / 3.0)));
-        pino.setSoil(terriccio0 * (1 - smooth((w - .9) / 1.0)));
+        pianta.setThirst(sete0 * (1 - smooth((w - 1.0) / 3.0)));
+        pianta.setSoil(terriccio0 * (1 - smooth((w - .9) / 1.0)));
         if (w > .9 && !assorbita) { assorbita = true; eventi.assorbita(); }
-        if (w > 1.2) pino.ring.visible = false;
+        if (w > 1.2) pianta.ring.visible = false;
         if (w > 3.3 && !completata) { completata = true; eventi.completata(); }
-        if (w > 4.2) { w = -1; pino.setThirst(0); pino.setSoil(0); }
+        if (w > 4.2) { w = -1; pianta.setThirst(0); pianta.setSoil(0); }
       }
       drops.forEach(d => {
         if (!d.on) return;

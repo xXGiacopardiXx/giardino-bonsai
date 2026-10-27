@@ -2,7 +2,7 @@
 // La scena segue la vista del motore: sincronizza() crea, allunga e toglie i pezzi;
 // taglia() stacca un germoglio, che cade a terra perdendo qualche foglia.
 import * as THREE from 'three';
-import { PI, toon, ciuffoAghi } from './strumenti.js';
+import { PI, toon, ciuffoAghi, ciuffoFoglie } from './strumenti.js';
 
 const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const backOut = t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
@@ -15,18 +15,23 @@ const VERDE_NUOVO = 0xb4e05a, FUSTO = 0xc9d27a, GEMMA = new THREE.Color(0xc9dc6e
 const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 const fustoGeo = new THREE.CylinderGeometry(.6, 1, 1, 6).translate(0, .5, 0);
-// germoglio del pino: una "candela" coperta di aghi corti; la gemma è un ciuffetto di aghi che si apre
-const ciuffoGeo = ciuffoAghi({ n: 34, lunghezza: 1, larghezza: .08, seme: 17, nucleo: .3 }), gemmaGeo = ciuffoAghi({ n: 40, larghezza: .07, seme: 29 });
+// germoglio del pino: una "candela" coperta di aghi corti; la gemma è un ciuffetto di aghi che si apre.
+// Sull'acero il germoglio porta foglioline palmate e la gemma si apre in un ciuffo di foglie.
+const FORME = {
+  aghi: { ciuffo: ciuffoAghi({ n: 34, lunghezza: 1, larghezza: .08, seme: 17, nucleo: .3 }), gemma: ciuffoAghi({ n: 40, larghezza: .07, seme: 29 }) },
+  foglie: { ciuffo: ciuffoFoglie({ n: 5, seme: 23, nucleo: .25 }), gemma: ciuffoFoglie({ n: 5, seme: 31, nucleo: .35 }) },
+};
 const budGeo = new THREE.ConeGeometry(1, 2.2, 7).translate(0, 1.1, 0);
 const toccoGeo = new THREE.SphereGeometry(.28, 8, 6), toccoMat = new THREE.MeshBasicMaterial({ visible: false });
 const aloneGeo = new THREE.SphereGeometry(1, 16, 12);
 const fustoMat = toon({ color: FUSTO }), budMat = toon({ color: 0xe8dcb8 });
 
-// albero: { g: gruppo del tronco, punte: [{ p, d }] in coordinate del gruppo, verde: colore delle foglie mature,
+// albero: { g: gruppo del tronco, punte: [{ p, d }] in coordinate del gruppo, aghi: true per le conifere,
+//          verde: colore (THREE.Color) delle foglie mature, cambia con le stagioni,
 //          potTop: centro del terriccio, dove si fermano i germogli tagliati }
 export function creaGermogli(scene, albero) {
   const germogli = new Map(), gemme = new Map(), cadute = [], foglie = [];
-  const verde = new THREE.Color(albero.verde);
+  const { ciuffo: ciuffoGeo, gemma: gemmaGeo } = FORME[albero.aghi ? 'aghi' : 'foglie'];
   const terra = albero.potTop.y + .02;
   let potatura = false;
 
@@ -82,7 +87,7 @@ export function creaGermogli(scene, albero) {
     const pop = Math.min(1, (ora - x.nato) / 450);
     const s = (.045 + .09 * x.crescita) * Math.max(.001, backOut(pop));
     x.m.scale.set(s, s * .72, s);
-    x.m.material.color.copy(GEMMA).lerp(verde, smooth(x.crescita * 1.2));
+    x.m.material.color.copy(GEMMA).lerp(albero.verde, smooth(x.crescita * 1.2));
   }
 
   function togli(o) { o.parent?.remove(o); o.traverse(c => { if (c.material && c.material !== fustoMat && c.material !== toccoMat && c.material !== budMat) c.material.dispose(); }); }

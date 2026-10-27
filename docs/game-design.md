@@ -314,7 +314,7 @@ Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a
 | **Acqua e Pota** | Filo, Cura, Rinvaso, parassiti, troppa acqua |
 | Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
 | Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
-| Un solo albero in primo piano, il giardino come cornice | Più alberi, zoom a 4 livelli |
+| Un solo albero da curare (l'acero); il giardino è un ecosistema di piante, ognuna nel suo spazio: pino e ginepro restano, per ora senza cure | Cure per più alberi, zoom a 4 livelli |
 | Salvataggio sul telefono | Account, server, notifiche, social |
 
 Al posto della percentuale di stile, l'etichetta mostra l'**età dell'albero** in anni di gioco.
@@ -327,7 +327,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 2. **Progetto dell'app e PWA:** prototipo portato in `app/`, a schermo intero, installabile sull'iPhone da GitHub Pages. ✅ (manca solo la messa online, vedi `docs/guida-iphone.md`)
 3. **Motore senza grafica:** stato dell'albero, tempo trascorso calcolato all'apertura, salvataggio, cursore "avanti di N giorni" per i test di trascuratezza e stagioni. ✅ Il pannello di prova si apre toccando 3 volte la stagione. Per ora il motore guida il pino del prototipo; la scena resta autunnale anche se la stagione cambia (si sistema nella fase 5 con l'acero).
 4. **Potatura:** toccare un germoglio, tagliarlo, vedere le gemme ricrescere. È la parte che decide se il gioco è divertente. ✅ Numeri nella sezione 6.1.2. Come la sete, per ora la potatura è sul pino; nella fase 5 passa all'acero. Da verificare sul telefono se il gesto dà soddisfazione. Dopo la prima prova sul telefono: bonsai più realistici, con ciuffi di aghi (pino, ginepro), foglie palmate (acero), corteccia e rametti dentro la chioma.
-5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni.
+5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero portano foglioline palmate. Il resto del giardino (cielo, prato) è ancora autunnale. Da fare: negozio dei vasi, tutorial, suoni.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
 8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico.
