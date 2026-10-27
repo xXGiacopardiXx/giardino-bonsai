@@ -111,3 +111,27 @@ button{touch-action:manipulation}
 .prova-pulsanti .principale{background:linear-gradient(#a5e36a,#58a32b);color:#fff;text-shadow:0 .3cqw 0 var(--ink)}
 .prova-pulsanti .pericolo{background:linear-gradient(#ffb3a8,#e0604f);color:#fff;text-shadow:0 .3cqw 0 var(--ink)}
 .prova-pulsanti button:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
+
+/* negozio dei vasi (si apre da Negozio e dal "+" dei Semi) */
+.negozio{position:absolute;inset:0;z-index:6;background:rgba(30,22,14,.38);display:flex;align-items:flex-end;padding:0 3cqw calc(var(--bottom) * .45 + 30cqw)}
+.negozio[hidden]{display:none}
+.negozio-pannello{width:100%;box-sizing:border-box;padding:3cqw 3.4cqw 3.6cqw;border-radius:5cqw;background:linear-gradient(var(--cream),var(--cream-2));border:.7cqw solid var(--ink);box-shadow:0 1.1cqw 0 var(--ink);animation:pop .3s ease-out}
+.negozio-testa{display:flex;align-items:center;gap:2.4cqw}
+.negozio h2{margin:0;flex:1;font:700 6cqw/1 var(--display);color:#fff;text-shadow:0 .55cqw 0 var(--ink),.35cqw .35cqw 0 var(--ink),-.35cqw .35cqw 0 var(--ink),.35cqw -.35cqw 0 var(--ink),-.35cqw -.35cqw 0 var(--ink)}
+.negozio-semi{display:flex;align-items:center;gap:1cqw;padding:1cqw 2.6cqw 1cqw 1.6cqw;border-radius:99px;background:#fff7e4;border:.5cqw solid var(--ink);font:700 4cqw/1 var(--display);font-variant-numeric:tabular-nums}
+.negozio-semi svg{width:4.6cqw;height:4.6cqw}
+.negozio-x{all:unset;cursor:pointer;width:8.6cqw;height:8.6cqw;display:grid;place-items:center;border-radius:50%;background:linear-gradient(#ff8a7a,#e0382a);border:.5cqw solid var(--ink);box-shadow:0 .6cqw 0 var(--ink);color:#fff;font:700 5.6cqw/1 var(--display);text-shadow:0 .3cqw 0 var(--ink)}
+.negozio-sotto{margin:2.2cqw 0 2cqw;font:600 3.4cqw/1 var(--display);color:#8a6a48}
+.negozio-lista{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2cqw}
+.vaso{display:flex;flex-direction:column;align-items:center;gap:1.2cqw;padding:2cqw 1.4cqw 2.2cqw;border-radius:3.6cqw;background:#fffaf0;border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);text-align:center}
+.vaso.in-uso{background:linear-gradient(#f3ffe6,#d6f3b8);border-color:#2f6a1a;box-shadow:0 .7cqw 0 #2f6a1a}
+.vaso-img{width:100%;aspect-ratio:64/50;border-radius:2.4cqw;background:radial-gradient(circle at 50% 70%,#e7f3f6,#bfe0ea)}
+.vaso-img svg{width:100%;height:100%;display:block}
+.vaso-nome{font:600 2.9cqw/1.15 var(--display);min-height:6.6cqw;display:grid;place-items:center}
+.vaso-b{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.8cqw;min-width:70%;padding:1.5cqw 2cqw;border-radius:2.6cqw;border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);font:700 3.4cqw/1 var(--display);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
+.vaso-b svg{width:3.8cqw;height:3.8cqw}
+.vaso-b.compra{background:linear-gradient(#a5e36a,#58a32b)}
+.vaso-b.compra.caro{background:linear-gradient(#d9cdb6,#b3a385)}
+.vaso-b.usa{background:linear-gradient(#9bd8ff,#3f92d6)}
+.vaso-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
+.vaso-stato{padding:1.5cqw 0;font:700 3.2cqw/1 var(--display);color:#2f6a1a}

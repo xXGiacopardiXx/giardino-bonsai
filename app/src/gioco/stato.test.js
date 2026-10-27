@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, SEMI, VERSIONE } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, SEMI, VASI, VERSIONE } from './stato.js';
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -173,8 +173,36 @@ test('un salvataggio della versione 1 riceve i germogli', () => {
   const vecchio = nuovoStato(T0);
   vecchio.versione = 1;
   delete vecchio.albero.germogli; delete vecchio.albero.gemme; delete vecchio.albero.contatore;
+  delete vecchio.vasi;
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(s.albero.germogli.length, 2);
+  assert.equal(s.vasi.scelto, VASI[0].id);
   assert.equal(migra({ versione: 99 }), null);
+});
+
+test('si parte con il primo vaso; gli altri si comprano con i Semi', () => {
+  const s = nuovoStato(T0);
+  assert.equal(vista(s).vaso, VASI[0].id);
+  assert.deepEqual(vista(s).vasi.filter(v => v.tuo).map(v => v.id), [VASI[0].id]);
+  // 50 Semi non bastano per un vaso da 80
+  assert.deepEqual(compra(s, 'terracotta'), { esito: 'pochi', mancano: 30 });
+  s.semi = 100;
+  assert.equal(compra(s, 'terracotta').esito, 'ok');
+  assert.equal(s.semi, 20);
+  assert.equal(vista(s).vaso, 'terracotta');
+  // un vaso già comprato non si paga due volte, e si può tornare al primo
+  assert.equal(compra(s, 'terracotta').esito, 'gia');
+  assert.equal(scegliVaso(s, VASI[0].id), true);
+  assert.equal(vista(s).vaso, VASI[0].id);
+  assert.equal(scegliVaso(s, 'nuvola'), false);
+  assert.equal(compra(s, 'inesistente').esito, 'nessuno');
+});
+
+test('un salvataggio della versione 2 riceve il vaso iniziale', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 2; delete vecchio.vasi;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.vasi, { posseduti: [VASI[0].id], scelto: VASI[0].id });
 });

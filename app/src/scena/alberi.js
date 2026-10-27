@@ -34,6 +34,47 @@ function aspettoAnno(p) {
   return { da: 'primavera', a: 'primavera', k: 0, foglie: tra(3.75, 4) };
 }
 
+// I vasi del negozio (gioco/stato.js, VASI), tutti alti uguale sul tavolo dell'acero:
+// ognuno aggiunge i suoi pezzi al gruppo e dice com'è fatto il terriccio.
+const VASI_FORME = {
+  blu(g) {
+    mesh(new THREE.CylinderGeometry(.8, .62, .36, 36), M(0x4c7891), g, 0, .99, 0).scale.z = .74;
+    mesh(new THREE.CylinderGeometry(.84, .84, .06, 36), M(0x5f8ea8), g, 0, 1.17, 0).scale.z = .74;
+    return { geo: new THREE.CylinderGeometry(.76, .76, .04, 36), sz: .72 };
+  },
+  terracotta(g) {
+    mesh(new THREE.CylinderGeometry(.68, .54, .36, 36), M(0xc27a4a), g, 0, .99, 0).scale.z = .9;
+    mesh(new THREE.CylinderGeometry(.73, .73, .07, 36), M(0xae6a3d), g, 0, 1.17, 0).scale.z = .9;
+    return { geo: new THREE.CylinderGeometry(.65, .65, .04, 36), sz: .88 };
+  },
+  // rettangolare basso in grès scuro non smaltato, con i piedini agli angoli
+  rettangolare(g) {
+    mesh(new THREE.BoxGeometry(1.62, .3, .98), M(0x5b4636), g, 0, 1.0, 0);
+    mesh(new THREE.BoxGeometry(1.7, .06, 1.06), M(0x4a3829), g, 0, 1.17, 0);
+    [[-.7, -.38], [.7, -.38], [-.7, .38], [.7, .38]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.16, .06, .14), M(0x4a3829), g, x, .84, z));
+    return { geo: new THREE.BoxGeometry(1.56, .04, .92) };
+  },
+  // ovale basso verde celadon, smaltato
+  celadon(g) {
+    mesh(new THREE.CylinderGeometry(.88, .7, .3, 40), M(0x8cbfa3), g, 0, 1.02, 0).scale.z = .7;
+    mesh(new THREE.CylinderGeometry(.92, .92, .06, 40), M(0xa9d6bd), g, 0, 1.17, 0).scale.z = .7;
+    mesh(new THREE.CylinderGeometry(.6, .6, .06, 40), M(0x76a98c), g, 0, .84, 0).scale.z = .7;
+    return { geo: new THREE.CylinderGeometry(.84, .84, .04, 40), sz: .68 };
+  },
+  // tondo color crema con una fascia blu e tre piedini a nuvola
+  nuvola(g) {
+    mesh(new THREE.CylinderGeometry(.74, .64, .3, 40), M(0xeadfc6), g, 0, 1.02, 0).scale.z = .82;
+    mesh(new THREE.CylinderGeometry(.78, .78, .06, 40), M(0xd9c9a6), g, 0, 1.17, 0).scale.z = .82;
+    const fascia = mesh(new THREE.TorusGeometry(.705, .022, 8, 48), M(0x4c7891), g, 0, 1.08, 0);
+    fascia.rotation.x = PI / 2; fascia.scale.y = .82;
+    for (let i = 0; i < 3; i++) {
+      const a = i / 3 * PI * 2 + PI / 2, p = mesh(new THREE.SphereGeometry(.1, 12, 8), M(0xd0bc96), g, Math.cos(a) * .5, .86, Math.sin(a) * .42);
+      p.scale.set(1.5, .55, 1.1);
+    }
+    return { geo: new THREE.CylinderGeometry(.7, .7, .04, 40), sz: .8 };
+  },
+};
+
 export function creaAlberi(world) {
   const trees = {};
 
@@ -44,9 +85,18 @@ export function creaAlberi(world) {
     mesh(new THREE.BoxGeometry(2.1, .12, 1.3), M(0x8b5a34), t, 0, .75, 0);
     [[-.9, -.52], [.9, -.52], [-.9, .52], [.9, .52]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.13, .75, .13), M(0x6b4226), t, x, .375, z));
     mesh(new THREE.BoxGeometry(1.9, .08, .1), M(0x6b4226), t, 0, .2, .52);
-    const pot = mesh(new THREE.CylinderGeometry(.8, .62, .36, 36), M(0x4c7891), t, 0, .99, 0); pot.scale.z = .74;
-    const rim = mesh(new THREE.CylinderGeometry(.84, .84, .06, 36), M(0x5f8ea8), t, 0, 1.17, 0); rim.scale.z = .74;
-    const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), toon({ color: SOIL_DRY.clone() }), t, 0, 1.19, 0); soil.scale.z = .72;
+    // vaso: si cambia dal negozio; il terriccio resta lo stesso oggetto e cambia solo forma
+    const vasoG = new THREE.Group(); t.add(vasoG);
+    const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), toon({ color: SOIL_DRY.clone() }), t, 0, 1.19, 0);
+    let vasoAttuale = null;
+    function mettiVaso(id) {
+      if (id === vasoAttuale || !VASI_FORME[id]) return;
+      vasoAttuale = id;
+      vasoG.children.slice().forEach(c => { vasoG.remove(c); c.geometry.dispose(); });
+      const terra = VASI_FORME[id](vasoG);
+      soil.geometry.dispose(); soil.geometry = terra.geo; soil.scale.set(1, 1, terra.sz ?? 1);
+    }
+    mettiVaso('blu');
     for (let i = 0; i < 7; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .14), 1), M(0x6a9a40), t, R(-.55, .55), 1.21, R(-.35, .35)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, 1.16, 0); t.add(tr);
     const legnoA = corteccia(0x857262, { chiaro: .18, scuro: .25 });
@@ -74,6 +124,7 @@ export function creaAlberi(world) {
       return { p: new THREE.Vector3(x + c * r * .95, y + r * .28, z + sn * r * .85), d: new THREE.Vector3(c * .9, 1, sn * .9).normalize() };
     }));
     acero = pianta(f, soil, ring, {
+      setVaso: mettiVaso,
       g: tr,
       punte,
       aghi: false,

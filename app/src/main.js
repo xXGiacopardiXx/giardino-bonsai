@@ -18,8 +18,9 @@ import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
+import { creaNegozio } from './negozio.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -91,7 +92,7 @@ function avvia() {
   avanza(stato, ora());
   salva(stato);
 
-  let pannello;
+  let pannello, negozio;
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
@@ -105,6 +106,8 @@ function avvia() {
       acero.ring.visible = v.haSete;
     }
     acero.setSalute(v.salute);
+    acero.setVaso(v.vaso);
+    negozio?.mostra(v);
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno);
@@ -157,10 +160,29 @@ function avvia() {
   const prossimamente = {
     't-wire': 'Filo: trascina un ramo per piegarlo nella forma voluta. Arriva più avanti.',
     't-care': 'Cura: concime e trattamenti contro i parassiti. Arriva più avanti.',
-    't-shop': 'Negozio: vasi da comprare con i Semi. Arriva nella prossima versione.',
   };
   for (const id in prossimamente) document.getElementById(id).addEventListener('click', () => ui.toast(prossimamente[id]));
-  document.getElementById('plus').addEventListener('click', () => ui.toast(prossimamente['t-shop']));
+
+  // --- Negozio dei vasi: il vaso comprato va subito all'acero ---
+  const nomeVaso = (id) => VASI.find(x => x.id === id).nome.toLowerCase();
+  negozio = creaNegozio({
+    compra(id) {
+      const esito = compra(stato, id);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni annaffiando ogni giorno.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); disegna();
+      negozio.chiudi();
+      ui.toast(`Ecco il vaso ${nomeVaso(id)}: l'acero ci sta benissimo!`);
+    },
+    usa(id) {
+      if (!scegliVaso(stato, id)) return;
+      salva(stato); disegna();
+      negozio.chiudi();
+    },
+  });
+  const apriNegozio = () => { negozio.apri(); disegna(); };
+  document.getElementById('t-shop').addEventListener('click', apriNegozio);
+  document.getElementById('plus').addEventListener('click', apriNegozio);
 
   // --- Potatura: Pota avvicina la telecamera all'acero, un tocco su un germoglio lo taglia ---
   const pruneBtn = document.getElementById('t-prune');

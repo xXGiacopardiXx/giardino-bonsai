@@ -4,10 +4,21 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 2;
+export const VERSIONE = 3;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, acqua: 5, serie7: 50 };
+
+// Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
+// Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
+// il primo vaso arriva in meno di una settimana, l'ultimo in circa un mese.
+export const VASI = [
+  { id: 'blu', nome: 'Ovale blu smaltato', prezzo: 0 },
+  { id: 'terracotta', nome: 'Tondo in terracotta', prezzo: 80 },
+  { id: 'rettangolare', nome: 'Rettangolare in grès', prezzo: 120 },
+  { id: 'celadon', nome: 'Ovale celadon', prezzo: 180 },
+  { id: 'nuvola', nome: 'Crema con piedini a nuvola', prezzo: 250 },
+];
 
 // Fasi della disidratazione (sezione 6.1). "da" è in giorni di sete, cioè giorni reali
 // senza acqua pesati per la stagione (un giorno d'inverno vale mezzo giorno d'estate).
@@ -47,6 +58,7 @@ export function nuovoStato(ora) {
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
     albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane() },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
+    vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     oggi: { giorno: giornoLocale(ora), acqua: false },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
   };
@@ -63,6 +75,7 @@ function alberoGiovane() {
 export function migra(stato) {
   if (!stato || typeof stato !== 'object') return null;
   if (stato.versione === 1) { Object.assign(stato.albero, alberoGiovane()); stato.versione = 2; }
+  if (stato.versione === 2) { stato.vasi = { posseduti: [VASI[0].id], scelto: VASI[0].id }; stato.versione = 3; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -166,6 +179,25 @@ export function pota(stato, ora, id) {
   return { esito: 'ok', gemme, bonusSerie };
 }
 
+// Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
+export function compra(stato, id) {
+  const vaso = VASI.find(v => v.id === id);
+  if (!vaso) return { esito: 'nessuno', mancano: 0 };
+  if (stato.vasi.posseduti.includes(id)) return { esito: 'gia', mancano: 0 };
+  if (stato.semi < vaso.prezzo) return { esito: 'pochi', mancano: vaso.prezzo - stato.semi };
+  stato.semi -= vaso.prezzo;
+  stato.vasi.posseduti.push(id);
+  stato.vasi.scelto = id;
+  return { esito: 'ok', mancano: 0 };
+}
+
+// Mette all'albero un vaso già comprato. Restituisce false se il vaso non è tuo.
+export function scegliVaso(stato, id) {
+  if (!stato.vasi.posseduti.includes(id)) return false;
+  stato.vasi.scelto = id;
+  return true;
+}
+
 const limita = (v) => Math.min(1, Math.max(0, v));
 
 // Tutto quello che serve per disegnare: calcolato dallo stato, senza modificarlo.
@@ -179,6 +211,9 @@ export function vista(stato) {
     ...cal,
     nomeStagione: STAGIONI[cal.stagione],
     semi: stato.semi,
+    vaso: stato.vasi.scelto,
+    // catalogo del negozio con lo stato di ogni vaso
+    vasi: VASI.map(v => ({ ...v, tuo: stato.vasi.posseduti.includes(v.id), inUso: stato.vasi.scelto === v.id })),
     serie: stato.serie.giorni,
     sete: a.sete,
     salute: a.salute,
