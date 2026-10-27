@@ -16,8 +16,8 @@ export function creaAlberi(world) {
     mesh(new THREE.BoxGeometry(1.9, .08, .1), M(0x6b4226), t, 0, .2, .52);
     const pot = mesh(new THREE.CylinderGeometry(.8, .62, .36, 36), M(0x4c7891), t, 0, .99, 0); pot.scale.z = .74;
     const rim = mesh(new THREE.CylinderGeometry(.84, .84, .06, 36), M(0x5f8ea8), t, 0, 1.17, 0); rim.scale.z = .74;
-    const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), M(0x4a3628), t, 0, 1.18, 0); soil.scale.z = .72;
-    for (let i = 0; i < 7; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .14), 1), M(0x6a9a40), t, R(-.55, .55), 1.2, R(-.35, .35)); b.scale.y = .4; }
+    const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), M(0x4a3628), t, 0, 1.19, 0); soil.scale.z = .72;
+    for (let i = 0; i < 7; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .14), 1), M(0x6a9a40), t, R(-.55, .55), 1.21, R(-.35, .35)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, 1.16, 0); t.add(tr);
     tube([[0, -.05, 0], [.08, .35, .02], [-.12, .75, .05], [.04, 1.15, 0], [0, 1.55, 0]], .2, .06, 0x857262, tr);
     for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2 + .3; tube([[0, .06, 0], [Math.cos(a) * .22, 0, Math.sin(a) * .18], [Math.cos(a) * .42, -.03, Math.sin(a) * .3]], .075, .02, 0x857262, tr, 6); }
