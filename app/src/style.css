@@ -13,6 +13,8 @@ button{touch-action:manipulation}
 
 /* su schermi larghi (computer) il gioco resta in una colonna con proporzioni da telefono */
 .screen{position:fixed;top:0;bottom:0;left:0;right:0;margin-inline:auto;width:100%;max-width:calc(100dvh * .62);overflow:hidden;background:var(--sky);container-type:inline-size;font-family:var(--display);color:var(--ink);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* app installata sull'iPhone: a volte iOS lascia una striscia vuota in fondo, così lo schermo copre tutto */
+@media (display-mode: standalone){html,body,.screen{background:var(--sky)}.screen{bottom:auto;height:100lvh}}
 #c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
 
 .hud{position:absolute;top:calc(var(--top) + 3cqw);left:3.5cqw;right:3.5cqw;display:flex;flex-direction:column;gap:2.6cqw;pointer-events:none}
@@ -44,7 +46,13 @@ button{touch-action:manipulation}
 .qbar{grid-column:1/-1;height:2.6cqw;border-radius:99px;background:#eadbbd;border:.4cqw solid var(--ink);overflow:hidden;position:relative}
 .qbar i{position:absolute;inset:0;width:0;background:linear-gradient(#9be36a,#5fae2f);transition:width .6s ease}
 .qbar span{position:absolute;inset:0;display:grid;place-items:center;font:700 2.1cqw/1 var(--display);color:var(--ink)}
-.quest.done .qd{text-decoration:line-through;text-decoration-thickness:.4cqw;color:#7a6a58}
+/* a sfida completata la scritta viene cancellata da una riga, poi il banner scivola via */
+.quest .qd{position:relative;justify-self:start;transition:color .3s .6s}
+.quest .qd::after{content:"";position:absolute;left:-3%;top:50%;width:0;height:.5cqw;border-radius:99px;background:var(--ink);transition:width .45s ease-in-out .6s}
+.quest.done .qd{color:#7a6a58}
+.quest.done .qd::after{width:106%}
+.quest.via{animation:via .5s ease-in forwards}
+@keyframes via{30%{transform:translateX(2cqw) scale(1.04)}100%{opacity:0;transform:translateX(-60cqw) scale(.9)}}
 
 /* etichette che seguono le piante nella scena 3D */
 .tags{position:absolute;inset:0;pointer-events:none}

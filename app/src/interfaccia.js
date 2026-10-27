@@ -44,6 +44,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
   }
 
   const settimanaEl = $('settimana'), questEl = $('quest');
+  let primoAggiornamento = true, sfidaChiusa = false;
+  questEl.addEventListener('animationend', () => { if (questEl.classList.contains('via')) questEl.style.display = 'none'; });
   return {
     toast,
     guadagnaSemi,
@@ -56,12 +58,22 @@ export function creaInterfaccia(screenEl, camera, trees) {
       if (!semiAnimati && !annaffiando) { semiMostrati = v.semi; seedsEl.textContent = fmt(v.semi); }
       $('serie').textContent = v.serie;
 
-      questEl.style.display = v.sfida ? '' : 'none';
-      if (v.sfida) {
-        questEl.classList.toggle('done', v.sfida.fatta);
-        $('qfill').style.width = v.sfida.fatta ? '100%' : '0';
-        $('qtxt').textContent = v.sfida.fatta ? '1/1' : '0/1';
+      // sfida completata: la barra si riempie, la scritta si cancella e il banner esce di scena
+      if (!v.sfida?.fatta) {
+        sfidaChiusa = false;
+        questEl.classList.remove('done', 'via');
+        questEl.style.display = v.sfida ? '' : 'none';
+        $('qfill').style.width = '0'; $('qtxt').textContent = '0/1';
+      } else if (!sfidaChiusa) {
+        sfidaChiusa = true;
+        if (primoAggiornamento) questEl.style.display = 'none';
+        else {
+          questEl.classList.add('done');
+          $('qfill').style.width = '100%'; $('qtxt').textContent = '1/1';
+          setTimeout(() => { if (sfidaChiusa) questEl.classList.add('via'); }, 1800);
+        }
       }
+      primoAggiornamento = false;
 
       const salute = Math.round(v.salute * 100) + '%';
       $('pino-fase').textContent = v.nomeFase;
