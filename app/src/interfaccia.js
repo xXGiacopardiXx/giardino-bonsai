@@ -76,9 +76,13 @@ export function creaInterfaccia(screenEl, camera, trees) {
       primoAggiornamento = false;
 
       const salute = Math.round(v.salute * 100) + '%';
+      // fase scritta col colore della gravità; acqua e chioma su due barre separate
       $('acero-fase').textContent = v.nomeFase;
+      $('acero-fase').dataset.livello = v.fase === 0 ? 'bene' : v.fase === 1 ? 'sete' : v.fase < 4 ? 'stress' : 'grave';
       $('acero-salute').textContent = salute;
       $('acero-barra').style.width = salute;
+      $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
+      $('acero-acqua').parentElement.dataset.livello = v.acqua > .6 ? 'bene' : v.acqua > .3 ? 'poca' : 'pochissima';
       if (!annaffiando) {
         $('alert').classList.toggle('hide', !v.haSete);
         $('alert').style.display = v.haSete ? '' : 'none';

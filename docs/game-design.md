@@ -127,11 +127,16 @@ Valori iniziali, in `app/src/gioco/stato.js` e `tempo.js`, da ritoccare con i te
 
 Valori iniziali in `app/src/gioco/stato.js`, da ritoccare con i test sul telefono.
 
-- **Germogli:** spuntano su 10 punte fisse della chioma. Ogni nuovo giorno ne spunta uno (due in primavera), al massimo 5 alla volta; sotto stress medio (4+ giorni di sete) la pianta non ne mette.
+- **Germogli:** spuntano su 10 punte fisse della chioma. Ogni nuovo giorno ne spunta uno (due in primavera), anche quando si salta avanti di più giorni in una volta, al massimo 5 alla volta: arrivati a 5 ne spuntano di nuovi solo potando. Sotto stress medio (4+ giorni di sete) la pianta non ne mette.
 - **Lunghezza:** da 0 a 1 (getto lungo). Un germoglio nuovo nasce a 0,3, cioè già cimabile, così ogni giorno c'è un'azione di cura per la serie. Si può tagliare da 0,25.
-- **Crescita:** in estate +0,6 al giorno per i germogli e +0,5 per le gemme (un ciuffo pieno in 2 giorni). Vigore per stagione: primavera 1,4, estate 1, autunno 0,6, inverno 0,5. Con stress lieve (2–4 giorni di sete) cresce al 40%, con stress medio si ferma.
+- **Crescita:** in estate +0,3 al giorno per i germogli (da cimabile a getto lungo in 2–3 giorni, così si vede crescere giorno per giorno; sull'acero lo stelo si allunga e le foglie si aprono) e +0,5 per le gemme (un ciuffo pieno in 2 giorni). Vigore per stagione: primavera 1,4, estate 1, autunno 0,6, inverno 0,5. Con stress lieve (2–4 giorni di sete) cresce al 40%, con stress medio si ferma.
 - **Taglio:** sotto il taglio spuntano 2 gemme, fino a 6 per punta; poi la punta è già fitta e il taglio non ne aggiunge. La potatura conta per la serie ma non dà Semi (sezione 7.1).
-- **Comandi:** Pota avvicina la telecamera al pino e illumina i germogli da tagliare; un tocco ne taglia uno, che cade nel vaso. Pota ha il badge "!" quando ci sono germogli e oggi non c'è ancora stata un'azione di cura (e la pianta non ha sete).
+- **Comandi:** Pota (dalla barra o dalla tendina dell'acero) avvicina la telecamera all'acero e illumina i germogli da tagliare; un tocco ne taglia uno, che cade nel vaso. Pota ha il badge "!" quando ci sono germogli e oggi non c'è ancora stata un'azione di cura (e la pianta non ha sete).
+
+### 6.1.3 Come si vede la sofferenza
+
+- **Etichetta dell'acero:** sotto il nome la fase (Sta bene, Ha sete, Stress lieve, medio, forte, Sopravvivenza) con un colore che segue la gravità: verde, azzurro, arancione, rosso. Due barre separate: **acqua** (riserva nel terriccio: piena appena annaffiata, vuota dopo una settimana senz'acqua; azzurra, poi arancione, poi rossa) e **chioma** (quanto è folta, in percentuale). Le due cose sono diverse: la sete arriva in un giorno, mentre la chioma si dirada solo dopo vari giorni di stress forte. Per questo si può essere in stress medio con la chioma ancora al 95%.
+- **Sulla pianta:** con la sete le foglie ingialliscono e il terriccio schiarisce. Dallo stress medio la chioma si affloscia verso il basso, le foglie diventano spente e marroni, cadono foglie secche e l'anello a terra passa dall'azzurro all'arancione. Con lo stress forte la chioma si dirada.
 
 ### 6.2 Ritorno dopo una lunga assenza
 
@@ -238,7 +243,8 @@ Elementi:
 - **In alto a destra:** Semi con pulsante "+" verso il negozio.
 - **Sotto:** serie di giorni consecutivi.
 - **Scheda "Sfida del giorno"** con barra di avanzamento e ricompensa.
-- **Etichette sulle piante:** nome, stile, percentuale di stile. Avvisi a fumetto ("Ha sete!") sopra la pianta che ne ha bisogno.
+- **Etichette sulle piante:** nome, stile, percentuale di stile. Avvisi a fumetto ("Ha sete!") sopra la pianta che ne ha bisogno. Sulla pianta curata (l'acero nell'MVP) l'etichetta mostra invece fase, acqua e chioma (sezione 6.1.3).
+- **Tendina della pianta:** toccando l'acero si apre sotto la sua etichetta una tendina con Acqua, Pota e Aspetto. Aspetto mostra gli oggetti già comprati (per ora i vasi) da mettere in uso, con un pulsante verso il negozio. Il negozio serve solo a comprare: i vasi già comprati vi risultano "Già tuo". Toccando pino o ginepro un messaggio ricorda che per ora si cura solo l'acero.
 - **Barra in basso:** Acqua, Pota, Filo, Cura, Negozio. Il pulsante dell'azione urgente si evidenzia con un badge "!".
 - **Scena:** ruotabile col dito, zoom con il pizzico.
 

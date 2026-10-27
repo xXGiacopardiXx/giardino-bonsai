@@ -104,6 +104,7 @@ function avvia() {
       acero.setThirst(v.ingiallimento);
       acero.setSoil(v.terriccio);
       acero.ring.visible = v.haSete;
+      acero.setAppassimento(v.appassimento);
     }
     acero.setSalute(v.salute);
     acero.setVaso(v.vaso);
@@ -172,7 +173,7 @@ function avvia() {
       if (esito.esito !== 'ok') return;
       salva(stato); disegna();
       negozio.chiudi();
-      ui.toast(`Ecco il vaso ${nomeVaso(id)}: l'acero ci sta benissimo!`);
+      ui.toast(`Ecco il vaso ${nomeVaso(id)}! Per cambiarlo tocca l'acero e scegli Aspetto.`, 3500);
     },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
@@ -180,9 +181,21 @@ function avvia() {
       negozio.chiudi();
     },
   });
-  const apriNegozio = () => { negozio.apri(); disegna(); };
+  const apriNegozio = () => { chiudiMenu(); negozio.apri('negozio'); disegna(); };
   document.getElementById('t-shop').addEventListener('click', apriNegozio);
   document.getElementById('plus').addEventListener('click', apriNegozio);
+
+  // --- Tendina dell'acero: si apre toccando la pianta, con Acqua, Pota e Aspetto ---
+  const menuAcero = document.getElementById('menu-acero');
+  function chiudiMenu() { menuAcero.hidden = true; }
+  menuAcero.addEventListener('click', (e) => {
+    const a = e.target.closest('button')?.dataset.a; if (!a) return;
+    chiudiMenu();
+    if (a === 'acqua') waterBtn.click();
+    else if (a === 'pota') document.getElementById('t-prune').click();
+    else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
+  });
+  const nomiPiante = { pino: 'Il pino nero', ginepro: 'Il ginepro' };
 
   // --- Potatura: Pota avvicina la telecamera all'acero, un tocco su un germoglio lo taglia ---
   const pruneBtn = document.getElementById('t-prune');
@@ -197,6 +210,7 @@ function avvia() {
   function potatura(on) {
     if (on === potando) return;
     potando = on; germogli.potatura = on;
+    if (on) chiudiMenu();
     pruneBtn.classList.toggle('attivo', on);
     if (on) {
       distanzaPrima = camera.position.distanceTo(controls.target);
@@ -226,7 +240,15 @@ function avvia() {
     puntatore.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     raycaster.setFromCamera(puntatore, camera);
     const id = germogli.tocca(raycaster);
-    if (id === null) return;
+    if (id === null) {
+      // fuori dalla potatura un tocco su una pianta apre la sua tendina
+      if (potando) return;
+      const quale = alberi.tocca(raycaster);
+      if (quale === 'acero') { menuAcero.hidden = !menuAcero.hidden; return; }
+      chiudiMenu();
+      if (quale) ui.toast(`${nomiPiante[quale]} per ora si gode il giardino: per adesso si cura solo l'acero.`);
+      return;
+    }
     if (!potando) { ui.toast('Per tagliare un germoglio scegli prima Pota.'); return; }
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
     const esito = pota(stato, ora(), id);

@@ -1,5 +1,7 @@
-// Negozio dei vasi (fase 5 della roadmap): si apre da Negozio nella barra e dal "+" dei Semi.
-// Mostra il catalogo che arriva dalla vista del motore; comprare e scegliere li decide main.js.
+// Negozio dei vasi e sezione Aspetto (fase 5 della roadmap), nello stesso pannello.
+// Negozio: si apre da Negozio nella barra e dal "+" dei Semi, mostra tutti i vasi da comprare.
+// Aspetto: si apre dalla tendina dell'acero, mostra solo i vasi già comprati da mettere in uso.
+// Il catalogo arriva dalla vista del motore; comprare e scegliere li decide main.js.
 
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
@@ -24,16 +26,18 @@ export function creaNegozio(azioni) {
   el.innerHTML = `
     <div class="negozio-pannello" role="dialog" aria-modal="true" aria-labelledby="negozio-titolo">
       <div class="negozio-testa">
-        <h2 id="negozio-titolo">Negozio</h2>
+        <h2 id="negozio-titolo" data-v="titolo">Negozio</h2>
         <span class="negozio-semi">${SEME}<b data-v="semi"></b></span>
         <button class="negozio-x" data-a="chiudi" aria-label="Chiudi il negozio">×</button>
       </div>
-      <p class="negozio-sotto">Vasi per l'acero</p>
+      <p class="negozio-sotto" data-v="sotto">Vasi per l'acero</p>
       <div class="negozio-lista" data-v="lista"></div>
+      <button class="negozio-vai" data-a="negozio" hidden>Altri vasi nel negozio</button>
     </div>`;
   document.getElementById('screen').appendChild(el);
-  const lista = el.querySelector('[data-v="lista"]'), semiEl = el.querySelector('[data-v="semi"]');
-  let ultimaVista = null;
+  const v = (nome) => el.querySelector(`[data-v="${nome}"]`);
+  const lista = v('lista'), semiEl = v('semi'), vai = el.querySelector('.negozio-vai');
+  let ultimaVista = null, modo = 'negozio';
 
   function chiudi() { el.hidden = true; }
   el.addEventListener('click', (e) => {
@@ -43,23 +47,36 @@ export function creaNegozio(azioni) {
     if (b.dataset.a === 'chiudi') chiudi();
     else if (b.dataset.a === 'compra') azioni.compra(b.dataset.id);
     else if (b.dataset.a === 'usa') azioni.usa(b.dataset.id);
+    else if (b.dataset.a === 'negozio') api.apri('negozio');
   });
 
-  return {
+  const api = {
     get aperto() { return !el.hidden; },
-    apri() { el.hidden = false; if (ultimaVista) this.mostra(ultimaVista); },
+    get modo() { return modo; },
+    // nuovoModo: 'negozio' (comprare) o 'aspetto' (mettere in uso i vasi comprati)
+    apri(nuovoModo = 'negozio') {
+      modo = nuovoModo; el.hidden = false;
+      v('titolo').textContent = modo === 'aspetto' ? 'Aspetto' : 'Negozio';
+      v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero' : 'Vasi per l\'acero';
+      if (ultimaVista) api.mostra(ultimaVista);
+    },
     chiudi,
     // ridisegna le schede dalla vista del motore (gioco/stato.js)
-    mostra(v) {
-      ultimaVista = v;
+    mostra(vista) {
+      ultimaVista = vista;
       if (el.hidden) return;
-      semiEl.textContent = v.semi;
-      lista.innerHTML = v.vasi.map(x => {
+      semiEl.textContent = vista.semi;
+      const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi;
+      vai.hidden = modo !== 'aspetto' || vista.vasi.every(x => x.tuo);
+      lista.innerHTML = vasi.map(x => {
+        // nel negozio i vasi già comprati si mettono in uso da Aspetto; in Aspetto si cambiano qui
         const pulsante = x.inUso ? '<span class="vaso-stato">In uso</span>'
-          : x.tuo ? `<button class="vaso-b usa" data-a="usa" data-id="${x.id}">Usa</button>`
-          : `<button class="vaso-b compra${v.semi < x.prezzo ? ' caro' : ''}" data-a="compra" data-id="${x.id}" aria-label="Compra per ${x.prezzo} Semi">${x.prezzo}${SEME}</button>`;
+          : x.tuo && modo === 'aspetto' ? `<button class="vaso-b usa" data-a="usa" data-id="${x.id}">Usa</button>`
+          : x.tuo ? '<span class="vaso-stato tuo">Già tuo</span>'
+          : `<button class="vaso-b compra${vista.semi < x.prezzo ? ' caro' : ''}" data-a="compra" data-id="${x.id}" aria-label="Compra per ${x.prezzo} Semi">${x.prezzo}${SEME}</button>`;
         return `<div class="vaso${x.inUso ? ' in-uso' : ''}"><div class="vaso-img">${disegno(x.id)}</div><span class="vaso-nome">${x.nome}</span>${pulsante}</div>`;
       }).join('');
     },
   };
+  return api;
 }

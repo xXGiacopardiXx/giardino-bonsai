@@ -206,3 +206,12 @@ test('un salvataggio della versione 2 riceve il vaso iniziale', () => {
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.vasi, { posseduti: [VASI[0].id], scelto: VASI[0].id });
 });
+
+test('saltando più giorni in una volta spunta un germoglio per ogni giorno', () => {
+  const s = nuovoStato(T0);
+  s.albero.germogli = [];
+  annaffia(s, T0);
+  avanza(s, dopo(2));
+  // primavera: due germogli al giorno
+  assert.equal(vista(s).germogli.length, 4);
+});

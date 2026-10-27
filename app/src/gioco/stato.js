@@ -45,7 +45,7 @@ export const POTABILE_DA = 0.25;       // lunghezza minima per poter tagliare un
 const GERMOGLI_MASSIMI = 5;            // oltre, la pianta non ne mette di nuovi finché non si pota
 const GEMME_PER_PUNTA = 6;             // poi la punta è già fitta: il taglio non aggiunge altre gemme
 const LUNGHEZZA_INIZIALE = 0.3;        // un germoglio nuovo si può già cimare: serve alla serie di ogni giorno
-const CRESCITA_GERMOGLIO = 0.6;        // al giorno, in estate: da cimabile a getto lungo in poco più di un giorno
+const CRESCITA_GERMOGLIO = 0.3;        // al giorno, in estate: da cimabile a getto lungo in 2-3 giorni, così si vede crescere
 const CRESCITA_GEMMA = 0.5;            // al giorno, in estate: una gemma diventa un ciuffo in 2 giorni
 const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
 
@@ -122,18 +122,15 @@ export function avanza(stato, ora) {
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     t += passo;
+    // ogni giorno nuovo, anche quando si salta avanti di molti giorni in una volta
+    if (giornoLocale(t) !== stato.oggi.giorno) nuovoGiorno(stato, t);
     // dopo molti giorni senz'acqua non cambia più niente: si salta alla fine
     if (a.sete >= SETE_MASSIMA && a.salute <= SALUTE_MINIMA) t = ora;
   }
   stato.aggiornato = Math.max(stato.aggiornato, ora);
 
   const oggi = giornoLocale(ora);
-  if (stato.oggi.giorno !== oggi) {
-    stato.oggi = { giorno: oggi, acqua: false };
-    // ogni giorno spunta almeno un germoglio da cimare (due in primavera), se la pianta non è sotto stress
-    const { stagione } = calendario(stato.inizio, ora);
-    if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
-  }
+  if (stato.oggi.giorno !== oggi) nuovoGiorno(stato, ora);
   // serie interrotta: si dimezza una volta sola invece di azzerarsi (sezione 7.2)
   const s = stato.serie;
   if (s.ultimoGiorno && !s.interrotta && giorniTra(s.ultimoGiorno, oggi) > 1) {
@@ -141,6 +138,14 @@ export function avanza(stato, ora) {
     s.interrotta = true;
   }
   return stato;
+}
+
+// Inizio di un giorno del calendario: la sfida riparte e spunta almeno un germoglio da cimare
+// (due in primavera), se la pianta non è sotto stress
+function nuovoGiorno(stato, ora) {
+  stato.oggi = { giorno: giornoLocale(ora), acqua: false };
+  const { stagione } = calendario(stato.inizio, ora);
+  if (vigore(stagione, stato.albero.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(stato.albero);
 }
 
 // Un'azione di cura conta per la serie una volta al giorno. Restituisce i Semi del bonus.
@@ -217,6 +222,10 @@ export function vista(stato) {
     serie: stato.serie.giorni,
     sete: a.sete,
     salute: a.salute,
+    // riserva d'acqua nel terriccio: 1 appena annaffiata, 0 dopo una settimana senz'acqua (stress forte)
+    acqua: limita(1 - a.sete / FASI[4].da),
+    // 0..1: quanto la pianta sta soffrendo oltre la semplice sete (stress medio e oltre), per la scena
+    appassimento: limita((a.sete - FASI[3].da) / (FASI[5].da - FASI[3].da)),
     fase,
     nomeFase: FASI[fase].nome,
     haSete,

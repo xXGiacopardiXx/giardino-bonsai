@@ -4,7 +4,7 @@
 // (scena/germogli.js). Pino e ginepro fanno parte del giardino e per ora stanno sempre bene.
 // I dettagli non consumano numeri della sequenza col seme.
 import * as THREE from 'three';
-import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, corteccia, rametti, sequenza } from './strumenti.js';
+import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
 
@@ -110,7 +110,7 @@ export function creaAlberi(world) {
     // anello azzurro a terra, attorno al tavolo: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.38, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
     ring.rotation.x = -PI / 2; ring.position.y = .025; t.add(ring);
-    trees.acero = { g: tr, tag: new THREE.Vector3(-.3, 1.16 + 2.95, -2.4), ph: 0 };
+    trees.acero = { g: tr, radice: t, tag: new THREE.Vector3(-.3, 1.16 + 2.95, -2.4), ph: 0 };
 
     // colori di ogni ciuffo in ogni stagione e con la sete, presi dalla stessa posizione nella tavolozza
     const tinta = (pal) => f.toni.map(x => new THREE.Color(pal[Math.round(x * (pal.length - 1))]));
@@ -164,7 +164,7 @@ export function creaAlberi(world) {
     const fg = foliage(tr, padsG,
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     rametti(tr, padsG, legnoG, 13);
-    trees.ginepro = { g: tr, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
+    trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
     // d'inverno il ginepro cinese prende un colore bronzeo, che torna verde a fine stagione
     const bronzo = fg.toni.map(x => new THREE.Color(['#4f4a2e', '#5e5432', '#6e5e36', '#7d6a3c', '#8b7443', '#9a7f4c'][Math.round(x * 5)]));
     const c = new THREE.Color();
@@ -196,46 +196,87 @@ export function creaAlberi(world) {
     foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     rametti(tr, pads, legnoP, 5);
-    trees.pino = { g: tr, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
+    trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
   }
 
   return {
     trees,
     acero,
+    // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino' oppure null
+    tocca(raycaster) {
+      let meglio = null, d = Infinity;
+      for (const k in trees) {
+        const hit = raycaster.intersectObject(trees[k].radice, true)[0];
+        if (hit && hit.distance < d) { d = hit.distance; meglio = k; }
+      }
+      return meglio;
+    },
     // punto dell'anno (0 = inizio primavera, 3 = inverno): l'acero cambia chioma, il ginepro si fa bronzeo
     setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }
       if (acero.ring.visible) acero.ring.material.opacity = .45 + .3 * Math.sin(clock * 3.2);
+      acero.aggiorna(clock);
     },
   };
 }
 
-// Pianta da curare: chioma che si dirada, ingiallisce con la sete e cambia con le stagioni.
+// Pianta da curare: chioma che si dirada, ingiallisce con la sete, si affloscia e perde foglie secche
+// quando soffre, e cambia con le stagioni.
 // f: chioma (foliage), soil: terriccio, ring: anello della sete; dati: punte, fuoco, potTop, colore()...
+const ANELLO = new THREE.Color(0x6ac8ff), ANELLO_GRAVE = new THREE.Color(0xff7a4a), SECCO = new THREE.Color(0x7d6a3e);
+const fogliaSeccaGeo = fogliaAcero().scale(.075, .075, .075);
+const FOGLIE_SECCHE = ['#9a7434', '#8a5f2e', '#b08a48', '#7a5228'];
+
 function pianta(f, soil, ring, dati) {
   const tmpC = new THREE.Color();
   // ordine in cui spariscono i ciuffi quando la chioma si dirada: prima quelli esterni
-  const originali = f.m.instanceMatrix.array.slice();
   const ordine = f.periferia.map((dn, i) => [dn + ((i * 0.618) % 1) * .35, i]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
-  const zero = new THREE.Matrix4().makeScale(0, 0, 0);
-  let salute = 1, foglie = 1, anno = aspettoAnno(2.5), nascostiPrima = -1;
+  // posizione, rotazione e grandezza originali di ogni ciuffo, per poterlo afflosciare
+  const forme = [], m4 = new THREE.Matrix4();
+  for (let i = 0; i < f.healthy.length; i++) {
+    f.m.getMatrixAt(i, m4);
+    const pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+    m4.decompose(pos, q, sc); forme.push({ pos, q, sc });
+  }
+  const zero = new THREE.Matrix4().makeScale(0, 0, 0), vp = new THREE.Vector3(), vs = new THREE.Vector3();
+  let salute = 1, foglie = 1, appassimento = 0, anno = aspettoAnno(2.5), chiavePrima = '';
+  const visibili = [];
 
   function chioma() {
     const nascosti = Math.max(Math.round((1 - salute) / .8 * ordine.length * .85), Math.round((1 - foglie) * ordine.length));
-    if (nascosti === nascostiPrima) return;
-    nascostiPrima = nascosti;
+    const chiave = nascosti + ':' + appassimento.toFixed(2);
+    if (chiave === chiavePrima) return;
+    chiavePrima = chiave;
+    visibili.length = 0;
     ordine.forEach((idx, k) => {
-      if (k < nascosti) f.m.setMatrixAt(idx, zero);
-      else f.m.instanceMatrix.array.set(originali.subarray(idx * 16, idx * 16 + 16), idx * 16);
+      if (k < nascosti) { f.m.setMatrixAt(idx, zero); return; }
+      // quando soffre i ciuffi scendono un po' e si appiattiscono: la chioma si affloscia
+      const { pos, q, sc } = forme[idx];
+      vp.copy(pos); vp.y -= appassimento * (.06 + .1 * f.periferia[idx]);
+      vs.copy(sc); vs.y *= 1 - .4 * appassimento; vs.x *= 1 - .08 * appassimento; vs.z *= 1 - .08 * appassimento;
+      f.m.setMatrixAt(idx, m4.compose(vp, q, vs));
+      visibili.push(idx);
     });
     f.m.instanceMatrix.needsUpdate = true;
   }
   function colora() {
-    for (let i = 0; i < f.healthy.length; i++) f.m.setColorAt(i, dati.colore(i, anno, p.thirst, tmpC));
+    for (let i = 0; i < f.healthy.length; i++) {
+      dati.colore(i, anno, p.thirst, tmpC);
+      if (appassimento > 0) tmpC.lerp(SECCO, appassimento * .55);
+      f.m.setColorAt(i, tmpC);
+    }
     f.m.instanceColor.needsUpdate = true;
   }
+
+  // foglie secche che si staccano e cadono quando la pianta soffre
+  const cadute = [];
+  for (let i = 0; i < 10; i++) {
+    const m = new THREE.Mesh(fogliaSeccaGeo, toon({ color: FOGLIE_SECCHE[i % 4], side: THREE.DoubleSide }));
+    m.visible = false; dati.g.add(m); cadute.push({ m, v: 0, ph: i * 1.7, terra: -1, attiva: false });
+  }
+  let accumulo = 0, orologio = null;
 
   const p = {
     ...dati,
@@ -251,6 +292,13 @@ function pianta(f, soil, ring, dati) {
     setSalute(v) { salute = v; chioma(); },
     // 0 = idratata, 1 = assetata: sfuma il colore di ogni ciuffo verso le foglie secche
     setThirst(v) { this.thirst = v; colora(); },
+    // 0 = sta bene, 1 = soffre molto: chioma afflosciata, foglie spente, anello arancione
+    setAppassimento(v) {
+      if (Math.abs(v - appassimento) < .005) return;
+      appassimento = v;
+      ring.material.color.copy(ANELLO).lerp(ANELLO_GRAVE, Math.min(1, v * 2));
+      colora(); chioma();
+    },
     // 0 = terriccio umido (scuro), 1 = secco (chiaro)
     setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
     // punto dell'anno: 0 = inizio primavera, 1 estate, 2 autunno, 3 inverno, fino a 4
@@ -261,6 +309,40 @@ function pianta(f, soil, ring, dati) {
       this.verde.setHex(MATURO[Math.min(3, Math.floor(pAnno))]);
       this.coloreGermoglio.setHex(GERMOGLIO[Math.min(3, Math.floor(pAnno))]);
       colora(); chioma();
+    },
+    aggiorna(clock) {
+      const dt = orologio === null ? 0 : Math.min(.05, clock - orologio); orologio = clock;
+      // più soffre, più foglie secche cadono (fino a 2 al secondo)
+      const ritmo = Math.max(appassimento * 2, (this.thirst - .7) * 2);
+      if (ritmo > 0 && visibili.length) {
+        accumulo += dt * ritmo;
+        while (accumulo > 1) {
+          accumulo--;
+          const c = cadute.find(x => !x.attiva); if (!c) break;
+          const { pos } = forme[visibili[(Math.random() * visibili.length) | 0]];
+          c.m.position.copy(pos); c.m.rotation.set(0, Math.random() * 6, 0);
+          // si posa sul tavolo se ci cade sopra, altrimenti a terra
+          c.terra = Math.abs(pos.x) < 1.05 && Math.abs(pos.z) < .65 ? -.33 : -1.14;
+          c.v = .3 + Math.random() * .2; c.t = 0; c.attiva = true; c.m.visible = true; c.m.scale.setScalar(1);
+        }
+      }
+      for (const c of cadute) {
+        if (!c.attiva) continue;
+        c.t += dt;
+        if (c.m.position.y > c.terra) {
+          c.ph += dt;
+          c.m.position.y = Math.max(c.terra, c.m.position.y - c.v * dt);
+          c.m.position.x += Math.sin(c.ph * 2.2) * .25 * dt;
+          c.m.rotation.x = Math.sin(c.ph * 3) * .6; c.m.rotation.z = Math.cos(c.ph * 2.4) * .5;
+          c.atterrata = c.t;
+        } else {
+          c.m.rotation.x = c.m.rotation.z = 0;
+          // resta a terra un paio di secondi, poi sparisce
+          const k = (c.t - c.atterrata - 2) / .6;
+          c.m.scale.setScalar(Math.max(.001, 1 - Math.max(0, k)));
+          if (k >= 1) { c.attiva = false; c.m.visible = false; }
+        }
+      }
     },
   };
   p.setThirst(1);

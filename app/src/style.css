@@ -135,3 +135,30 @@ button{touch-action:manipulation}
 .vaso-b.usa{background:linear-gradient(#9bd8ff,#3f92d6)}
 .vaso-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
 .vaso-stato{padding:1.5cqw 0;font:700 3.2cqw/1 var(--display);color:#2f6a1a}
+
+/* etichetta della pianta curata: fase colorata, acqua e chioma su due barre */
+.plate .fase{font:600 2.6cqw/1 var(--display);color:#4f7a2a}
+.plate .fase[data-livello="sete"]{color:#1d6fb0}
+.plate .fase[data-livello="stress"]{color:#d06a12}
+.plate .fase[data-livello="grave"]{color:#c4291c}
+.plate .misura{display:flex;align-items:center;gap:1cqw}
+.plate .misura svg{width:3cqw;height:3cqw;flex:none}
+.plate .misura .bar{flex:1}
+.plate .misura b{font:600 2.3cqw/1 var(--display);color:#7a5a3e;min-width:5.4cqw;text-align:right}
+.bar.acqua i{background:linear-gradient(#9bd8ff,#3f92d6);transition:width .6s ease}
+.bar.acqua[data-livello="poca"] i{background:linear-gradient(#ffd38a,#e99a2c)}
+.bar.acqua[data-livello="pochissima"] i{background:linear-gradient(#ff9a8a,#d8402f)}
+.vaso-stato.tuo{color:#8a6a48}
+.negozio-vai{all:unset;cursor:pointer;display:block;margin:3cqw auto 0;padding:2cqw 4cqw;border-radius:3cqw;background:linear-gradient(#ffe08a,#f2b93e);border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);font:700 3.5cqw/1 var(--display);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
+.negozio-vai[hidden]{display:none}
+.negozio-vai:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
+
+/* tendina della pianta: compare toccando l'acero, sotto la sua etichetta */
+.menu-pianta{display:flex;gap:2cqw;padding:1.6cqw 2cqw 2cqw;border-radius:4cqw;background:rgba(255,250,240,.95);border:.5cqw solid var(--ink);box-shadow:0 .8cqw 0 var(--ink);pointer-events:auto;animation:pop .25s ease-out;margin-top:.6cqw}
+.menu-pianta[hidden]{display:none}
+.mp{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.8cqw;-webkit-tap-highlight-color:transparent}
+.mp-b{width:11cqw;height:11cqw;border-radius:3.2cqw;border:.5cqw solid var(--ink);box-sizing:border-box;display:grid;place-items:center;background:linear-gradient(#fff7e4,#efd6a6);box-shadow:inset 0 -1cqw 0 rgba(120,80,30,.18),0 .7cqw 0 var(--ink)}
+.mp.acqua .mp-b{background:linear-gradient(#9bd8ff,#3f92d6)}
+.mp-b svg{width:64%;height:64%}
+.mp-l{font:600 2.7cqw/1 var(--display);color:var(--ink)}
+.mp:active .mp-b{transform:translateY(.5cqw);box-shadow:inset 0 -1cqw 0 rgba(120,80,30,.18),0 .2cqw 0 var(--ink)}

@@ -80,13 +80,15 @@ export function creaGermogli(scene, albero) {
 
   // lunghezza 0..1 del motore: il fusto va da 0,2 a 0,7
   function allunga(x, lunghezza) {
-    const L = .2 + .5 * lunghezza;
+    let L = .2 + .5 * lunghezza;
     if (!albero.aghi) {
+      // il germoglio dell'acero si allunga molto: da corto e chiuso a getto lungo con le foglie aperte
+      L = .14 + .8 * lunghezza;
       x.fusto.scale.set(.011, L, .011);
       // le foglie in alto si aprono dopo: piccole e ripiegate finché il germoglio è corto
       x.ciuffi.forEach(({ m, k, grande }) => {
         const apertura = smooth((lunghezza + .35 - k * .4) / .6);
-        m.position.y = L * k; m.scale.setScalar((.09 + .07 * lunghezza) * grande * (.35 + .65 * apertura));
+        m.position.y = L * k; m.scale.setScalar((.06 + .11 * lunghezza) * grande * (.3 + .7 * apertura));
       });
       x.punta.position.y = L; x.punta.scale.set(.012, .02, .012);
       x.tocco.position.y = L * .6;
