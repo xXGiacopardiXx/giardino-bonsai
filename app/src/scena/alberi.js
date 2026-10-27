@@ -8,11 +8,12 @@ import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie,
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
 
-// Colori dell'acero giapponese nell'anno: verde chiaro in primavera, pieno in estate, rosso in autunno
+// Colori dell'acero giapponese nell'anno, ben diversi tra loro: in primavera verde tenero con le punte
+// arrossate dalle foglie nuove, in estate verde intenso, in autunno rosso fuoco e arancio
 const ACERO = {
-  primavera: ['#6f9e36', '#80ae3c', '#92bd45', '#a5c950', '#b9d35e', '#cbdc72', '#d9b45e'],
-  estate: ['#2f5a24', '#3b6a2a', '#477a30', '#538836', '#60953d', '#6fa245', '#7dad4e'],
-  autunno: ['#9a2c22', '#b33827', '#c94b2b', '#db652e', '#e88535', '#f0a744', '#f5c25a'],
+  primavera: ['#86c23a', '#97cf40', '#a9da4a', '#bce35a', '#cfe56a', '#dcd070', '#e4906c'],
+  estate: ['#1f5219', '#28621f', '#317226', '#3c812d', '#478f35', '#539c3d', '#5fa645'],
+  autunno: ['#8c1616', '#ad1f1c', '#cc2c22', '#e3462a', '#f0702c', '#f79c38', '#fcc848'],
   // foglie che seccano per la sete: marroni e accartocciate
   sete: ['#a07a3a', '#8a6334', '#b2914f', '#7a5530', '#c0a05a'],
 };
@@ -91,6 +92,7 @@ export function creaAlberi(world) {
     });
   }
 
+  let ginepro;
   // Ginepro su una lastra di pietra, con legno secco (jin) chiaro
   {
     const t = new THREE.Group(); t.position.set(-2.3, 0, .6); world.add(t);
@@ -108,10 +110,20 @@ export function creaAlberi(world) {
     [[[-.15, .85, .04], [-.5, .82, .1], [-.8, .78, .12]], [[.1, .6, -.04], [.45, .85, -.05], [.75, 1.0, -.05]], [[-.08, 1.1, .05], [-.3, 1.25, .06], [-.5, 1.32, .05]], [[.05, 1.25, .04], [.2, 1.32, .18], [.3, 1.36, .25]]].forEach(p => tube(p, .07, .02, legnoG, tr, 10));
     const padsG = [[-.84, .8, .12, .5], [.76, 1.03, -.05, .48], [-.5, 1.33, .05, .4], [.04, 1.72, 0, .46], [.3, 1.38, .25, .3]];
     // il ginepro ha aghi corti e fitti
-    foliage(tr, padsG,
+    const fg = foliage(tr, padsG,
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     rametti(tr, padsG, legnoG, 13);
     trees.ginepro = { g: tr, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
+    // d'inverno il ginepro cinese prende un colore bronzeo, che torna verde a fine stagione
+    const bronzo = fg.toni.map(x => new THREE.Color(['#4f4a2e', '#5e5432', '#6e5e36', '#7d6a3c', '#8b7443', '#9a7f4c'][Math.round(x * 5)]));
+    const c = new THREE.Color();
+    ginepro = {
+      setStagione(p) {
+        const k = Math.min(1, Math.max(0, (p - 3) / .35)) * (1 - Math.min(1, Math.max(0, (p - 3.75) / .25)));
+        for (let i = 0; i < fg.healthy.length; i++) fg.m.setColorAt(i, c.copy(fg.healthy[i]).lerp(bronzo[i], k * .75));
+        fg.m.instanceColor.needsUpdate = true;
+      },
+    };
   }
 
   // Pino nero inclinato su una base in legno
@@ -139,6 +151,8 @@ export function creaAlberi(world) {
   return {
     trees,
     acero,
+    // punto dell'anno (0 = inizio primavera, 3 = inverno): l'acero cambia chioma, il ginepro si fa bronzeo
+    setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }

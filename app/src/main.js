@@ -107,7 +107,7 @@ function avvia() {
     acero.setSalute(v.salute);
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
-    acero.setStagione(pAnno); giardino.setStagione(pAnno);
+    alberi.setStagione(pAnno); giardino.setStagione(pAnno);
     germogli.sincronizza(v.germogli, v.gemme);
     pannello?.mostra(v, base.aggiornato);
   }

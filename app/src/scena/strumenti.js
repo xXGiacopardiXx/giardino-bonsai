@@ -150,6 +150,31 @@ export function ciuffoFoglie({ n = 7, seme = 11, nucleo = .45, lobi = 5, incavo 
   return geoCiuffo(pos, nucleo);
 }
 
+// Una sola foglia d'acero giapponese, lunga circa 1, distesa nel piano orizzontale e rivolta verso +x:
+// 7 lobi appuntiti con il bordo dentellato, tagli profondi tra un lobo e l'altro, bordi un po' rialzati
+// e un picciolo sottile. Serve per i germogli, i ritagli della potatura e le foglie che cadono.
+export function fogliaAcero({ lobi = 7, incavo = .3 } = {}) {
+  const pos = [], nrm = [], ap = 2.35, contorno = [];
+  for (let j = 0; j < lobi; j++) {
+    const ang = -ap + 2 * ap * j / (lobi - 1), L = .5 + .5 * Math.cos(ang * .62);
+    // lobo a forma di lancia: largo a metà, appuntito in cima, con una piccola dentellatura sui fianchi
+    const meta = ap / (lobi - 1), fianco = [[.8, .48], [.66, .66], [.5, .7], [.3, .86], [0, 1]];
+    fianco.forEach(([da, r]) => contorno.push([ang - da * meta, r * L]));
+    fianco.slice(0, -1).reverse().forEach(([da, r]) => contorno.push([ang + da * meta, r * L]));
+    if (j < lobi - 1) contorno.push([ang + meta, incavo]);
+  }
+  const xyz = ([a, r]) => { const x = Math.cos(a) * r, z = Math.sin(a) * r; return [x, .14 * r * r, z]; };
+  const pts = contorno.map(xyz), centro = [0, 0, 0];
+  const giu = (p) => { const v = new THREE.Vector3(-p[0] * .35, 1, -p[2] * .35).normalize(); nrm.push(v.x, v.y, v.z); };
+  for (let k = 0; k < pts.length - 1; k++) { pos.push(...centro, ...pts[k], ...pts[k + 1]); [centro, pts[k], pts[k + 1]].forEach(giu); }
+  // picciolo verso -x
+  pos.push(0, 0, -.025, 0, 0, .025, -.42, -.04, 0); nrm.push(0, 1, 0, 0, 1, 0, 0, 1, 0);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  return g;
+}
+
 // Ciuffo di rametti a squame (ginepro) di raggio circa 1: tante "fiammelle" appuntite rivolte in su,
 // con il bordo seghettato come le squame del ginepro cinese
 export function ciuffoSquame({ n = 20, lunghezza = 1, larghezza = .2, seme = 5, nucleo = .2 } = {}) {

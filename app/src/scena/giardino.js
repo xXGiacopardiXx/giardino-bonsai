@@ -1,7 +1,7 @@
 // Il resto del giardino: laghetto con le carpe koi, lanterna, staccionata di bambù,
 // alberi di sfondo, cespugli, pietre del sentiero, prato e foglie che cadono.
 import * as THREE from 'three';
-import { PI, R, rnd, M, toon, flatGeo, mesh, tube, foliage } from './strumenti.js';
+import { PI, R, rnd, M, toon, flatGeo, mesh, tube, foliage, fogliaAcero } from './strumenti.js';
 import { ZS, GX, GZ, GRX, GRZ } from './isola.js';
 
 export function creaGiardino(world, { reduce }) {
@@ -64,12 +64,32 @@ export function creaGiardino(world, { reduce }) {
     [.45, 1.0].forEach(h => tube(arc.map(p => [p[0], h, p[2]]), .035, .035, 0x9c8448, world, 40));
   }
 
-  // Alberi di sfondo: un albero giallo e un ciuffo di bambù
+  // Alberi di sfondo: un albero che cambia con le stagioni e un ciuffo di bambù
+  let sfondo;
   {
     const t = new THREE.Group(); t.position.set(-2.6, 0, -6.0); world.add(t);
     tube([[0, 0, 0], [.15, 1.2, .05], [-.1, 2.3, 0], [.1, 3.2, 0]], .32, .1, 0x6f5a49, t, 16);
     [[[0, 1.8, 0], [-.8, 2.5, .2], [-1.4, 2.8, .3]], [[.05, 2.1, 0], [.8, 2.7, -.1], [1.3, 3.0, -.2]]].forEach(p => tube(p, .13, .04, 0x6f5a49, t, 10));
-    foliage(t, [[-1.3, 2.8, .3, 1.0], [1.2, 3.0, -.2, 1.0], [0, 3.5, 0, 1.2], [-.3, 2.9, .6, .8], [.5, 3.0, .5, .8]], { palette: ['#c99a2e', '#d9ad38', '#e6c048', '#efd25c', '#f6e07a'], density: 26, size: .34, flat: .85, detail: 1 });
+    const f = foliage(t, [[-1.3, 2.8, .3, 1.0], [1.2, 3.0, -.2, 1.0], [0, 3.5, 0, 1.2], [-.3, 2.9, .6, .8], [.5, 3.0, .5, .8]], { palette: ['#c99a2e', '#d9ad38', '#e6c048', '#efd25c', '#f6e07a'], density: 26, size: .34, flat: .85, detail: 1 });
+    // in primavera fiorito di rosa, in estate verde, in autunno giallo oro, in inverno quasi spoglio
+    const tinte = [['#e9a6b8', '#f0b6c6', '#f5c6d2', '#f9d6de', '#fde6ec'], ['#3f7a34', '#4b893b', '#589843', '#67a64c', '#78b357'], null, ['#9a8a6a', '#a8987a', '#b5a688', '#c2b496', '#cfc2a6']]
+      .map(pal => pal ? f.toni.map(x => new THREE.Color(pal[Math.round(x * 4)])) : f.healthy);
+    const originali = f.m.instanceMatrix.array.slice(), zero = new THREE.Matrix4().makeScale(0, 0, 0), c = new THREE.Color();
+    let prima = -1;
+    sfondo = (p) => {
+      const s = Math.floor(p) % 4, k = Math.min(1, Math.max(0, (p - Math.floor(p) - .6) / .4)), chiave = s * 10 + Math.round(k * 7);
+      if (chiave === prima) return;
+      prima = chiave;
+      // negli ultimi giorni di ogni stagione il colore sfuma in quello della stagione dopo
+      const da = tinte[s], a = tinte[(s + 1) % 4];
+      for (let i = 0; i < f.healthy.length; i++) {
+        f.m.setColorAt(i, c.copy(da[i]).lerp(a[i], k));
+        const spoglio = s === 3 ? 1 - k : s === 2 ? k : 0;
+        if (f.periferia[i] + (i * .618 % 1) * .4 < spoglio * 1.25) f.m.setMatrixAt(i, zero);
+        else f.m.instanceMatrix.array.set(originali.subarray(i * 16, i * 16 + 16), i * 16);
+      }
+      f.m.instanceColor.needsUpdate = true; f.m.instanceMatrix.needsUpdate = true;
+    };
   }
   {
     const t = new THREE.Group(); t.position.set(2.7, 0, -5.95); world.add(t);
@@ -118,9 +138,9 @@ export function creaGiardino(world, { reduce }) {
     }
   }
 
-  // Foglie d'acero a terra e foglie che cadono
-  const leafGeo = new THREE.PlaneGeometry(.15, .12);
-  const leafCols = ['#b83a28', '#cc4f2c', '#de6a2f', '#e88535', '#f0a744'];
+  // Foglie d'acero a terra e foglie che cadono: hanno la forma della foglia d'acero, coi colori del suo autunno
+  const leafGeo = fogliaAcero().scale(.085, .085, .085);
+  const leafCols = ['#ad1f1c', '#cc2c22', '#e3462a', '#f0702c', '#f79c38'];
   let foglieATerra;
   {
     const N = 80, im = new THREE.InstancedMesh(leafGeo, toon({ color: 0xffffff, side: THREE.DoubleSide }), N); im.receiveShadow = true;
@@ -130,7 +150,7 @@ export function creaGiardino(world, { reduce }) {
       const x = Math.cos(a) * r * 1.1, z = -2.4 + Math.sin(a) * r * .8;
       // quelle che cadono sul tavolo restano all'altezza del piano
       d.position.set(x, (Math.abs(x) < 1.05 && Math.abs(z + 2.4) < .65) ? .82 : .02, z);
-      d.rotation.set(-PI / 2, 0, R(0, 6)); d.updateMatrix(); im.setMatrixAt(i, d.matrix); im.setColorAt(i, new THREE.Color(leafCols[i % 5]));
+      d.rotation.set(0, R(0, 6), 0); d.updateMatrix(); im.setMatrixAt(i, d.matrix); im.setColorAt(i, new THREE.Color(leafCols[i % 5]));
     }
     world.add(im);
     foglieATerra = im;
@@ -146,6 +166,7 @@ export function creaGiardino(world, { reduce }) {
     // le foglie d'acero cadono da metà autunno all'inizio dell'inverno e restano a terra ancora un po'
     // (p: punto dell'anno, 0 = inizio primavera, 2 = autunno, 3 = inverno)
     setStagione(p) {
+      sfondo(p);
       falling.forEach(L => { L.m.visible = p >= 2.4 && p < 3.4; });
       foglieATerra.visible = p >= 2.5 && p < 3.7;
     },
