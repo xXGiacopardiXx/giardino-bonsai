@@ -70,8 +70,12 @@ button{touch-action:manipulation}
 .tool:focus-visible .b{outline:.8cqw solid #ffd25a;outline-offset:.4cqw}
 .tool.water .b{background:linear-gradient(#9bd8ff,#3f92d6);box-shadow:inset 0 -1.3cqw 0 rgba(10,50,100,.22),0 .9cqw 0 var(--ink)}
 .tool.water.needs .b::before{content:"";position:absolute;inset:-1.6cqw;border-radius:5.4cqw;border:.7cqw solid #ffffff;opacity:0;animation:ring 1.4s ease-out infinite}
-.tool.water.needs .b::after{content:"!";position:absolute;top:-2cqw;right:-2cqw;width:5.6cqw;height:5.6cqw;border-radius:50%;background:linear-gradient(#ff7a6a,#e0382a);border:.5cqw solid var(--ink);box-sizing:border-box;color:#fff;font:700 3.6cqw/4.6cqw var(--display);text-align:center;text-shadow:0 .3cqw 0 var(--ink)}
+.tool.needs .b::after{content:"!";position:absolute;top:-2cqw;right:-2cqw;width:5.6cqw;height:5.6cqw;border-radius:50%;background:linear-gradient(#ff7a6a,#e0382a);border:.5cqw solid var(--ink);box-sizing:border-box;color:#fff;font:700 3.6cqw/4.6cqw var(--display);text-align:center;text-shadow:0 .3cqw 0 var(--ink)}
 @keyframes ring{0%{opacity:.9;transform:scale(.92)}100%{opacity:0;transform:scale(1.18)}}
+.tool.attivo .b{background:linear-gradient(#fff1b0,#f2b93e);transform:translateY(.5cqw);box-shadow:inset 0 -1.3cqw 0 rgba(150,90,10,.22),0 .4cqw 0 var(--ink),0 0 0 .9cqw rgba(255,226,120,.75)}
+.snip{position:absolute;width:12cqw;height:12cqw;pointer-events:none;filter:drop-shadow(0 .5cqw 0 rgba(30,20,10,.35));animation:snip .65s ease-out forwards}
+.snip svg{width:100%;height:100%}
+@keyframes snip{0%{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(-35deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(8deg)}45%{transform:translate(-50%,-50%) scale(.95) rotate(0)}100%{opacity:0;transform:translate(-50%,-70%) scale(1) rotate(0)}}
 .tool .l{font:600 3.1cqw/1 var(--display);color:#fff;text-shadow:0 .45cqw 0 var(--ink),.3cqw .3cqw 0 var(--ink),-.3cqw .3cqw 0 var(--ink),.3cqw -.3cqw 0 var(--ink),-.3cqw -.3cqw 0 var(--ink)}
 
 .toast{position:absolute;left:50%;bottom:calc(var(--bottom) + 31cqw);transform:translate(-50%,2cqw);width:max-content;max-width:84cqw;padding:2.4cqw 3.6cqw;border-radius:3.4cqw;background:rgba(43,30,19,.9);color:#fff7e8;font:500 3.3cqw/1.35 var(--display);text-align:center;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}

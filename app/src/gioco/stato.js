@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 1;
+export const VERSIONE = 2;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, acqua: 5, serie7: 50 };
@@ -26,6 +26,18 @@ const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma re
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
 const RIPRESA_AL_GIORNO = 0.15;        // da quasi spoglia a piena in 5-6 giorni di cure
 
+// Potatura (sezione 14.1): germogli sulle punte della chioma; tagliandone uno, sotto il taglio
+// spuntano 2 gemme che crescono nei giorni successivi e rendono la chioma più fitta.
+// La crescita segue il tempo compresso: forte in primavera, lenta in inverno, ferma sotto stress.
+export const PUNTE = 10;               // posti della chioma dove può spuntare un germoglio (li disegna la scena)
+export const POTABILE_DA = 0.25;       // lunghezza minima per poter tagliare un germoglio (1 = getto lungo)
+const GERMOGLI_MASSIMI = 5;            // oltre, la pianta non ne mette di nuovi finché non si pota
+const GEMME_PER_PUNTA = 6;             // poi la punta è già fitta: il taglio non aggiunge altre gemme
+const LUNGHEZZA_INIZIALE = 0.3;        // un germoglio nuovo si può già cimare: serve alla serie di ogni giorno
+const CRESCITA_GERMOGLIO = 0.6;        // al giorno, in estate: da cimabile a getto lungo in poco più di un giorno
+const CRESCITA_GEMMA = 0.5;            // al giorno, in estate: una gemma diventa un ciuffo in 2 giorni
+const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
+
 export function nuovoStato(ora) {
   return {
     versione: VERSIONE,
@@ -33,11 +45,41 @@ export function nuovoStato(ora) {
     aggiornato: ora,
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
-    albero: { sete: 1, salute: 1, ultimaAcqua: null },
+    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane() },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     oggi: { giorno: giornoLocale(ora), acqua: false },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
   };
+}
+
+// Germogli e gemme di una partita nuova: due germogli pronti, così Pota si prova subito
+function alberoGiovane() {
+  const a = { germogli: [], gemme: [], contatore: 0 };
+  spuntaGermoglio(a, 0.4); spuntaGermoglio(a, 0.55);
+  return a;
+}
+
+// Porta un salvataggio di una versione precedente alla versione attuale (null se non si può)
+export function migra(stato) {
+  if (!stato || typeof stato !== 'object') return null;
+  if (stato.versione === 1) { Object.assign(stato.albero, alberoGiovane()); stato.versione = 2; }
+  return stato.versione === VERSIONE ? stato : null;
+}
+
+// Fa spuntare un germoglio su una punta libera, scelta in modo prevedibile (niente Math.random: i test devono ripetersi)
+function spuntaGermoglio(a, lunghezza = LUNGHEZZA_INIZIALE) {
+  if (a.germogli.length >= GERMOGLI_MASSIMI) return null;
+  const libere = [];
+  for (let p = 0; p < PUNTE; p++) if (!a.germogli.some(g => g.punta === p)) libere.push(p);
+  const id = ++a.contatore;
+  const g = { id, punta: libere[(id * 7 + 3) % libere.length], lunghezza };
+  a.germogli.push(g);
+  return g;
+}
+
+// Quanto cresce la pianta: con la stagione, e meno quando ha sete (sezione 6.1: lo stress lieve rallenta, il medio ferma)
+function vigore(stagione, sete) {
+  return VIGORE[stagione] * (sete < 2 ? 1 : sete < 4 ? 0.4 : 0);
 }
 
 // Fin dove può arrivare la chioma con una certa sete: a lungo senz'acqua si perdono i rametti periferici
@@ -63,6 +105,9 @@ export function avanza(stato, ora) {
     const max = saluteMassima(a.sete);
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
     else if (a.sete < 2) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO);
+    const v = giorni * vigore(stagione, a.sete);
+    for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
+    for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     t += passo;
     // dopo molti giorni senz'acqua non cambia più niente: si salta alla fine
     if (a.sete >= SETE_MASSIMA && a.salute <= SALUTE_MINIMA) t = ora;
@@ -70,7 +115,12 @@ export function avanza(stato, ora) {
   stato.aggiornato = Math.max(stato.aggiornato, ora);
 
   const oggi = giornoLocale(ora);
-  if (stato.oggi.giorno !== oggi) stato.oggi = { giorno: oggi, acqua: false };
+  if (stato.oggi.giorno !== oggi) {
+    stato.oggi = { giorno: oggi, acqua: false };
+    // ogni giorno spunta almeno un germoglio da cimare (due in primavera), se la pianta non è sotto stress
+    const { stagione } = calendario(stato.inizio, ora);
+    if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
+  }
   // serie interrotta: si dimezza una volta sola invece di azzerarsi (sezione 7.2)
   const s = stato.serie;
   if (s.ultimoGiorno && !s.interrotta && giorniTra(s.ultimoGiorno, oggi) > 1) {
@@ -101,6 +151,21 @@ export function annaffia(stato, ora) {
   return { esito: 'ok', semi, bonusSerie };
 }
 
+// Taglia un germoglio. esito: 'ok', 'piccolo' (non è ancora cresciuto abbastanza) o 'nessuno'.
+// La potatura conta per la serie ma non dà Semi da sola (sezione 7.1).
+export function pota(stato, ora, id) {
+  avanza(stato, ora);
+  const a = stato.albero, i = a.germogli.findIndex(g => g.id === id);
+  if (i < 0) return { esito: 'nessuno', gemme: 0, bonusSerie: 0 };
+  const g = a.germogli[i];
+  if (g.lunghezza < POTABILE_DA) return { esito: 'piccolo', gemme: 0, bonusSerie: 0 };
+  a.germogli.splice(i, 1);
+  const gemme = Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
+  for (let k = 0; k < gemme; k++) a.gemme.push({ punta: g.punta, crescita: 0 });
+  const bonusSerie = registraCura(stato, ora);
+  return { esito: 'ok', gemme, bonusSerie };
+}
+
 const limita = (v) => Math.min(1, Math.max(0, v));
 
 // Tutto quello che serve per disegnare: calcolato dallo stato, senza modificarlo.
@@ -126,6 +191,11 @@ export function vista(stato) {
     // 0 = terriccio scuro e umido, 1 = chiaro e secco
     terriccio: limita(a.sete / 1.5),
     lungaAssenza: a.sete >= FASI[4].da,
+    germogli: a.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
+    gemme: a.gemme.map(g => ({ ...g })),
+    puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
+    // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)
+    curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,
     // sfida del giorno "annaffia": compare quando la pianta ha sete, resta spuntata dopo l'acqua
     sfida: haSete || stato.oggi.acqua ? { fatta: stato.oggi.acqua && !haSete } : null,
   };

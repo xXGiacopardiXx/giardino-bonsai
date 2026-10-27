@@ -21,6 +21,7 @@ export function creaPannelloProva(azioni) {
       <dt>Fase</dt><dd data-v="fase"></dd>
       <dt>Chioma</dt><dd data-v="salute"></dd>
       <dt>Serie</dt><dd data-v="serie"></dd>
+      <dt>Germogli</dt><dd data-v="germogli"></dd>
     </dl>
     <div class="prova-pulsanti">
       <button data-a="ora">+1 ora</button>
@@ -62,6 +63,7 @@ export function creaPannelloProva(azioni) {
       v('fase').textContent = vista.nomeFase;
       v('salute').textContent = Math.round(vista.salute * 100) + '%';
       v('serie').textContent = vista.serie;
+      v('germogli').textContent = `${vista.germogli.length}, gemme ${vista.gemme.length}`;
     },
   };
 }

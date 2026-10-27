@@ -1,6 +1,6 @@
 // Salvataggio della partita sul telefono (localStorage).
 // Ogni accesso è protetto: se la memoria non è disponibile il gioco funziona lo stesso, senza salvare.
-import { VERSIONE, nuovoStato } from './stato.js';
+import { migra, nuovoStato } from './stato.js';
 
 const CHIAVE = 'giardino-bonsai:partita';
 
@@ -8,8 +8,8 @@ export function carica(ora) {
   try {
     const testo = localStorage.getItem(CHIAVE);
     if (testo) {
-      const stato = JSON.parse(testo);
-      if (stato && stato.versione === VERSIONE) return stato;
+      const stato = migra(JSON.parse(testo));
+      if (stato) return stato;
     }
   } catch (e) { /* salvataggio illeggibile: si riparte */ }
   return nuovoStato(ora);

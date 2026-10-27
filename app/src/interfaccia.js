@@ -73,6 +73,15 @@ export function creaInterfaccia(screenEl, camera, trees) {
         $('ok').classList.toggle('show', !v.haSete && v.sfida?.fatta === true);
         $('t-water').classList.toggle('needs', v.haSete);
       }
+      // Pota chiede attenzione solo se oggi non c'è ancora stata un'azione di cura e la pianta non ha sete
+      $('t-prune').classList.toggle('needs', v.puoPotare && !v.curatoOggi && !v.haSete);
+    },
+    // forbici che si chiudono nel punto toccato
+    forbici(x, y) {
+      const f = document.createElement('div'); f.className = 'snip';
+      f.innerHTML = $('t-prune').querySelector('svg').outerHTML;
+      f.style.left = x + 'px'; f.style.top = y + 'px';
+      screenEl.appendChild(f); setTimeout(() => f.remove(), 700);
     },
     nascondiAvvisoSete() { $('alert').classList.add('hide'); },
     mostraIdratato() { $('alert').style.display = 'none'; $('ok').classList.add('show'); },

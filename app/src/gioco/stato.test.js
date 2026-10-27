@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, vista, SEMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, SEMI, VERSIONE } from './stato.js';
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -103,4 +103,78 @@ test('i Semi dell\'acqua si danno una volta al giorno', () => {
   assert.equal(annaffia(s, T0 + 3 * ORA).semi, 0);
   s.albero.sete = 1;
   assert.equal(annaffia(s, dopo(1)).semi, SEMI.acqua);
+});
+
+test('una partita nuova ha due germogli da cimare subito', () => {
+  const v = vista(nuovoStato(T0));
+  assert.equal(v.germogli.length, 2);
+  assert.equal(v.puoPotare, true);
+  assert.notEqual(v.germogli[0].punta, v.germogli[1].punta);
+});
+
+test('tagliando un germoglio spuntano 2 gemme che crescono nei giorni successivi', () => {
+  const s = nuovoStato(T0);
+  const g = s.albero.germogli[0];
+  const r = pota(s, T0, g.id);
+  assert.equal(r.esito, 'ok');
+  assert.equal(r.gemme, 2);
+  assert.equal(s.albero.germogli.length, 1);
+  assert.deepEqual(s.albero.gemme.map(x => x.punta), [g.punta, g.punta]);
+  assert.equal(s.serie.giorni, 1, 'la potatura conta per la serie');
+  assert.equal(s.semi, SEMI.iniziali, 'ma non dà Semi da sola');
+  annaffia(s, T0 + ORA);
+  avanza(s, T0 + ORA + GIORNO);
+  const c = s.albero.gemme[0].crescita;
+  assert.ok(c > .5 && c < 1, `dopo un giorno di primavera la gemma è a metà strada (${c})`);
+  assert.equal(pota(s, T0, g.id).esito, 'nessuno', 'un germoglio si taglia una volta sola');
+});
+
+test('ogni giorno spunta un germoglio da cimare (due in primavera), fino a un massimo', () => {
+  const s = nuovoStato(T0);
+  s.inizio = T0 - 7 * GIORNO; // estate
+  annaffia(s, T0);
+  avanza(s, dopo(1));
+  assert.equal(s.albero.germogli.length, 3);
+  assert.equal(vista(s).germogli.at(-1).potabile, true, 'il germoglio nuovo si può già cimare');
+  for (let g = 2; g < 8; g++) { s.albero.sete = 0; avanza(s, dopo(g)); }
+  assert.equal(s.albero.germogli.length, 5);
+  assert.equal(new Set(s.albero.germogli.map(g => g.punta)).size, 5, 'ognuno su una punta diversa');
+
+  const p = nuovoStato(T0);
+  p.albero.sete = 0;
+  avanza(p, dopo(1));
+  assert.equal(p.albero.germogli.length, 4);
+});
+
+test('sotto stress la pianta smette di crescere', () => {
+  const s = nuovoStato(T0);
+  s.albero.sete = 5;
+  const prima = s.albero.germogli.map(g => g.lunghezza);
+  avanza(s, dopo(1));
+  assert.deepEqual(s.albero.germogli.map(g => g.lunghezza), prima);
+  assert.equal(s.albero.germogli.length, 2, 'e non mette germogli nuovi');
+});
+
+test('un germoglio appena spuntato è troppo piccolo per essere tagliato', () => {
+  const s = nuovoStato(T0);
+  s.albero.germogli[0].lunghezza = .1;
+  assert.equal(pota(s, T0, s.albero.germogli[0].id).esito, 'piccolo');
+  assert.equal(s.serie.giorni, 0);
+});
+
+test('una punta già fitta non aggiunge altre gemme', () => {
+  const s = nuovoStato(T0);
+  const g = s.albero.germogli[0];
+  for (let i = 0; i < 6; i++) s.albero.gemme.push({ punta: g.punta, crescita: 1 });
+  assert.equal(pota(s, T0, g.id).gemme, 0);
+});
+
+test('un salvataggio della versione 1 riceve i germogli', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 1;
+  delete vecchio.albero.germogli; delete vecchio.albero.gemme; delete vecchio.albero.contatore;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(s.albero.germogli.length, 2);
+  assert.equal(migra({ versione: 99 }), null);
 });

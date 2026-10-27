@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 26/10/2026
+Ultimo aggiornamento: 27/10/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -122,6 +122,16 @@ Valori iniziali, in `app/src/gioco/stato.js` e `tempo.js`, da ritoccare con i te
 - **Chioma (salute):** da 1 (piena) a 0,2 (minimo garantito). Da 4 giorni di sete si dirada verso 0,85 a 7 giorni, 0,45 a 14 e 0,2 a 30, perdendo al massimo 0,08 al giorno: spariscono prima i ciuffi esterni. Con la pianta annaffiata (sotto i 2 giorni di sete) ricresce di 0,15 al giorno: da quasi spoglia a piena in 5–6 giorni.
 - **Nuova partita:** inizia il primo giorno di primavera, con 50 Semi e la pianta un po' assetata, così la prima azione è annaffiarla.
 - **Ritorno da 7+ giorni di sete:** messaggio *"Ti stava aspettando"*.
+
+### 6.1.2 Numeri della potatura (MVP)
+
+Valori iniziali in `app/src/gioco/stato.js`, da ritoccare con i test sul telefono.
+
+- **Germogli:** spuntano su 10 punte fisse della chioma. Ogni nuovo giorno ne spunta uno (due in primavera), al massimo 5 alla volta; sotto stress medio (4+ giorni di sete) la pianta non ne mette.
+- **Lunghezza:** da 0 a 1 (getto lungo). Un germoglio nuovo nasce a 0,3, cioè già cimabile, così ogni giorno c'è un'azione di cura per la serie. Si può tagliare da 0,25.
+- **Crescita:** in estate +0,6 al giorno per i germogli e +0,5 per le gemme (un ciuffo pieno in 2 giorni). Vigore per stagione: primavera 1,4, estate 1, autunno 0,6, inverno 0,5. Con stress lieve (2–4 giorni di sete) cresce al 40%, con stress medio si ferma.
+- **Taglio:** sotto il taglio spuntano 2 gemme, fino a 6 per punta; poi la punta è già fitta e il taglio non ne aggiunge. La potatura conta per la serie ma non dà Semi (sezione 7.1).
+- **Comandi:** Pota avvicina la telecamera al pino e illumina i germogli da tagliare; un tocco ne taglia uno, che cade nel vaso. Pota ha il badge "!" quando ci sono germogli e oggi non c'è ancora stata un'azione di cura (e la pianta non ha sete).
 
 ### 6.2 Ritorno dopo una lunga assenza
 
@@ -316,7 +326,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 1. **Game design scritto** (questo documento). ✅
 2. **Progetto dell'app e PWA:** prototipo portato in `app/`, a schermo intero, installabile sull'iPhone da GitHub Pages. ✅ (manca solo la messa online, vedi `docs/guida-iphone.md`)
 3. **Motore senza grafica:** stato dell'albero, tempo trascorso calcolato all'apertura, salvataggio, cursore "avanti di N giorni" per i test di trascuratezza e stagioni. ✅ Il pannello di prova si apre toccando 3 volte la stagione. Per ora il motore guida il pino del prototipo; la scena resta autunnale anche se la stagione cambia (si sistema nella fase 5 con l'acero).
-4. **Potatura:** toccare un germoglio, tagliarlo, vedere le gemme ricrescere. È la parte che decide se il gioco è divertente.
+4. **Potatura:** toccare un germoglio, tagliarlo, vedere le gemme ricrescere. È la parte che decide se il gioco è divertente. ✅ Numeri nella sezione 6.1.2. Come la sete, per ora la potatura è sul pino; nella fase 5 passa all'acero. Da verificare sul telefono se il gesto dà soddisfazione.
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).

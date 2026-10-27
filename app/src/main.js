@@ -15,10 +15,11 @@ import { creaIsola } from './scena/isola.js';
 import { creaAlberi } from './scena/alberi.js';
 import { creaGiardino } from './scena/giardino.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
+import { creaGermogli } from './scena/germogli.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, vista } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -59,7 +60,7 @@ function avvia() {
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, { enablePan: false, enableDamping: true, dampingFactor: .08, rotateSpeed: .55, zoomSpeed: .8, minPolarAngle: .55, maxPolarAngle: 1.2 });
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
-  let baseDist = 30;
+  let baseDist = 30, potando = false;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
     const w = screenEl.clientWidth, h = screenEl.clientHeight; if (!w || !h) return;
@@ -67,7 +68,8 @@ function avvia() {
     const a = w / h, hw = Math.min(4.4, 4.4 * Math.max(a, .42) / .46);
     baseDist = Math.min(44, Math.max(16, hw / (Math.tan(camera.fov / 2 * Math.PI / 180) * Math.min(a, 1))));
     camera.updateProjectionMatrix();
-    controls.minDistance = baseDist * .45; controls.maxDistance = baseDist * 1.15;
+    // durante la potatura ci si può avvicinare di più, per toccare i germogli
+    controls.minDistance = baseDist * (potando ? .2 : .45); controls.maxDistance = baseDist * 1.15;
     scene.fog.near = baseDist + 8; scene.fog.far = baseDist + 62;
   }
   fit();
@@ -82,6 +84,7 @@ function avvia() {
   // Per ora la pianta del motore è il pino, l'unico con i colori della sete.
   // Nella fase 5 diventerà l'acero, unica specie dell'MVP.
   const pino = alberi.pino;
+  const germogli = creaGermogli(scene, pino);
 
   // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
   let stato = carica(Date.now());
@@ -103,6 +106,7 @@ function avvia() {
       pino.ring.visible = v.haSete;
     }
     pino.setSalute(v.salute);
+    germogli.sincronizza(v.germogli, v.gemme);
     pannello?.mostra(v, base.aggiornato);
   }
   function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
@@ -149,7 +153,6 @@ function avvia() {
 
   // Strumenti non ancora attivi
   const prossimamente = {
-    't-prune': 'Pota: zoomma su un ramo e toccalo per tagliarlo. Arriva nella prossima versione.',
     't-wire': 'Filo: trascina un ramo per piegarlo nella forma voluta. Arriva più avanti.',
     't-care': 'Cura: concime e trattamenti contro i parassiti. Arriva più avanti.',
     't-shop': 'Negozio: vasi da comprare con i Semi. Arriva nella prossima versione.',
@@ -157,11 +160,77 @@ function avvia() {
   for (const id in prossimamente) document.getElementById(id).addEventListener('click', () => ui.toast(prossimamente[id]));
   document.getElementById('plus').addEventListener('click', () => ui.toast(prossimamente['t-shop']));
 
+  // --- Potatura: Pota avvicina la telecamera al pino, un tocco su un germoglio lo taglia ---
+  const pruneBtn = document.getElementById('t-prune');
+  const volo = { t: 1, daT: new THREE.Vector3(), aT: new THREE.Vector3(), daD: 0, aD: 0 };
+  const centro = target.clone();
+  let distanzaPrima = baseDist;
+  // sposta con dolcezza il punto guardato e la distanza, lasciando l'angolo scelto dal giocatore
+  function vola(versoT, dist) {
+    volo.t = 0; volo.daT.copy(controls.target); volo.aT.copy(versoT);
+    volo.daD = camera.position.distanceTo(controls.target); volo.aD = dist;
+  }
+  function potatura(on) {
+    if (on === potando) return;
+    potando = on; germogli.potatura = on;
+    pruneBtn.classList.toggle('attivo', on);
+    if (on) {
+      distanzaPrima = camera.position.distanceTo(controls.target);
+      controls.minDistance = baseDist * .2;
+      vola(pino.fuoco, baseDist * .27);
+    } else {
+      vola(centro, Math.max(distanzaPrima, baseDist * .45));
+      controls.minDistance = baseDist * .45;
+    }
+  }
+  pruneBtn.addEventListener('click', () => {
+    if (potando) { potatura(false); return; }
+    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
+    potatura(true);
+    ui.toast(vista(stato).puoPotare ? 'Tocca un germoglio chiaro per tagliarlo. Tocca Pota per finire.' : 'Per ora non c\'è niente da potare: ogni giorno spunta un germoglio nuovo.', 3500);
+  });
+
+  const raycaster = new THREE.Raycaster(), puntatore = new THREE.Vector2();
+  // un tocco è breve e quasi fermo: così non si confonde con la rotazione della scena
+  const dita = new Map();
+  canvas.addEventListener('pointerdown', e => dita.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now(), multi: dita.size > 0 }));
+  canvas.addEventListener('pointercancel', e => dita.delete(e.pointerId));
+  canvas.addEventListener('pointerup', e => {
+    const d = dita.get(e.pointerId); dita.delete(e.pointerId);
+    if (!d || d.multi || dita.size || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || performance.now() - d.t > 450) return;
+    const r = canvas.getBoundingClientRect();
+    puntatore.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    raycaster.setFromCamera(puntatore, camera);
+    const id = germogli.tocca(raycaster);
+    if (id === null) return;
+    if (!potando) { ui.toast('Per tagliare un germoglio scegli prima Pota.'); return; }
+    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
+    const esito = pota(stato, ora(), id);
+    if (esito.esito === 'piccolo') { ui.toast('È ancora troppo piccolo: lascialo crescere un po\'.'); return; }
+    if (esito.esito !== 'ok') return;
+    ui.forbici(e.clientX - r.left, e.clientY - r.top);
+    germogli.taglia(id);
+    salva(stato);
+    disegna();
+    if (esito.bonusSerie) ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'pino');
+    ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+      : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
+    // finiti i germogli da tagliare, la telecamera torna indietro da sola
+    if (!vista(stato).puoPotare) setTimeout(() => potatura(false), 1600);
+  });
+
   let clock = 0, last = performance.now();
   function frame(now) {
     const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
+    if (volo.t < 1) {
+      volo.t = Math.min(1, volo.t + dt / .8);
+      const k = volo.t * volo.t * (3 - 2 * volo.t), dir = camera.position.clone().sub(controls.target).normalize();
+      controls.target.lerpVectors(volo.daT, volo.aT, k);
+      camera.position.copy(controls.target).addScaledVector(dir, volo.daD + (volo.aD - volo.daD) * k);
+    }
     controls.update();
     alberi.aggiorna(clock);
+    germogli.aggiorna(dt, clock);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
     annaffiatura.aggiorna(dt);

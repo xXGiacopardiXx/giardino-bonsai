@@ -1,5 +1,5 @@
 // I tre bonsai del prototipo: acero sul tavolo, ginepro sulla lastra di pietra, pino sulla base in legno.
-// Sono forme fisse; nella fase 4 della roadmap verranno generati dai dati dell'albero.
+// Sono forme fisse; sul pino spuntano i germogli da potare (scena/germogli.js).
 import * as THREE from 'three';
 import { PI, R, M, toon, flatGeo, mesh, tube, foliage } from './strumenti.js';
 
@@ -59,7 +59,8 @@ export function creaAlberi(world) {
     tube([[0, -.05, 0], [.14, .38, 0], [.34, .78, .05], [.44, 1.18, 0], [.4, 1.55, 0]], .18, .05, 0x5e4434, tr, 24);
     for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2 + .7; tube([[0, .06, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .36, -.03, Math.sin(a) * .36]], .07, .02, 0x5e4434, tr, 6); }
     [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]].forEach(p => tube(p, .07, .02, 0x5e4434, tr, 10));
-    const f = foliage(tr, [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]],
+    const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
+    const f = foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .19, flat: .62, detail: 0, stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     // anello azzurro a terra: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.08, 1.2, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
@@ -71,8 +72,20 @@ export function creaAlberi(world) {
     const originali = f.m.instanceMatrix.array.slice();
     const ordine = f.periferia.map((dn, i) => [dn + ((i * 0.618) % 1) * .35, i]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
     const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    // punte della chioma dove spuntano i germogli da potare: 2 per cuscinetto, girate verso l'esterno
+    // (angoli scelti a mano, più verso chi guarda); l'indice corrisponde a PUNTE del motore
+    const angoli = [[2.5, 3.5], [.6, -.4], [1.6, 2.8], [-.3, .9], [1.2, 2.2]];
+    const punte = [0, 1].flatMap(j => pads.map(([x, y, z, r], i) => {
+      const a = angoli[i][j], c = Math.cos(a), sn = Math.sin(a);
+      return { p: new THREE.Vector3(x + c * r * .72, y + r * .16, z + sn * r * .65), d: new THREE.Vector3(c * .75, 1, sn * .75).normalize() };
+    }));
     pino = {
       ring,
+      g: tr,
+      punte,
+      verde: 0x4a6c34,
+      // dove guarda la telecamera durante la potatura
+      fuoco: new THREE.Vector3(2.35, 1.7, 2.0),
       thirst: 1,
       soilDry: 1,
       potTop: new THREE.Vector3(2.1, .63, 2.0),
