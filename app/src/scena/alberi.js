@@ -4,7 +4,7 @@
 // (scena/germogli.js). Pino e ginepro fanno parte del giardino e per ora stanno sempre bene.
 // I dettagli non consumano numeri della sequenza col seme.
 import * as THREE from 'three';
-import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, corteccia, rametti, sequenza } from './strumenti.js';
+import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, corteccia, rametti, sequenza } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
 
@@ -18,6 +18,8 @@ const ACERO = {
 };
 // colore che prendono le gemme cresciute (in inverno restano gemme scure)
 const MATURO = [0x92bd45, 0x477a30, 0xc94b2b, 0x7a3b2a];
+// germogli nuovi dell'acero: rosso tenero sulla chioma verde, verde chiaro sulla chioma rossa o spoglia
+const GERMOGLIO = [0xe0563c, 0xe0563c, 0xc8ec5a, 0xc8ec5a];
 
 // Aspetto della chioma in un punto dell'anno p (0 = inizio primavera, 4 = fine inverno):
 // da quale tavolozza a quale (k = quanto si è passati alla seconda) e quante foglie ci sono (0..1).
@@ -52,7 +54,7 @@ export function creaAlberi(world) {
     [[[-.1, .7, .04], [-.55, .9, .12], [-1.0, 1.05, .1]], [[.03, 1.0, 0], [.5, 1.2, -.08], [.95, 1.35, -.05]], [[.02, 1.3, 0], [-.25, 1.55, .18], [-.45, 1.75, .2]], [[.03, 1.15, -.02], [.15, 1.35, -.35], [.2, 1.5, -.55]], [[0, 1.5, 0], [.15, 1.75, -.05], [.2, 1.95, -.1]], [[.02, 1.2, .02], [.3, 1.45, .25], [.45, 1.7, .3]]].forEach(p => tube(p, .075, .022, legnoA, tr, 10));
     const padsA = [[-1.0, 1.08, .1, .56], [.95, 1.38, -.05, .56], [-.45, 1.82, .2, .5], [.2, 2.0, -.1, .6], [.2, 1.55, -.55, .46], [-.5, 1.42, -.3, .42], [.45, 1.75, .3, .44]];
     const f = foliage(tr, padsA,
-      { palette: ACERO.autunno, density: 72, size: .37, flat: .78, detail: 1, geo: ciuffoFoglie() });
+      { palette: ACERO.autunno, density: 72, size: .37, flat: .78, detail: 1, geo: ciuffoFoglie({ n: 7, lobi: 5, incavo: .32, nucleo: .1, grandezza: .74 }) });
     rametti(tr, padsA, legnoA, 21);
     // anello azzurro a terra, attorno al tavolo: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.38, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
@@ -68,7 +70,7 @@ export function creaAlberi(world) {
     const davanti = [0, 1, 2, 3, 6], angoli = [[2.4, 1.9], [.5, 1.2], [2.2, 1.4], [.9, 2.2], [1.3, .4]];
     const punte = [0, 1].flatMap(j => davanti.map((n, i) => {
       const [x, y, z, r] = padsA[n], a = angoli[i][j], c = Math.cos(a), sn = Math.sin(a);
-      return { p: new THREE.Vector3(x + c * r * .72, y + r * .16, z + sn * r * .65), d: new THREE.Vector3(c * .75, 1, sn * .75).normalize() };
+      return { p: new THREE.Vector3(x + c * r * .95, y + r * .28, z + sn * r * .85), d: new THREE.Vector3(c * .9, 1, sn * .9).normalize() };
     }));
     acero = pianta(f, soil, ring, {
       g: tr,
@@ -107,7 +109,7 @@ export function creaAlberi(world) {
     const padsG = [[-.84, .8, .12, .5], [.76, 1.03, -.05, .48], [-.5, 1.33, .05, .4], [.04, 1.72, 0, .46], [.3, 1.38, .25, .3]];
     // il ginepro ha aghi corti e fitti
     foliage(tr, padsG,
-      { palette: ['#2e5638', '#3a6943', '#467a4c', '#548955', '#66985c', '#7daa65'], density: 92, size: .34, flat: .56, detail: 1, geo: ciuffoAghi({ n: 60, lunghezza: .85, larghezza: .1, seme: 3 }) });
+      { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     rametti(tr, padsG, legnoG, 13);
     trees.ginepro = { g: tr, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
   }
@@ -129,7 +131,7 @@ export function creaAlberi(world) {
     const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
     // i colori della sete restano preparati (la sequenza col seme non deve cambiare) ma per ora non si usano
     foliage(tr, pads,
-      { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 64, larghezza: .055 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
+      { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     rametti(tr, pads, legnoP, 5);
     trees.pino = { g: tr, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
   }
@@ -177,6 +179,9 @@ function pianta(f, soil, ring, dati) {
     soilDry: 1,
     // colore delle foglie mature in questa stagione (lo usano le gemme che crescono)
     verde: new THREE.Color(MATURO[2]),
+    coloreGermoglio: new THREE.Color(GERMOGLIO[2]),
+    // germogli più lunghi, che escono bene dalla chioma
+    scalaGermogli: 1.5,
     // 1 = chioma piena, 0,2 = quasi spoglia (resta sempre qualche ciuffo)
     setSalute(v) { salute = v; chioma(); },
     // 0 = idratata, 1 = assetata: sfuma il colore di ogni ciuffo verso le foglie secche
@@ -189,6 +194,7 @@ function pianta(f, soil, ring, dati) {
       if (a.da === anno.da && a.a === anno.a && a.k === anno.k && a.foglie === foglie) return;
       anno = a; foglie = a.foglie;
       this.verde.setHex(MATURO[Math.min(3, Math.floor(pAnno))]);
+      this.coloreGermoglio.setHex(GERMOGLIO[Math.min(3, Math.floor(pAnno))]);
       colora(); chioma();
     },
   };

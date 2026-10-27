@@ -19,7 +19,7 @@ const fustoGeo = new THREE.CylinderGeometry(.6, 1, 1, 6).translate(0, .5, 0);
 // Sull'acero il germoglio porta foglioline palmate e la gemma si apre in un ciuffo di foglie.
 const FORME = {
   aghi: { ciuffo: ciuffoAghi({ n: 34, lunghezza: 1, larghezza: .08, seme: 17, nucleo: .3 }), gemma: ciuffoAghi({ n: 40, larghezza: .07, seme: 29 }) },
-  foglie: { ciuffo: ciuffoFoglie({ n: 5, seme: 23, nucleo: .25 }), gemma: ciuffoFoglie({ n: 5, seme: 31, nucleo: .35 }) },
+  foglie: { ciuffo: ciuffoFoglie({ n: 5, seme: 23, nucleo: .1, incavo: .32, grandezza: .74 }), gemma: ciuffoFoglie({ n: 6, seme: 31, nucleo: .15, incavo: .32, grandezza: .74 }) },
 };
 const budGeo = new THREE.ConeGeometry(1, 2.2, 7).translate(0, 1.1, 0);
 const toccoGeo = new THREE.SphereGeometry(.28, 8, 6), toccoMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -27,6 +27,7 @@ const aloneGeo = new THREE.SphereGeometry(1, 16, 12);
 const fustoMat = toon({ color: FUSTO }), budMat = toon({ color: 0xe8dcb8 });
 
 // albero: { g: gruppo del tronco, punte: [{ p, d }] in coordinate del gruppo, aghi: true per le conifere,
+//          scalaGermogli e coloreGermoglio (THREE.Color): facoltativi, per far risaltare i germogli sulla chioma,
 //          verde: colore (THREE.Color) delle foglie mature, cambia con le stagioni,
 //          potTop: centro del terriccio, dove si fermano i germogli tagliati }
 export function creaGermogli(scene, albero) {
@@ -144,7 +145,8 @@ export function creaGermogli(scene, albero) {
       for (const x of germogli.values()) {
         // un germoglio nuovo spunta con un piccolo salto
         const pop = Math.max(.001, backOut(Math.min(1, (ora - x.nato) / 500)));
-        x.o.scale.setScalar(pop);
+        x.o.scale.setScalar(pop * (albero.scalaGermogli ?? 1));
+        if (albero.coloreGermoglio) x.mat.color.copy(albero.coloreGermoglio);
         const luce = potatura && x.potabile ? .5 + .5 * Math.sin(clock * 4 + x.o.id) : 0;
         x.mat.emissiveIntensity = luce * .55;
         x.alone.material.opacity = luce * .28;

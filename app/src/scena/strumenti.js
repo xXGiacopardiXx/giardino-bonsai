@@ -105,12 +105,13 @@ function geoCiuffo(pos, nucleo = 0) {
   return g;
 }
 
-// Ciuffo di aghi (pino, ginepro) di raggio circa 1: n aghi sottili che partono dal centro
-export function ciuffoAghi({ n = 46, lunghezza = 1, larghezza = .07, seme = 7, nucleo = .5 } = {}) {
+// Ciuffo di aghi (pino) di raggio circa 1: n aghi sottili che partono dal centro.
+// apertura: quanto in basso arrivano gli aghi (-1 = sfera intera, 0 = solo verso l'alto, a spazzola)
+export function ciuffoAghi({ n = 46, lunghezza = 1, larghezza = .07, seme = 7, nucleo = .5, apertura = -.35 } = {}) {
   const rnd = sequenza(seme), pos = [], d = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
     // direzioni sparse su una cupola, un po' anche verso il basso
-    const y = -.35 + 1.35 * (i + .5) / n, r = Math.sqrt(Math.max(0, 1 - y * y)), t = i * 2.39996;
+    const y = apertura + (1 - apertura) * (i + .5) / n, r = Math.sqrt(Math.max(0, 1 - y * y)), t = i * 2.39996;
     d.set(Math.cos(t) * r, y, Math.sin(t) * r).normalize();
     const L = lunghezza * (.7 + rnd() * .35), base = d.clone().multiplyScalar(.12);
     const tip = d.clone().multiplyScalar(L);
@@ -125,15 +126,17 @@ export function ciuffoAghi({ n = 46, lunghezza = 1, larghezza = .07, seme = 7, n
   return geoCiuffo(pos, nucleo * lunghezza);
 }
 
-// Ciuffo di foglie palmate a 5 lobi (acero) di raggio circa 1
-export function ciuffoFoglie({ n = 7, seme = 11, nucleo = .45 } = {}) {
+// Ciuffo di foglie palmate (acero) di raggio circa 1.
+// lobi: quante punte ha la foglia; incavo: quanto sono profondi i tagli tra un lobo e l'altro (più basso = più profondi)
+export function ciuffoFoglie({ n = 7, seme = 11, nucleo = .45, lobi = 5, incavo = .38, grandezza = .55 } = {}) {
   const rnd = sequenza(seme), pos = [];
-  // contorno della foglia nel piano: picciolo in (0,0), lobi verso +x
-  const lobi = [[-1.2, .55], [-.6, .82], [0, 1], [.6, .82], [1.2, .55]], contorno = [];
-  lobi.forEach(([ang, L], i) => {
+  // contorno della foglia nel piano: picciolo in (0,0), lobi a ventaglio verso +x, il centrale più lungo
+  const contorno = [], ap = lobi > 5 ? 1.5 : 1.2;
+  for (let j = 0; j < lobi; j++) {
+    const ang = -ap + 2 * ap * j / (lobi - 1), L = .5 + .5 * Math.cos(ang * .85);
     contorno.push([Math.cos(ang) * L, Math.sin(ang) * L]);
-    if (i < lobi.length - 1) { const m = ang + .3; contorno.push([Math.cos(m) * .38, Math.sin(m) * .38]); }
-  });
+    if (j < lobi - 1) { const m = ang + ap / (lobi - 1); contorno.push([Math.cos(m) * incavo, Math.sin(m) * incavo]); }
+  }
   const q = new THREE.Quaternion(), v = new THREE.Vector3(), d = new THREE.Vector3(), base = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
     const y = .15 + .7 * rnd(), r = Math.sqrt(1 - y * y), t = i * 2.39996 + rnd();
@@ -141,10 +144,39 @@ export function ciuffoFoglie({ n = 7, seme = 11, nucleo = .45 } = {}) {
     // la foglia si stende verso l'esterno, quasi orizzontale, un po' inclinata
     q.setFromEuler(new THREE.Euler(-.35 + rnd() * .7, -t, (y - .3) * .9));
     base.copy(d).multiplyScalar(.18);
-    const s = .55 + rnd() * .2, pts = contorno.map(([x, z]) => v.set(x * s, 0, z * s).applyQuaternion(q).add(base).toArray());
+    const s = grandezza + rnd() * .2, pts = contorno.map(([x, z]) => v.set(x * s, 0, z * s).applyQuaternion(q).add(base).toArray());
     for (let k = 0; k < pts.length - 1; k++) pos.push(...base.toArray(), ...pts[k], ...pts[k + 1]);
   }
   return geoCiuffo(pos, nucleo);
+}
+
+// Ciuffo di rametti a squame (ginepro) di raggio circa 1: tante "fiammelle" appuntite rivolte in su,
+// con il bordo seghettato come le squame del ginepro cinese
+export function ciuffoSquame({ n = 20, lunghezza = 1, larghezza = .2, seme = 5, nucleo = .2 } = {}) {
+  const rnd = sequenza(seme), pos = [], d = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const SEG = 6;
+  for (let i = 0; i < n; i++) {
+    // le fiammelle salgono verso l'alto e verso l'esterno, mai verso il basso
+    const y = .15 + .85 * (i + .5) / n, r = Math.sqrt(1 - y * y), t = i * 2.39996;
+    d.set(Math.cos(t) * r, y, Math.sin(t) * r).normalize();
+    const L = lunghezza * (.65 + rnd() * .4);
+    a.crossVectors(d, Math.abs(d.y) > .9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)).normalize();
+    b.crossVectors(d, a).normalize();
+    for (const s of [a, b]) {
+      // striscia che si assottiglia fino alla punta; a segmenti alterni più larga (le squame)
+      const lato = [];
+      for (let k = 0; k <= SEG; k++) {
+        const q = k / SEG, hw = larghezza * L * Math.pow(1 - q, .8) * (k % 2 ? 1 : .65);
+        c.copy(d).multiplyScalar(.08 + q * L); c.y += .12 * q * q * L;
+        lato.push([c.x - s.x * hw, c.y - s.y * hw, c.z - s.z * hw, c.x + s.x * hw, c.y + s.y * hw, c.z + s.z * hw]);
+      }
+      for (let k = 0; k < SEG; k++) {
+        const [p, q] = [lato[k], lato[k + 1]];
+        pos.push(p[0], p[1], p[2], p[3], p[4], p[5], q[3], q[4], q[5], p[0], p[1], p[2], q[3], q[4], q[5], q[0], q[1], q[2]);
+      }
+    }
+  }
+  return geoCiuffo(pos, nucleo * lunghezza);
 }
 
 // Corteccia: venature lungo il ramo, dipinte su una piccola immagine generata dal codice

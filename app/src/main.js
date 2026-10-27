@@ -189,7 +189,7 @@ function avvia() {
     if (potando) { potatura(false); return; }
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
     potatura(true);
-    ui.toast(vista(stato).puoPotare ? 'Tocca un germoglio chiaro per tagliarlo. Tocca Pota per finire.' : 'Per ora non c\'è niente da potare: ogni giorno spunta un germoglio nuovo.', 3500);
+    ui.toast(vista(stato).puoPotare ? 'Tocca un germoglio che brilla per tagliarlo. Tocca Pota per finire.' : 'Per ora non c\'è niente da potare: ogni giorno spunta un germoglio nuovo.', 3500);
   });
 
   const raycaster = new THREE.Raycaster(), puntatore = new THREE.Vector2();
