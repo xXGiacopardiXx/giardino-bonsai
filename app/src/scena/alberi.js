@@ -88,13 +88,16 @@ export function creaAlberi(world) {
     // vaso: si cambia dal negozio; il terriccio resta lo stesso oggetto e cambia solo forma
     const vasoG = new THREE.Group(); t.add(vasoG);
     const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), toon({ color: SOIL_DRY.clone() }), t, 0, 1.19, 0);
-    let vasoAttuale = null;
-    function mettiVaso(id) {
+    let vasoAttuale = null, vasoPronto = false;
+    const scintille = creaScintille(t, vasoG);
+    // anima: fa un saltello e una pioggia di stelline, per far capire che il vaso è cambiato
+    function mettiVaso(id, anima = false) {
       if (id === vasoAttuale || !VASI_FORME[id]) return;
       vasoAttuale = id;
       vasoG.children.slice().forEach(c => { vasoG.remove(c); c.geometry.dispose(); });
       const terra = VASI_FORME[id](vasoG);
       soil.geometry.dispose(); soil.geometry = terra.geo; soil.scale.set(1, 1, terra.sz ?? 1);
+      if (anima) scintille.avvia();
     }
     mettiVaso('blu');
     for (let i = 0; i < 7; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .14), 1), M(0x6a9a40), t, R(-.55, .55), 1.21, R(-.35, .35)); b.scale.y = .4; }
@@ -106,7 +109,7 @@ export function creaAlberi(world) {
     const padsA = [[-1.0, 1.08, .1, .56], [.95, 1.38, -.05, .56], [-.45, 1.82, .2, .5], [.2, 2.0, -.1, .6], [.2, 1.55, -.55, .46], [-.5, 1.42, -.3, .42], [.45, 1.75, .3, .44]];
     const f = foliage(tr, padsA,
       { palette: ACERO.autunno, density: 72, size: .37, flat: .78, detail: 1, geo: ciuffoFoglie({ n: 7, lobi: 5, incavo: .32, nucleo: .1, grandezza: .74 }) });
-    rametti(tr, padsA, legnoA, 21);
+    const puntiRametti = rametti(tr, padsA, legnoA, 21);
     // anello azzurro a terra, attorno al tavolo: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.38, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
     ring.rotation.x = -PI / 2; ring.position.y = .025; t.add(ring);
@@ -118,13 +121,24 @@ export function creaAlberi(world) {
     const rs = sequenza(41), secche = f.healthy.map(() => rs() < .55 ? new THREE.Color(ACERO.sete[Math.floor(rs() * ACERO.sete.length)]) : null);
     // punte della chioma dove spuntano i germogli da potare: 2 per cuscinetto, sui 5 cuscinetti
     // più verso chi guarda; l'indice corrisponde a PUNTE del motore
-    const davanti = [0, 1, 2, 3, 6], angoli = [[2.4, 1.9], [.5, 1.2], [2.2, 1.4], [.9, 2.2], [1.3, .4]];
-    const punte = [0, 1].flatMap(j => davanti.map((n, i) => {
-      const [x, y, z, r] = padsA[n], a = angoli[i][j], c = Math.cos(a), sn = Math.sin(a);
-      return { p: new THREE.Vector3(x + c * r * .95, y + r * .28, z + sn * r * .85), d: new THREE.Vector3(c * .9, 1, sn * .9).normalize() };
+    // ogni germoglio nasce dalla punta di un rametto, così è sempre attaccato alla pianta:
+    // per ogni cuscinetto si scelgono i 2 rametti più rivolti verso l'esterno e verso chi guarda
+    const davanti = [0, 1, 2, 3, 6];
+    const scelti = davanti.map(n => {
+      const [x, , z] = padsA[n], fuori = new THREE.Vector3(x, 0, z + .6).normalize();
+      return puntiRametti.filter(q => q.pad === n)
+        .map(q => ({ q, voto: q.a.clone().sub(q.da).setY(0).normalize().dot(fuori) }))
+        .sort((a, b) => b.voto - a.voto).slice(0, 2).map(x => x.q);
+    });
+    const punte = [0, 1].flatMap(j => scelti.map(coppia => {
+      const { da, a } = coppia[j];
+      // il germoglio prosegue il rametto piegando verso l'alto, verso la luce
+      return { p: a.clone(), d: a.clone().sub(da).normalize().add(new THREE.Vector3(0, 1.3, 0)).normalize() };
     }));
     acero = pianta(f, soil, ring, {
-      setVaso: mettiVaso,
+      // il primo vaso (quello del salvataggio) si mette senza stelline
+      setVaso(id) { mettiVaso(id, vasoPronto); vasoPronto = true; },
+      scintille,
       g: tr,
       punte,
       aghi: false,
@@ -222,6 +236,45 @@ export function creaAlberi(world) {
   };
 }
 
+// Stelline dorate che girano attorno al vaso e salgono per un paio di secondi, mentre il vaso fa un saltello
+function creaScintille(parent, vaso) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 30);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.25, 'rgba(255,240,170,.9)'); g.addColorStop(1, 'rgba(255,210,90,0)');
+  x.fillStyle = g; x.beginPath();
+  // stella a quattro punte
+  for (let i = 0; i < 8; i++) { const a = i / 8 * PI * 2 - PI / 2, r = i % 2 ? 7 : 30; x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); }
+  x.fill();
+  const tex = new THREE.CanvasTexture(c), stelle = [];
+  for (let i = 0; i < 26; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: i % 3 ? 0xffe27a : 0xffffff, transparent: true, depthWrite: false }));
+    sp.visible = false; parent.add(sp); stelle.push({ sp, a: 0, r: 0, y: 0, v: 0, ritardo: 0 });
+  }
+  let t = -1;
+  return {
+    avvia() {
+      t = 0;
+      stelle.forEach((s, i) => Object.assign(s, { a: i / stelle.length * PI * 2 + Math.random() * .5, r: .85 + Math.random() * .4, y: .85 + Math.random() * .5, v: .25 + Math.random() * .25, ritardo: Math.random() * .7 }));
+    },
+    aggiorna(dt) {
+      if (t < 0) return;
+      t += dt;
+      const k = Math.min(1, t / .5);
+      vaso.scale.set(1 + .1 * Math.sin(PI * k), 1 + .16 * Math.sin(PI * k), 1 + .1 * Math.sin(PI * k));
+      for (const s of stelle) {
+        const tt = t - s.ritardo, vita = Math.min(1, Math.max(0, tt / 1.5));
+        s.sp.visible = tt > 0 && vita < 1;
+        if (!s.sp.visible) continue;
+        const a = s.a + tt * 1.2;
+        s.sp.position.set(Math.cos(a) * s.r, s.y + tt * s.v, Math.sin(a) * s.r * .75);
+        s.sp.scale.setScalar(.42 * Math.sin(PI * vita) * (1 + .2 * Math.sin(tt * 18)));
+        s.sp.material.opacity = Math.sin(PI * vita);
+      }
+      if (t > 2.4) { t = -1; vaso.scale.setScalar(1); stelle.forEach(s => { s.sp.visible = false; }); }
+    },
+  };
+}
+
 // Pianta da curare: chioma che si dirada, ingiallisce con la sete, si affloscia e perde foglie secche
 // quando soffre, e cambia con le stagioni.
 // f: chioma (foliage), soil: terriccio, ring: anello della sete; dati: punte, fuoco, potTop, colore()...
@@ -312,6 +365,7 @@ function pianta(f, soil, ring, dati) {
     },
     aggiorna(clock) {
       const dt = orologio === null ? 0 : Math.min(.05, clock - orologio); orologio = clock;
+      this.scintille?.aggiorna(dt);
       // più soffre, più foglie secche cadono (fino a 2 al secondo)
       const ritmo = Math.max(appassimento * 2, (this.thirst - .7) * 2);
       if (ritmo > 0 && visibili.length) {

@@ -26,7 +26,28 @@ const budGeo = new THREE.ConeGeometry(1, 2.2, 7).translate(0, 1.1, 0);
 const toccoGeo = new THREE.SphereGeometry(.28, 8, 6), toccoMat = new THREE.MeshBasicMaterial({ visible: false });
 const aloneGeo = new THREE.SphereGeometry(1, 16, 12);
 const fustoMat = toon({ color: FUSTO }), budMat = toon({ color: 0xe8dcb8 });
-const fogliaGeo = fogliaAcero(), steloMat = toon({ color: 0x9c3f33 }), budAceroMat = toon({ color: 0xb8483a });
+const fogliaGeo = fogliaAcero(), steloMat = toon({ color: 0xffffff, vertexColors: true }), budAceroMat = toon({ color: 0xb8483a });
+// colori dello stelo dell'acero dalla base alla punta: legno come i rametti, poi rosso tenero, poi rosa
+const STELO = [[0, new THREE.Color(0x857262)], [.3, new THREE.Color(0x8a4636)], [1, new THREE.Color(0xc4604c)]];
+
+// Stelo dell'acero lungo L: curvo con dolcezza (verso bx, bz), più grosso alla base e sottile in punta,
+// col colore che sfuma dal legno del rametto al rosso del getto nuovo
+function geoStelo(L, bx, bz) {
+  const pts = [];
+  for (let i = 0; i <= 4; i++) { const t = i / 4, b = L * .16 * Math.sin(PI * t * .8); pts.push(new THREE.Vector3(bx * b, L * t, bz * b)); }
+  const curva = new THREE.CatmullRomCurve3(pts), SEG = 10, RS = 6;
+  const geo = new THREE.TubeGeometry(curva, SEG, 1, RS, false), p = geo.attributes.position, col = [], c = new THREE.Vector3(), v = new THREE.Vector3(), k = new THREE.Color();
+  for (let i = 0; i <= SEG; i++) {
+    const t = i / SEG, r = .007 + (.0028 - .007) * Math.pow(t, .8);
+    curva.getPointAt(t, c);
+    const j = t < STELO[1][0] ? 0 : 1, f = (t - STELO[j][0]) / (STELO[j + 1][0] - STELO[j][0]);
+    k.copy(STELO[j][1]).lerp(STELO[j + 1][1], f);
+    for (let q = 0; q <= RS; q++) { const n = i * (RS + 1) + q; v.fromBufferAttribute(p, n).sub(c).multiplyScalar(r).add(c); p.setXYZ(n, v.x, v.y, v.z); col.push(k.r, k.g, k.b); }
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  return { geo, curva };
+}
 // coppie di foglie lungo lo stelo dell'acero: altezza (0..1), grandezza; ogni coppia è girata di 90° (foglie opposte)
 const COPPIE = [[.42, 1], [.72, .82], [.96, .55]];
 
@@ -47,7 +68,9 @@ export function creaGermogli(scene, albero) {
     const mat = toon({ color: VERDE_NUOVO, emissive: 0xfff2a0, emissiveIntensity: 0, side: THREE.DoubleSide });
     const ciuffi = [];
     if (!albero.aghi) {
-      const fusto = new THREE.Mesh(fustoGeo, steloMat); fusto.castShadow = true; o.add(fusto);
+      const fusto = new THREE.Mesh(new THREE.BufferGeometry(), steloMat); fusto.castShadow = true; o.add(fusto);
+      // ogni germoglio piega da un lato suo
+      const piega = hash(g.id * 13) * PI * 2;
       COPPIE.forEach(([k, grande], c) => {
         for (const lato of [0, PI]) {
           // perno sullo stelo: la foglia esce di lato e si alza verso la luce
@@ -61,7 +84,7 @@ export function creaGermogli(scene, albero) {
       const alone = new THREE.Mesh(aloneGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
       o.add(alone);
       albero.g.add(o);
-      return { o, fusto, ciuffi, punta, tocco, alone, mat, potabile: false, nato: performance.now() };
+      return { o, fusto, ciuffi, punta, tocco, alone, mat, piega, L: -1, potabile: false, nato: performance.now() };
     }
     const fusto = new THREE.Mesh(fustoGeo, fustoMat); fusto.castShadow = true; o.add(fusto);
     for (let i = 0; i < 5; i++) {
@@ -84,15 +107,21 @@ export function creaGermogli(scene, albero) {
     if (!albero.aghi) {
       // il germoglio dell'acero si allunga molto: da corto e chiuso a getto lungo con le foglie aperte
       L = .14 + .8 * lunghezza;
-      x.fusto.scale.set(.011, L, .011);
+      // lo stelo si ricostruisce solo quando è cresciuto davvero
+      if (Math.abs(L - x.L) > .004) {
+        const { geo, curva } = geoStelo(L, Math.cos(x.piega), Math.sin(x.piega));
+        x.fusto.geometry.dispose(); x.fusto.geometry = geo; x.curva = curva; x.L = L;
+      }
       // le foglie in alto si aprono dopo: piccole e ripiegate finché il germoglio è corto
       x.ciuffi.forEach(({ m, k, grande }) => {
         const apertura = smooth((lunghezza + .35 - k * .4) / .6);
-        m.position.y = L * k; m.scale.setScalar((.06 + .11 * lunghezza) * grande * (.3 + .7 * apertura));
+        x.curva.getPointAt(k, m.position); m.scale.setScalar((.06 + .11 * lunghezza) * grande * (.3 + .7 * apertura));
       });
-      x.punta.position.y = L; x.punta.scale.set(.012, .02, .012);
-      x.tocco.position.y = L * .6;
-      x.alone.position.y = L * .6; x.alone.scale.setScalar(.12 + L * .32);
+      // gemma in cima, nella direzione dello stelo
+      x.curva.getPointAt(1, x.punta.position); x.punta.quaternion.setFromUnitVectors(SU, x.curva.getTangentAt(1));
+      x.punta.scale.set(.008, .016, .008);
+      x.curva.getPointAt(.6, x.tocco.position);
+      x.alone.position.copy(x.tocco.position); x.alone.scale.setScalar(.12 + L * .32);
       return;
     }
     x.fusto.scale.set(.026, L, .026);
@@ -127,7 +156,10 @@ export function creaGermogli(scene, albero) {
   }
 
   const condivisi = new Set([fustoMat, toccoMat, budMat, steloMat, budAceroMat]);
-  function togli(o) { o.parent?.remove(o); o.traverse(c => { if (c.material && !condivisi.has(c.material)) c.material.dispose(); }); }
+  function togli(o) {
+    o.parent?.remove(o);
+    o.traverse(c => { if (c.material && !condivisi.has(c.material)) c.material.dispose(); if (c.material === steloMat) c.geometry.dispose(); });
+  }
 
   return {
     // allinea la scena alla vista del motore (gioco/stato.js)

@@ -225,14 +225,17 @@ export function corteccia(hex, { chiaro = .22, scuro = .38 } = {}) {
   return (cortecce[hex] = toon({ color: 0xffffff, map: tex }));
 }
 
-// Rametti sottili che dal ramo entrano nel cuscinetto di foglie: si intravedono tra le foglie
+// Rametti sottili che dal ramo entrano nel cuscinetto di foglie: si intravedono tra le foglie.
+// Restituisce le punte dei rametti ({ pad, da, a }), dove possono spuntare i germogli.
 export function rametti(parent, pads, mat, seme = 5) {
-  const rnd = sequenza(seme);
-  pads.forEach(([x, y, z, r]) => {
+  const rnd = sequenza(seme), punte = [];
+  pads.forEach(([x, y, z, r], pad) => {
     for (let i = 0; i < 4; i++) {
       const a = rnd() * PI * 2, d = r * (.45 + rnd() * .4);
       const p0 = [x * .9, y - r * .18, z * .9], p2 = [x + Math.cos(a) * d, y + r * .05, z + Math.sin(a) * d * .9];
       tube([p0, [(p0[0] + p2[0]) / 2, y - r * .02, (p0[2] + p2[2]) / 2], p2], .022, .008, mat, parent, 6);
+      punte.push({ pad, da: new THREE.Vector3(...p0), a: new THREE.Vector3(...p2) });
     }
   });
+  return punte;
 }
