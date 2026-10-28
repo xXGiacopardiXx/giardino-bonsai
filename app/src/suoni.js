@@ -8,10 +8,13 @@ let ctx = null, master = null, rumore = null;
 let attivi = (() => { try { return localStorage.getItem(CHIAVE) !== 'no'; } catch (e) { return true; } })();
 
 // da chiamare a ogni tocco: la prima volta crea l'audio, poi lo riprende se il telefono l'ha sospeso
+// (o interrotto, per esempio dopo una telefonata)
 export function sblocca() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
+    // iPhone: senza questo, con il telefono in modalità silenziosa il gioco resta muto
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* telefoni più vecchi */ }
     ctx = new AC();
     master = ctx.createGain(); master.gain.value = attivi ? 1 : 0; master.connect(ctx.destination);
     // due secondi di rumore bianco, da cui nascono acqua, vento, fruscio e forbici
@@ -20,7 +23,12 @@ export function sblocca() {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     avviaVento();
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state !== 'running') {
+    ctx.resume();
+    // un suono vuoto dentro il tocco: è quello che su iPhone sblocca davvero l'audio
+    const vuoto = ctx.createBufferSource(); vuoto.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    vuoto.connect(ctx.destination); vuoto.start();
+  }
 }
 
 export const suoniAttivi = () => attivi;

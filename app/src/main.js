@@ -31,8 +31,10 @@ THREE.ColorManagement.enabled = false;
 
 // Su iPhone il pizzico non deve ingrandire la pagina, solo la scena
 document.addEventListener('gesturestart', e => e.preventDefault());
-// l'audio del telefono si sblocca solo con un tocco
-document.addEventListener('pointerdown', () => { suoni.sblocca(); musica.avvia(); }, true);
+// l'audio del telefono si sblocca solo con un tocco; Safari accetta lo sblocco solo da alcuni eventi,
+// per questo li ascoltiamo tutti
+const sbloccaAudio = () => { suoni.sblocca(); musica.avvia(); };
+['pointerdown', 'touchend', 'click'].forEach(ev => document.addEventListener(ev, sbloccaAudio, true));
 
 const screenEl = document.getElementById('screen'), canvas = document.getElementById('c');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -147,7 +147,7 @@ function suona(t) {
   if (passo === 0) stagione = nuovaStagione;  // la stagione cambia solo all'inizio di un giro
   const accordi = GIRI[stagione];
   const battuta = Math.floor(passo / 8), k = passo % 8, accordo = accordi[battuta];
-  const umano = () => (Math.random() - .5) * .018;
+  const umano = () => Math.random() * .012;  // solo in avanti: una nota nel passato fermerebbe la musica
   if (passo === 0) {
     // ogni tre giri: melodia nuova, poi la stessa ripetuta, poi solo accompagnamento
     const fase = giro % 3;
@@ -169,7 +169,7 @@ function suona(t) {
 function programma() {
   if (!attiva || ctx.state !== 'running') return;
   const ora = ctx.currentTime;
-  if (prossimo < ora) prossimo = ora + .1;  // dopo una pausa riparte da adesso
+  if (prossimo < ora + .05) prossimo = ora + .1;  // all'inizio e dopo una pausa riparte da adesso
   while (prossimo < ora + .6) { suona(prossimo); prossimo += OTTAVO; }
 }
 
