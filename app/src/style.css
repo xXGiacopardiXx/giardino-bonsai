@@ -186,5 +186,18 @@ button{touch-action:manipulation}
 /* pulsante per accendere e spegnere i suoni, sotto i Semi */
 .suoni-b{all:unset;cursor:pointer;position:absolute;right:3.5cqw;top:calc(var(--top) + 15.4cqw);width:9cqw;height:9cqw;border-radius:50%;display:grid;place-items:center;background:linear-gradient(var(--cream),var(--cream-2));border:.55cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);box-sizing:border-box}
 .musica-b{top:calc(var(--top) + 26.4cqw)}
+.parere-b{top:calc(var(--top) + 37.4cqw)}
+/* il tuo parere (fase 6): stesso pannello del negozio */
+.parere-dom{display:flex;align-items:center;justify-content:space-between;gap:2cqw;margin:0 0 2.2cqw}
+.parere-q{font:600 3.5cqw/1.2 var(--display);color:var(--ink)}
+.parere-r{display:flex;gap:1cqw;flex:none}
+.parere-foglia{all:unset;cursor:pointer;width:7.4cqw;height:7.4cqw;display:grid;place-items:center}
+.parere-foglia svg{width:100%;height:100%}
+.parere-foglia.on{animation:pop .25s ease-out}
+.parere-scelta{all:unset;cursor:pointer;padding:1.6cqw 2.8cqw;border-radius:2.6cqw;background:#fffaf0;border:.5cqw solid var(--ink);box-shadow:0 .6cqw 0 var(--ink);font:700 3.3cqw/1 var(--display);color:var(--ink)}
+.parere-scelta.on{background:linear-gradient(#9bd8ff,#3f92d6);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
+.parere-testo{display:block;width:100%;box-sizing:border-box;margin-top:1cqw;padding:2.4cqw;border-radius:3cqw;border:.5cqw solid var(--ink);background:#fffaf0;font:500 3.6cqw/1.3 var(--display);color:var(--ink);resize:none}
+.parere-invia{background:linear-gradient(#a5e36a,#58a32b)}
+.guida-avanti.parere-dopo{background:linear-gradient(#d9cdb6,#b3a385)}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}

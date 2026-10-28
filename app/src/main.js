@@ -22,7 +22,11 @@ import { creaNegozio } from './negozio.js';
 import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
-import { GIORNO } from './gioco/tempo.js';
+import { creaParere, mostraInvito, tempoDiInvito, registraErrori } from './parere.js';
+import { GIORNO, giornoLocale } from './gioco/tempo.js';
+
+// l'ultimo errore resta sul telefono e finisce nel parere dei tester
+registraErrori();
 import { nuovoStato, avanza, annaffia, pota, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
@@ -181,8 +185,26 @@ function avvia() {
   }
   musicaBtn.addEventListener('click', () => { musica.attivaMusica(!musica.musicaAttiva()); mostraMusica(); });
   mostraMusica();
+
+  // --- Il tuo parere (fase 6: prova con gli amici) ---
+  const parere = creaParere({
+    info: () => {
+      const v = vista(stato);
+      return [`Partita: anno ${v.anno}, ${v.nomeStagione} giorno ${v.giornoStagione} di 7, ${v.serie} giorni di fila, ${v.semi} Semi`, `Acero: ${v.nomeFase}`];
+    },
+    avviso: (t) => ui.toast(t, 4000),
+  });
+  document.getElementById('parere').addEventListener('click', () => parere.apri());
+  // dal secondo giorno di gioco, una volta sola, un invito gentile (mai sopra la guida o un pannello)
+  function forseInvita() {
+    const libero = !guida.attiva && !negozio?.aperto && !parere.aperto;
+    if (tempoDiInvito(giornoLocale(Date.now()), libero)) setTimeout(() => mostraInvito(() => parere.apri()), 4000);
+  }
+  forseInvita();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') forseInvita(); });
+
   // un piccolo "pop" a ogni pulsante dell'interfaccia
-  document.addEventListener('click', (e) => { if (e.target.closest('.tool, .mp, .vaso-b, .negozio-x, .negozio-vai, .guida-avanti, .suoni-b, .plus, .prova button')) suoni.tocco(); });
+  document.addEventListener('click', (e) => { if (e.target.closest('.tool, .mp, .vaso-b, .negozio-x, .negozio-vai, .guida-avanti, .suoni-b, .plus, .parere-foglia, .parere-scelta, .prova button')) suoni.tocco(); });
 
   // ritorno dopo una lunga assenza: nessun rimprovero (game-design.md, sezione 6.2)
   if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere.', 4500);
