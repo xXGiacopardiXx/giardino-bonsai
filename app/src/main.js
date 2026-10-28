@@ -205,7 +205,7 @@ function avvia() {
   negozio = creaNegozio({
     compra(id) {
       const esito = compra(stato, id);
-      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni annaffiando ogni giorno.`); return; }
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
       if (esito.esito !== 'ok') return;
       salva(stato); disegna(); suoni.magia();
       negozio.chiudi();
@@ -340,7 +340,7 @@ function avvia() {
     salva(stato); disegna();
     acero.filo.avvolgi(i); suoni.filo();
     const r = vista(stato).rami[i];
-    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
     ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
       : r.giorniAllaPresa ? `Filo avvolto! Crescendo, il ramo prenderà questa forma in circa ${giorni(r.giorniAllaPresa)}.`
       : 'Filo avvolto! Il ramo crescerà di nuovo quando la pianta starà meglio: intanto il filo lo tiene.', 3800);
@@ -396,7 +396,7 @@ function avvia() {
     guida.evento('potato');
     salva(stato);
     disegna();
-    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
     ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
       : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
     // finiti i germogli da tagliare, la telecamera torna indietro da sola

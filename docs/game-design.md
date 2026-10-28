@@ -172,7 +172,8 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 - **Quotidiane:** per esempio annaffiare una pianta, fare l'azione di stagione.
 - **Settimanali:** per esempio rinvasare nella stagione giusta, eliminare i parassiti in tempo.
 - **Di lungo periodo:** completare uno stile.
-- La potatura **non completa sfide da sola**: è lo strumento per raggiungere lo stile.
+- La potatura **non completa sfide da sola**: è lo strumento per raggiungere lo stile. Unica eccezione, la sfida del giorno "Pota un germoglio": è una cimatura leggera dei germogli nuovi, che non fa male alla pianta.
+- **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", l'azione tipica della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 5 Semi.
 
 ### 7.2 Serie di giorni consecutivi
 
@@ -186,7 +187,8 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 | Come si guadagna | Semi |
 |---|---|
-| Acqua del giorno | 5 |
+| Sfida del giorno (acqua, potatura o filo) | 5 |
+| Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo | 20 |
 | Rinvaso nella stagione giusta | 40 |

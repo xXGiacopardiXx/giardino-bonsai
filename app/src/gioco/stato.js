@@ -7,7 +7,13 @@ import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTr
 export const VERSIONE = 5;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, acqua: 5, serie7: 50, filo: 10 };
+export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10 };
+
+// Sfida del giorno (sezione 7.1): sempre fattibile. Si sceglie la prima volta che si apre il gioco
+// in quel giorno, guardando la pianta in quel momento: annaffiare se il terriccio è asciutto,
+// altrimenti potare un germoglio (ogni giorno ne spunta uno); in inverno, a giorni alterni,
+// mettere il filo, l'azione tipica della stagione (sezione 4.1).
+export const SFIDE = { acqua: 'Annaffia l\'acero', pota: 'Pota un germoglio', filo: 'Metti il filo a un ramo' };
 
 // Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
 // Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
@@ -72,7 +78,8 @@ export function nuovoStato(ora) {
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
-    oggi: { giorno: giornoLocale(ora), acqua: false },
+    // si comincia annaffiando, perché la pianta ha già sete
+    oggi: { giorno: giornoLocale(ora), acqua: false, sfida: { tipo: 'acqua', fatta: false } },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
   };
 }
@@ -158,6 +165,7 @@ export function avanza(stato, ora) {
 
   const oggi = giornoLocale(ora);
   if (stato.oggi.giorno !== oggi) nuovoGiorno(stato, ora);
+  if (!stato.oggi.sfida) scegliSfida(stato, ora);
   // serie interrotta: si dimezza una volta sola invece di azzerarsi (sezione 7.2)
   const s = stato.serie;
   if (s.ultimoGiorno && !s.interrotta && giorniTra(s.ultimoGiorno, oggi) > 1) {
@@ -170,9 +178,30 @@ export function avanza(stato, ora) {
 // Inizio di un giorno del calendario: la sfida riparte e spunta almeno un germoglio da cimare
 // (due in primavera), se la pianta non è sotto stress
 function nuovoGiorno(stato, ora) {
-  stato.oggi = { giorno: giornoLocale(ora), acqua: false };
+  const a = stato.albero;
   const { stagione } = calendario(stato.inizio, ora);
-  if (vigore(stagione, stato.albero.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(stato.albero);
+  if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
+  // la sfida si sceglie quando il giocatore vede il giorno (alla fine di avanza)
+  stato.oggi = { giorno: giornoLocale(ora), acqua: false, sfida: null };
+}
+
+function scegliSfida(stato, ora) {
+  const a = stato.albero;
+  const { stagione, giornoStagione } = calendario(stato.inizio, ora);
+  const tipo = a.sete >= SETE_PER_ANNAFFIARE ? 'acqua'
+    : stagione === 3 && giornoStagione % 2 === 0 ? 'filo'
+    : a.germogli.some(g => g.lunghezza >= POTABILE_DA) ? 'pota' : 'filo';
+  // salvataggi di prima della sfida variabile: se oggi ha già annaffiato, la sfida era l'acqua ed è fatta
+  stato.oggi.sfida = stato.oggi.acqua ? { tipo: 'acqua', fatta: true } : { tipo, fatta: false };
+}
+
+// Un'azione completa la sfida del giorno se è quella richiesta. Restituisce i Semi guadagnati.
+function completaSfida(stato, tipo) {
+  const s = stato.oggi.sfida;
+  if (!s || s.fatta || s.tipo !== tipo) return 0;
+  s.fatta = true;
+  stato.semi += SEMI.sfida;
+  return SEMI.sfida;
 }
 
 // Un'azione di cura conta per la serie una volta al giorno. Restituisce i Semi del bonus.
@@ -190,25 +219,26 @@ export function annaffia(stato, ora) {
   const a = stato.albero;
   if (a.sete < SETE_PER_ANNAFFIARE) return { esito: 'umido', semi: 0, bonusSerie: 0 };
   a.sete = 0; a.ultimaAcqua = ora;
-  let semi = 0;
-  if (!stato.oggi.acqua) { semi = SEMI.acqua; stato.semi += semi; stato.oggi.acqua = true; }
+  stato.oggi.acqua = true;
+  const semi = completaSfida(stato, 'acqua');
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', semi, bonusSerie };
 }
 
 // Taglia un germoglio. esito: 'ok', 'piccolo' (non è ancora cresciuto abbastanza) o 'nessuno'.
-// La potatura conta per la serie ma non dà Semi da sola (sezione 7.1).
+// La potatura conta per la serie; dà Semi solo se la sfida del giorno è potare (sezione 7.1).
 export function pota(stato, ora, id) {
   avanza(stato, ora);
   const a = stato.albero, i = a.germogli.findIndex(g => g.id === id);
-  if (i < 0) return { esito: 'nessuno', gemme: 0, bonusSerie: 0 };
+  if (i < 0) return { esito: 'nessuno', gemme: 0, semi: 0, bonusSerie: 0 };
   const g = a.germogli[i];
-  if (g.lunghezza < POTABILE_DA) return { esito: 'piccolo', gemme: 0, bonusSerie: 0 };
+  if (g.lunghezza < POTABILE_DA) return { esito: 'piccolo', gemme: 0, semi: 0, bonusSerie: 0 };
   a.germogli.splice(i, 1);
   const gemme = Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
   for (let k = 0; k < gemme; k++) a.gemme.push({ punta: g.punta, crescita: 0 });
+  const semi = completaSfida(stato, 'pota');
   const bonusSerie = registraCura(stato, ora);
-  return { esito: 'ok', gemme, bonusSerie };
+  return { esito: 'ok', gemme, semi, bonusSerie };
 }
 
 // Avvolge il filo su un ramo e lo piega (piega da -1 a 1). Se c'era già un filo, lo rifà da capo.
@@ -216,9 +246,10 @@ export function pota(stato, ora, id) {
 export function mettiFilo(stato, ora, ramo, piega) {
   avanza(stato, ora);
   const r = stato.albero.rami[ramo];
-  if (!r) return { esito: 'nessuno', bonusSerie: 0 };
+  if (!r) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
   r.filo = { piega: Math.max(-1, Math.min(1, piega)), presa: 0, oltre: 0 };
-  return { esito: 'ok', bonusSerie: registraCura(stato, ora) };
+  const semi = completaSfida(stato, 'filo');
+  return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
 // Toglie il filo. Il ramo resta piegato quanto ha preso: tolto presto, torna in parte indietro.
@@ -302,7 +333,8 @@ export function vista(stato) {
     puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
     // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,
-    // sfida del giorno "annaffia": compare quando la pianta ha sete, resta spuntata dopo l'acqua
-    sfida: haSete || stato.oggi.acqua ? { fatta: stato.oggi.acqua && !haSete } : null,
+    annaffiatoOggi: stato.oggi.acqua,
+    // sfida del giorno: tipo ('acqua', 'pota', 'filo'), testo da mostrare e se è già fatta
+    sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: SFIDE[stato.oggi.sfida.tipo] } : null,
   };
 }

@@ -58,6 +58,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
       if (!semiAnimati && !annaffiando) { semiMostrati = v.semi; seedsEl.textContent = fmt(v.semi); }
       $('serie').textContent = v.serie;
 
+      // la sfida del giorno cambia: acqua, potatura o filo (gioco/stato.js, SFIDE)
+      if (v.sfida) questEl.querySelector('.qd').textContent = v.sfida.testo;
       // sfida completata: la barra si riempie, la scritta si cancella e il banner esce di scena
       if (!v.sfida?.fatta) {
         sfidaChiusa = false;
@@ -86,7 +88,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
       if (!annaffiando) {
         $('alert').classList.toggle('hide', !v.haSete);
         $('alert').style.display = v.haSete ? '' : 'none';
-        $('ok').classList.toggle('show', !v.haSete && v.sfida?.fatta === true);
+        $('ok').classList.toggle('show', !v.haSete && v.annaffiatoOggi);
         $('t-water').classList.toggle('needs', v.haSete);
       }
       // Pota chiede attenzione solo se oggi non c'è ancora stata un'azione di cura e la pianta non ha sete

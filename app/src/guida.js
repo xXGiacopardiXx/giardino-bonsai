@@ -7,7 +7,7 @@
 const PASSI = [
   { testo: 'Benvenuto nel tuo giardino! Questo è il tuo acero giapponese: te ne prenderai cura un giorno alla volta.' },
   { testo: 'Ha sete: tocca Acqua per annaffiarlo.', bersaglio: '#t-water', attende: 'annaffiato', salta: v => !v.puoAnnaffiare },
-  { testo: 'Ogni giorno l\'acqua ti regala Semi. Con i Semi compri vasi nuovi nel Negozio.', bersaglio: '.pill.seeds' },
+  { testo: 'Ogni giorno la sfida in alto ti regala Semi. Con i Semi compri vasi nuovi nel Negozio.', bersaglio: '.pill.seeds' },
   { testo: 'Ora tocca Pota e taglia un germoglio che brilla.', bersaglio: '#t-prune', attende: 'potato', salta: v => !v.puoPotare },
   { testo: 'Taglio perfetto! Sotto il taglio spunteranno nuove gemme e la chioma diventerà più fitta.' },
   { testo: 'Quando vuoi, tocca l\'acero: si apre una tendina con Acqua, Pota e Aspetto, dove scegli il vaso.', bersaglio: '#tag-acero .plate' },

@@ -22,8 +22,8 @@ test('una partita nuova parte con la pianta assetata e si può annaffiare', () =
   assert.equal(v.semi, SEMI.iniziali);
   const r = annaffia(s, T0 + ORA);
   assert.equal(r.esito, 'ok');
-  assert.equal(r.semi, SEMI.acqua);
-  assert.equal(s.semi, SEMI.iniziali + SEMI.acqua);
+  assert.equal(r.semi, SEMI.sfida);
+  assert.equal(s.semi, SEMI.iniziali + SEMI.sfida);
   assert.equal(vista(s).haSete, false);
   assert.equal(s.serie.giorni, 1);
 });
@@ -33,7 +33,7 @@ test('con il terriccio ancora umido l\'acqua non viene assorbita', () => {
   annaffia(s, T0);
   const r = annaffia(s, T0 + 2 * ORA);
   assert.equal(r.esito, 'umido');
-  assert.equal(s.semi, SEMI.iniziali + SEMI.acqua);
+  assert.equal(s.semi, SEMI.iniziali + SEMI.sfida);
 });
 
 test('in primavera la sete torna dopo poco più di un giorno, in inverno dopo due', () => {
@@ -102,7 +102,7 @@ test('i Semi dell\'acqua si danno una volta al giorno', () => {
   s.albero.sete = 1;
   assert.equal(annaffia(s, T0 + 3 * ORA).semi, 0);
   s.albero.sete = 1;
-  assert.equal(annaffia(s, dopo(1)).semi, SEMI.acqua);
+  assert.equal(annaffia(s, dopo(1)).semi, SEMI.sfida);
 });
 
 test('una partita nuova ha due germogli da cimare subito', () => {
@@ -280,4 +280,35 @@ test('un salvataggio della versione 4 riceve i rami da legare', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).rami.length, RAMI);
+});
+
+test('la sfida del giorno si può sempre fare, in ogni stagione', () => {
+  const s = nuovoStato(T0);
+  const tipi = new Set();
+  // un giocatore che passa una sera e la mattina dopo, e fa sempre la sfida
+  for (let g = 0; g < 56; g++) {
+    const ora = new Date(2026, 9, 26 + g, g % 2 ? 9 : 20).getTime();
+    const v = vista(avanza(s, ora));
+    tipi.add(v.sfida.tipo);
+    if (v.sfida.tipo === 'acqua') assert.ok(v.puoAnnaffiare, `giorno ${g}: acqua ma terriccio umido`);
+    if (v.sfida.tipo === 'pota') assert.ok(v.puoPotare, `giorno ${g}: pota ma niente da potare`);
+    const semi = s.semi;
+    if (v.sfida.tipo === 'acqua') annaffia(s, ora);
+    else if (v.sfida.tipo === 'pota') pota(s, ora, v.germogli.find(x => x.potabile).id);
+    else mettiFilo(s, ora, g % RAMI, 0.3);
+    assert.ok(vista(s).sfida.fatta, `giorno ${g}: sfida non completata`);
+    assert.ok(s.semi >= semi + SEMI.sfida);
+  }
+  assert.deepEqual([...tipi].sort(), ['acqua', 'filo', 'pota']);
+});
+
+test('se il terriccio è ancora umido la sfida è potare, e dà i Semi', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, new Date(2026, 9, 26, 21).getTime());
+  const mattina = new Date(2026, 9, 27, 8).getTime();
+  const v = vista(avanza(s, mattina));
+  assert.equal(v.sfida.tipo, 'pota');
+  const semi = s.semi;
+  assert.equal(pota(s, mattina, v.germogli.find(x => x.potabile).id).semi, SEMI.sfida);
+  assert.equal(s.semi, semi + SEMI.sfida);
 });
