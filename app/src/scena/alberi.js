@@ -110,16 +110,18 @@ export function creaAlberi(world) {
     const padsA = [[-1.0, 1.08, .1, .56], [.95, 1.38, -.05, .56], [-.45, 1.82, .2, .5], [.2, 2.0, -.1, .6], [.2, 1.55, -.55, .46], [-.5, 1.42, -.3, .42], [.45, 1.75, .3, .44]];
     // rami da legare col filo (l'ordine è quello di RAMI nel motore): [ramo qui sopra, cuscinetto che porta]
     // ognuno ha un gruppo che ruota attorno all'attacco sul tronco, con il ramo e i suoi rametti
-    const LEGABILI = [[0, 0], [1, 1], [2, 2], [5, 6]];
+    // dopo i primi quattro, il ramo dietro e la cima: si aggiungono in fondo per non cambiare i salvataggi
+    // altezza (e spostamento a lato) del pallino sul cuscinetto: cima più in alto, ramo dietro spostato a sinistra, per non sovrapporli
+    const LEGABILI = [[0, 0, .5], [1, 1, .5], [2, 2, .5], [5, 6, .5], [3, 4, .2, -.3], [4, 3, .95]];
     const gruppoRamo = {}, gruppoPad = {};
     for (const [b, pad] of LEGABILI) { const g = new THREE.Group(); g.matrixAutoUpdate = false; tr.add(g); gruppoRamo[b] = gruppoPad[pad] = g; }
     ramiA.forEach((p, b) => tube(p, .075, .022, legnoA, gruppoRamo[b] ?? tr, 10));
     const f = foliage(tr, padsA,
       { palette: ACERO.autunno, density: 72, size: .37, flat: .78, detail: 1, geo: ciuffoFoglie({ n: 7, lobi: 5, incavo: .32, nucleo: .1, grandezza: .74 }) });
     const puntiRametti = rametti(pad => gruppoPad[pad] ?? tr, padsA, legnoA, 21);
-    const filo = creaFilo(LEGABILI.map(([b, pad]) => {
+    const filo = creaFilo(LEGABILI.map(([b, pad, alto, lato = 0]) => {
       const [x, y, z, r] = padsA[pad];
-      return { gruppo: gruppoRamo[b], punti: ramiA[b], r0: .075, r1: .022, cima: new THREE.Vector3(x, y + r * .5, z) };
+      return { gruppo: gruppoRamo[b], punti: ramiA[b], r0: .075, r1: .022, cima: new THREE.Vector3(x + lato, y + r * alto, z) };
     }));
     // anello azzurro a terra, attorno al tavolo: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.38, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));

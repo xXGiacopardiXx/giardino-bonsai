@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 5;
+export const VERSIONE = 6;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10 };
@@ -58,7 +58,7 @@ const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
 // Filo (sezione 4.2): si avvolge un ramo e lo si piega; crescendo il ramo "prende" la posizione.
 // Poi il filo va tolto: se resta troppo a lungo segna la corteccia (segno che sparisce piano).
 // piega: da -1 (ramo abbassato al massimo) a 1 (alzato al massimo); l'angolo vero lo decide la scena.
-export const RAMI = 4;                 // rami dell'acero che si possono legare (li disegna la scena)
+export const RAMI = 6;                 // rami principali dell'acero, tutti legabili (li disegna la scena)
 const PRESA_AL_GIORNO = 0.25;          // in estate: il ramo prende la forma in 4 giorni (più in fretta in primavera)
 const TOLLERANZA_FILO = 2;             // giorni dopo la presa in cui il filo non fa ancora danni
 const SEGNO_AL_GIORNO = 0.25;          // poi il segno sulla corteccia si fa pieno in 4 giorni
@@ -101,6 +101,8 @@ export function migra(stato) {
   // chi stava già giocando conosce i comandi: niente guida (si può rivedere dal pannello di prova)
   if (stato.versione === 3) { stato.guida = { fatta: true }; stato.versione = 4; }
   if (stato.versione === 4) { stato.albero.rami = ramiNuovi(); stato.versione = 5; }
+  // ora si legano tutti i rami principali: si aggiungono quelli che mancano, senza toccare gli altri
+  if (stato.versione === 5) { while (stato.albero.rami.length < RAMI) stato.albero.rami.push({ piega: 0, filo: null, segno: 0 }); stato.versione = 6; }
   return stato.versione === VERSIONE ? stato : null;
 }
 

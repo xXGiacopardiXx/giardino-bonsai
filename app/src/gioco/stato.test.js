@@ -312,3 +312,14 @@ test('se il terriccio è ancora umido la sfida è potare, e dà i Semi', () => {
   assert.equal(pota(s, mattina, v.germogli.find(x => x.potabile).id).semi, SEMI.sfida);
   assert.equal(s.semi, semi + SEMI.sfida);
 });
+
+test('un salvataggio della versione 5 riceve i rami nuovi e tiene il filo già messo', () => {
+  const vecchio = nuovoStato(T0);
+  mettiFilo(vecchio, T0, 1, -0.5);
+  vecchio.versione = 5; vecchio.albero.rami = vecchio.albero.rami.slice(0, 4);
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).rami.length, RAMI);
+  assert.equal(vista(s).rami[1].filo, true);
+  assert.equal(mettiFilo(s, T0, RAMI - 1, 0.4).esito, 'ok');
+});

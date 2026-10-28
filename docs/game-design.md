@@ -76,7 +76,7 @@ Su un bonsai vero potare ogni giorno è dannoso. Per questo la serie quotidiana 
 
 #### 4.2.1 Come funziona nell'app (acero)
 
-- **Rami:** sull'acero si possono legare 4 rami, i più visibili (i due bassi, quello in alto a sinistra e quello davanti a destra). Con il ramo si muovono le sue foglie, i rametti e i germogli.
+- **Rami:** sull'acero si possono legare tutti e 6 i rami principali: i due bassi, quello in alto a sinistra, quello davanti a destra, quello dietro e la cima. Con il ramo si muovono le sue foglie, i rametti e i germogli. I pallini sono disposti in modo da non sovrapporsi (quello della cima più in alto, quello del ramo dietro spostato a sinistra).
 - **Gesto:** Filo (nella barra o nella tendina dell'acero) avvicina la telecamera e mostra un pallino di rame sulla punta di ogni ramo. Trascinandolo su o giù il ramo si alza o si abbassa (si abbassa di più: come nei bonsai veri, i rami bassi danno un'aria antica) e una spirale di filo di rame si avvolge sul ramo. Mettere il filo conta come cura del giorno per la serie.
 - **Presa:** il ramo prende la forma crescendo, con lo stesso ritmo dei germogli: circa 3 giorni in primavera, 4 in estate, 7 in autunno, 8 in inverno; sotto stress medio non cresce e il filo lo tiene fermo. Toccando il pallino si vede quanto manca.
 - **Togliere il filo:** a forma presa il pallino diventa verde e sul pulsante Filo compare il "!". Toccandolo si toglie il filo: il ramo resta piegato e arrivano 10 Semi. Si può togliere anche prima (con un secondo tocco), ma il ramo torna indietro in proporzione a quanto non ha ancora preso.
