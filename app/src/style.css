@@ -185,5 +185,6 @@ button{touch-action:manipulation}
 
 /* pulsante per accendere e spegnere i suoni, sotto i Semi */
 .suoni-b{all:unset;cursor:pointer;position:absolute;right:3.5cqw;top:calc(var(--top) + 15.4cqw);width:9cqw;height:9cqw;border-radius:50%;display:grid;place-items:center;background:linear-gradient(var(--cream),var(--cream-2));border:.55cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);box-sizing:border-box}
+.musica-b{top:calc(var(--top) + 26.4cqw)}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
