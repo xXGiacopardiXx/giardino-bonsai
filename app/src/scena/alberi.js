@@ -179,6 +179,17 @@ export function creaAlberi(world) {
   // per la cura di pino e ginepro (scena/cura.js): i ciuffi di ogni cuscinetto letti dalla chioma,
   // il gruppo che li porta e il terriccio dove cadono i granuli di concime
   const cure = {};
+  // pino e ginepro con la loro sete: terriccio che schiarisce, anello azzurro a terra, aghi che
+  // ingialliscono (colori): come l'acero, ma più lenti (gioco/stato.js, SETE_SPECIE)
+  function assetabile(cura, { t, soil, raggioAnello, annaffiatoio, colora }) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(raggioAnello, raggioAnello + .1, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
+    ring.rotation.x = -PI / 2; ring.position.y = .025; ring.visible = false; t.add(ring);
+    return Object.assign(cura, {
+      ring, thirst: 0, soilDry: 0, annaffiatoio,
+      setThirst(v) { this.thirst = v; colora(v); },
+      setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
+    });
+  }
   function curabile(f, tr, terra, raggioTerra) {
     const m4 = new THREE.Matrix4();
     const forme = f.pad.map((_, i) => {
@@ -196,7 +207,7 @@ export function creaAlberi(world) {
     mesh(flatGeo(new THREE.CylinderGeometry(.85, .98, .26, 9)), M(0x9d998d), t, 0, .13, 0);
     mesh(new THREE.BoxGeometry(1.36, .3, .9), M(0x8a573a), t, 0, .41, 0);
     mesh(new THREE.BoxGeometry(1.44, .06, .98), M(0x76482f), t, 0, .57, 0);
-    mesh(new THREE.BoxGeometry(1.28, .04, .82), M(0x4a3628), t, 0, .59, 0);
+    const soilG = mesh(new THREE.BoxGeometry(1.28, .04, .82), toon({ color: SOIL_WET.clone() }), t, 0, .59, 0);
     [[-.55, -.33], [.55, -.33], [-.55, .33], [.55, .33]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.14, .06, .14), M(0x76482f), t, x, .27, z));
     for (let i = 0; i < 6; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .13), 1), M(0x6a9a40), t, R(-.5, .5), .61, R(-.3, .3)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, .58, 0); t.add(tr);
@@ -211,15 +222,28 @@ export function creaAlberi(world) {
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     rametti(tr, padsG, legnoG, 13);
     trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
-    cure.ginepro = curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6);
+    cure.ginepro = assetabile(curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6), {
+      t, soil: soilG, raggioAnello: 1.08, annaffiatoio: new THREE.Vector3(.95, 1.1, .75),
+      colora(v) { seteG = v; coloraG(); },
+    });
     // d'inverno il ginepro cinese prende un colore bronzeo, che torna verde a fine stagione
     const bronzo = fg.toni.map(x => new THREE.Color(['#4f4a2e', '#5e5432', '#6e5e36', '#7d6a3c', '#8b7443', '#9a7f4c'][Math.round(x * 5)]));
     const c = new THREE.Color();
+    // con la sete le squame si spengono verso un giallo-bruno, a chiazze (non tutte insieme)
+    const rs = sequenza(53), seccoG = fg.toni.map(() => rs() < .5 ? new THREE.Color(['#8f8a4a', '#a08a4c', '#7d7444'][Math.floor(rs() * 3)]) : null);
+    let inverno = 0, seteG = 0;
+    function coloraG() {
+      for (let i = 0; i < fg.healthy.length; i++) {
+        c.copy(fg.healthy[i]).lerp(bronzo[i], inverno * .75);
+        if (seccoG[i]) c.lerp(seccoG[i], seteG * .85);
+        fg.m.setColorAt(i, c);
+      }
+      fg.m.instanceColor.needsUpdate = true;
+    }
     ginepro = {
       setStagione(p) {
-        const k = Math.min(1, Math.max(0, (p - 3) / .35)) * (1 - Math.min(1, Math.max(0, (p - 3.75) / .25)));
-        for (let i = 0; i < fg.healthy.length; i++) fg.m.setColorAt(i, c.copy(fg.healthy[i]).lerp(bronzo[i], k * .75));
-        fg.m.instanceColor.needsUpdate = true;
+        inverno = Math.min(1, Math.max(0, (p - 3) / .35)) * (1 - Math.min(1, Math.max(0, (p - 3.75) / .25)));
+        coloraG();
       },
     };
   }
@@ -231,7 +255,7 @@ export function creaAlberi(world) {
     mesh(new THREE.BoxGeometry(.18, .06, 1.15), M(0x7a4f2c), t, -.6, .02, 0); mesh(new THREE.BoxGeometry(.18, .06, 1.15), M(0x7a4f2c), t, .6, .02, 0);
     mesh(new THREE.CylinderGeometry(.62, .5, .42, 36), M(0xc27a4a), t, 0, .41, 0);
     mesh(new THREE.CylinderGeometry(.66, .66, .07, 36), M(0xae6a3d), t, 0, .6, 0);
-    mesh(new THREE.CylinderGeometry(.6, .6, .04, 36), M(0x4a3628), t, 0, .62, 0);
+    const soilP = mesh(new THREE.CylinderGeometry(.6, .6, .04, 36), toon({ color: SOIL_WET.clone() }), t, 0, .62, 0);
     const tr = new THREE.Group(); tr.position.set(0, .6, 0); t.add(tr);
     // corteccia del pino nero: scura, a placche
     const legnoP = corteccia(0x5e4434, { chiaro: .35, scuro: .45 });
@@ -239,12 +263,20 @@ export function creaAlberi(world) {
     for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2 + .7; tube([[0, .06, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .36, -.03, Math.sin(a) * .36]], .07, .02, legnoP, tr, 6); }
     [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]].forEach(p => tube(p, .07, .02, legnoP, tr, 10));
     const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
-    // i colori della sete restano preparati (la sequenza col seme non deve cambiare) ma per ora non si usano
+    // i colori della sete (stress) si usano quando il pino ha sete
     const fp = foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     rametti(tr, pads, legnoP, 5);
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
-    cure.pino = curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8);
+    // con la sete gli aghi ingialliscono a chiazze: i colori "stressed" preparati nella chioma
+    const cp = new THREE.Color();
+    cure.pino = assetabile(curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8), {
+      t, soil: soilP, raggioAnello: 1.12, annaffiatoio: new THREE.Vector3(-1.0, 1.1, .8),
+      colora(v) {
+        for (let i = 0; i < fp.healthy.length; i++) fp.m.setColorAt(i, cp.copy(fp.healthy[i]).lerp(fp.stressed[i], v));
+        fp.m.instanceColor.needsUpdate = true;
+      },
+    });
   }
 
   cure.acero = acero;

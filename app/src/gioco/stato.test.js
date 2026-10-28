@@ -296,20 +296,22 @@ test('la sfida del giorno si può sempre fare, in ogni stagione', () => {
     const ora = new Date(2026, 9, 26 + g, g % 2 ? 9 : 20).getTime();
     const v = vista(avanza(s, ora));
     tipi.add(v.sfida.tipo);
-    if (v.sfida.tipo === 'acqua') assert.ok(v.puoAnnaffiare, `giorno ${g}: acqua ma terriccio umido`);
+    if (v.sfida.tipo === 'acqua') assert.ok(v.sfida.pianta && v.sfida.pianta !== 'acero' ? v.conifere[v.sfida.pianta].puoAnnaffiare : v.puoAnnaffiare, `giorno ${g}: acqua ma terriccio umido`);
     if (v.sfida.tipo === 'pota') assert.ok(v.puoPotare, `giorno ${g}: pota ma niente da potare`);
     const semi = s.semi;
-    if (v.sfida.tipo === 'acqua') annaffia(s, ora);
+    if (v.sfida.tipo === 'acqua') annaffia(s, ora, v.sfida.pianta ?? 'acero');
     else if (v.sfida.tipo === 'pota') pota(s, ora, v.germogli.find(x => x.potabile).id);
     else mettiFilo(s, ora, g % RAMI, 0.3);
     assert.ok(vista(s).sfida.fatta, `giorno ${g}: sfida non completata`);
     assert.ok(s.semi >= semi + SEMI.sfida);
   }
-  assert.deepEqual([...tipi].sort(), ['acqua', 'filo', 'pota']);
+  // l'acqua (anche delle conifere) torna spesso, ma non è l'unica sfida
+  assert.ok(tipi.has('acqua') && tipi.size >= 2, [...tipi].join());
 });
 
 test('se il terriccio è ancora umido la sfida è potare, e dà i Semi', () => {
   const s = nuovoStato(T0);
+  s.conifere.pino.sete = s.conifere.ginepro.sete = 0;  // le conifere qui non hanno sete
   annaffia(s, new Date(2026, 9, 26, 21).getTime());
   const mattina = new Date(2026, 9, 27, 8).getTime();
   const v = vista(avanza(s, mattina));
@@ -448,4 +450,41 @@ test('un salvataggio della versione 7 riceve il kit e la cura delle conifere', (
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).cura.pino.parassiti, null);
   assert.equal(vista(s).prodotti.find(p => p.id === 'sapone-molle').dosi, 2);
+});
+
+test("pino e ginepro bevono meno dell'acero: si annaffiano ogni 3-4 giorni d'estate", () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(7.5));  // estate
+  for (const p of ['pino', 'ginepro']) { s.conifere[p].sete = 0; }
+  s.albero.sete = 0;
+  avanza(s, dopo(8.5));
+  let v = vista(s);
+  assert.equal(v.puoAnnaffiare, true, "l'acero in un giorno d'estate ha già il terriccio asciutto");
+  assert.equal(v.conifere.pino.puoAnnaffiare, false, 'il pino no');
+  assert.equal(annaffia(s, dopo(8.5), 'pino').esito, 'umido');
+  avanza(s, dopo(11.5));
+  v = vista(s);
+  assert.equal(v.conifere.pino.puoAnnaffiare, true);
+  assert.equal(annaffia(s, dopo(11.5), 'ginepro').esito, 'ok');
+  assert.equal(vista(s).conifere.ginepro.sete, 0);
+});
+
+test("se l'acero non beve ma una conifera sì, la sfida è annaffiare lei", () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0 + 9 * ORA);  // l'acero bevuto la sera
+  s.conifere.ginepro.sete = 2;
+  const mattina = new Date(2026, 9, 27, 8).getTime();
+  const v = vista(avanza(s, mattina));
+  assert.equal(v.sfida.tipo, 'acqua');
+  assert.equal(v.sfida.pianta, 'ginepro');
+  assert.equal(v.sfida.testo, 'Annaffia il ginepro');
+  assert.equal(annaffia(s, mattina, 'ginepro').semi, SEMI.sfida);
+});
+
+test('un salvataggio della versione 8 riceve la sete di pino e ginepro', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 8; delete vecchio.conifere.pino.sete; delete vecchio.conifere.ginepro.sete;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).conifere.pino.haSete, false);
 });

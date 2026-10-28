@@ -87,11 +87,20 @@ export function creaInterfaccia(screenEl, camera, trees) {
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
       $('acero-acqua').parentElement.dataset.livello = v.acqua > .6 ? 'bene' : v.acqua > .3 ? 'poca' : 'pochissima';
+      // pino e ginepro: fase della sete e acqua nel terriccio, come l'acero
+      for (const p of ['pino', 'ginepro']) {
+        const c = v.conifere[p];
+        $(p + '-fase').textContent = c.nomeFase;
+        $(p + '-fase').dataset.livello = c.fase === 0 ? 'bene' : c.fase === 1 ? 'sete' : c.fase < 4 ? 'stress' : 'grave';
+        $(p + '-acqua').style.width = Math.round(c.acqua * 100) + '%';
+        $(p + '-acqua').parentElement.dataset.livello = c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
+      }
       if (!annaffiando) {
         $('alert').classList.toggle('hide', !v.haSete);
         $('alert').style.display = v.haSete ? '' : 'none';
         $('ok').classList.toggle('show', !v.haSete && v.annaffiatoOggi);
-        $('t-water').classList.toggle('needs', v.haSete);
+        // Acqua chiede attenzione se ha sete una pianta qualunque
+        $('t-water').classList.toggle('needs', v.haSete || v.conifere.pino.haSete || v.conifere.ginepro.haSete);
       }
       // Pota chiede attenzione solo se oggi non c'è ancora stata un'azione di cura e la pianta non ha sete
       $('t-prune').classList.toggle('needs', v.puoPotare && !v.curatoOggi && !v.haSete);

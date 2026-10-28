@@ -111,13 +111,20 @@ function avvia() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
     const base = giorniAnteprima > 0 ? avanza(structuredClone(stato), ora() + giorniAnteprima * GIORNO) : stato;
     const v = vista(base);
-    const annaffiando = annaffiatura.attiva;
+    const annaffiando = annaffiature.acero.attiva;
     ui.aggiorna(v, { annaffiando });
     if (!annaffiando) {
       acero.setThirst(v.ingiallimento);
       acero.setSoil(v.terriccio);
-      acero.ring.visible = v.haSete;
+      acero.ring.visible = v.haSete || (scegliAcqua && v.puoAnnaffiare);
       acero.setAppassimento(v.appassimento);
+    }
+    // pino e ginepro: aghi che ingialliscono, terriccio che schiarisce, anello quando hanno sete
+    for (const p of ['pino', 'ginepro']) {
+      if (annaffiature[p].attiva) continue;
+      const c = v.conifere[p], pianta = alberi.cure[p];
+      pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio);
+      pianta.ring.visible = c.haSete || (scegliAcqua && c.puoAnnaffiare);
     }
     acero.filo.setRami(v.rami);
     document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere);
@@ -145,31 +152,59 @@ function avvia() {
   }
   function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
 
+  // --- Acqua: ogni pianta ha la sua sete (sezione 6.1.4). Acqua nella barra annaffia la pianta
+  // che ne ha bisogno; se sono più d'una, si tocca quella da annaffiare. Dalla tendina di una pianta
+  // si annaffia lei. ---
   const waterBtn = document.getElementById('t-water');
-  let ultimoEsito = null;
-  const annaffiatura = creaAnnaffiatura(scene, acero, {
-    assorbita: () => { ui.nascondiAvvisoSete(); suoni.assorbe(); },
+  const esiti = {};
+  let scegliAcqua = false;
+  const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro' };
+  const DOPO = {
+    acero: 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.',
+    pino: 'Il pino ha bevuto. Come tutte le conifere vuole il terriccio quasi asciutto: avrà di nuovo sete tra qualche giorno.',
+    ginepro: 'Il ginepro ha bevuto. Come tutte le conifere vuole il terriccio quasi asciutto: avrà di nuovo sete tra qualche giorno.',
+  };
+  const annaffiature = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaAnnaffiatura(scene, alberi.cure[p], {
+    assorbita: () => { if (p === 'acero') ui.nascondiAvvisoSete(); suoni.assorbe(); },
     completata: () => {
-      ui.mostraIdratato();
-      const { semi, bonusSerie } = ultimoEsito;
-      if (semi) { ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'acero'); suoni.semi(); }
-      if (bonusSerie) setTimeout(() => { ui.guadagnaSemi(bonusSerie, stato.semi, 'acero'); suoni.semi(); }, 900);
-      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.');
+      if (p === 'acero') ui.mostraIdratato();
+      const { semi, bonusSerie } = esiti[p];
+      if (semi) { ui.guadagnaSemi(semi, stato.semi - bonusSerie, p); suoni.semi(); }
+      if (bonusSerie) setTimeout(() => { ui.guadagnaSemi(bonusSerie, stato.semi, p); suoni.semi(); }, 900);
+      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : DOPO[p], 4000);
       disegna();
-      guida.evento('annaffiato');
+      if (p === 'acero') guida.evento('annaffiato');
     },
-  });
-  waterBtn.addEventListener('click', () => {
-    if (annaffiatura.attiva) return;
+  })]));
+  function annaffiaPianta(p) {
+    scegliAcqua = false; waterBtn.classList.remove('attivo');
+    if (annaffiature[p].attiva) return;
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
-    const esito = annaffia(stato, ora());
-    if (esito.esito === 'umido') { ui.toast('Il terriccio è ancora umido: l\'acqua non viene assorbita. Riprova più tardi.'); return; }
-    ultimoEsito = esito;
+    const esito = annaffia(stato, ora(), p);
+    if (esito.esito === 'umido') {
+      ui.toast(p === 'acero' ? 'Il terriccio è ancora umido: l\'acqua non viene assorbita. Riprova più tardi.'
+        : `${IL[p]} ha ancora il terriccio umido: le conifere vogliono che si asciughi quasi del tutto. Riprova tra qualche giorno.`, 4000);
+      disegna(); return;
+    }
+    if (esito.esito !== 'ok') return;
+    esiti[p] = esito;
     salva(stato);
-    annaffiatura.avvia();
+    annaffiature[p].avvia();
     suoni.acqua();
-    waterBtn.classList.remove('needs');
     disegna();
+  }
+  waterBtn.addEventListener('click', () => {
+    if (scegliAcqua) { scegliAcqua = false; waterBtn.classList.remove('attivo'); disegna(); return; }
+    if (Object.values(annaffiature).some(a => a.attiva)) return;
+    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
+    chiudiMenu();
+    const v = vista(stato);
+    const asciutte = [v.puoAnnaffiare && 'acero', v.conifere.pino.puoAnnaffiare && 'pino', v.conifere.ginepro.puoAnnaffiare && 'ginepro'].filter(Boolean);
+    if (!asciutte.length) { ui.toast('Tutte le piante hanno il terriccio ancora umido. Riprova più tardi.'); return; }
+    if (asciutte.length === 1) { annaffiaPianta(asciutte[0]); return; }
+    // più piante da annaffiare: si sceglie toccandola (hanno l'anello azzurro)
+    scegliAcqua = true; waterBtn.classList.add('attivo'); disegna();
+    ui.toast('Tocca la pianta da annaffiare: quelle con l\'anello azzurro hanno il terriccio asciutto.', 4000);
   });
 
   pannello = creaPannelloProva({
@@ -287,11 +322,15 @@ function avvia() {
   const menuAcero = document.getElementById('menu-acero');
   const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro') };
   function chiudiMenu() { for (const m of Object.values(menuPiante)) m.hidden = true; }
-  for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => { if (e.target.closest('button')) curaPianta(p); });
+  for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => {
+    const a = e.target.closest('button')?.dataset.a; if (!a) return;
+    chiudiMenu();
+    if (a === 'acqua') annaffiaPianta(p); else curaPianta(p);
+  });
   menuAcero.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
-    if (a === 'acqua') waterBtn.click();
+    if (a === 'acqua') annaffiaPianta('acero');
     else if (a === 'pota') document.getElementById('t-prune').click();
     else if (a === 'filo') document.getElementById('t-wire').click();
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
@@ -445,6 +484,8 @@ function avvia() {
       // fuori dalla potatura un tocco su una pianta apre la sua tendina
       if (potando) return;
       const quale = alberi.tocca(raycaster);
+      // dopo Acqua nella barra, il tocco sceglie la pianta da annaffiare
+      if (scegliAcqua) { if (quale) annaffiaPianta(quale); return; }
       const m = menuPiante[quale];
       const apri = m && m.hidden;
       chiudiMenu();
@@ -484,7 +525,7 @@ function avvia() {
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
-    annaffiatura.aggiorna(dt);
+    for (const p in annaffiature) annaffiature[p].aggiorna(dt);
     renderer.render(scene, camera);
     ui.aggiornaEtichette();
     requestAnimationFrame(frame);

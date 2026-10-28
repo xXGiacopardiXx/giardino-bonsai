@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 8;
+export const VERSIONE = 9;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
@@ -38,6 +38,11 @@ export const FASI = [
 ];
 
 export const SETE_PER_ANNAFFIARE = 0.5; // sotto questa soglia il terriccio è ancora umido
+// Ogni specie beve a modo suo (sezione 6.1.4): l'acero, foglie larghe e radici fini, asciuga il vaso
+// in un giorno d'estate; pino nero e ginepro, aghi e squame che trattengono l'acqua, vogliono il
+// terriccio quasi asciutto tra un'annaffiatura e l'altra: circa ogni 3-4 giorni d'estate, il doppio d'inverno.
+// Le fasi della sete (FASI) sono le stesse: per le conifere arrivano solo più tardi.
+export const SETE_SPECIE = { acero: 1, pino: 0.28, ginepro: 0.33 };
 const SETE_MASSIMA = 60;               // oltre non cambia più niente
 const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma restano sempre
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
@@ -114,6 +119,8 @@ const concimeAttivo = (a, t) => !!a.concime && t < a.concime.fino;
 const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
+// pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
+const coniferaNuova = () => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null });
 // la parte di stato che riguarda la cura di una pianta (per l'acero è l'albero stesso)
 const curaDi = (stato, pianta) => pianta === 'acero' ? stato.albero : stato.conifere[pianta];
 const oreParassiti = (a, t) => a.parassiti ? (t - a.parassiti.da) / ORA : 0;
@@ -129,7 +136,7 @@ export function nuovoStato(ora) {
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
-    conifere: { pino: curaNuova(), ginepro: curaNuova() },
+    conifere: { pino: coniferaNuova(), ginepro: coniferaNuova() },
     inventario: { ...INVENTARIO_INIZIALE },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
@@ -162,9 +169,14 @@ export function migra(stato) {
   // prodotti a confezioni nell'inventario e cura anche per le conifere: si parte con il kit iniziale
   if (stato.versione === 7) {
     stato.albero.protezione = null;
-    stato.conifere = { pino: curaNuova(), ginepro: curaNuova() };
+    stato.conifere = { pino: coniferaNuova(), ginepro: coniferaNuova() };
     stato.inventario = { ...INVENTARIO_INIZIALE };
     stato.versione = 8;
+  }
+  // pino e ginepro hanno la loro sete
+  if (stato.versione === 8) {
+    for (const p of ['pino', 'ginepro']) Object.assign(stato.conifere[p], { sete: 0.3, ultimaAcqua: null });
+    stato.versione = 9;
   }
   return stato.versione === VERSIONE ? stato : null;
 }
@@ -209,6 +221,10 @@ export function avanza(stato, ora) {
     const giorni = passo / GIORNO;
     const { stagione } = calendario(stato.inizio, t + passo / 2);
     a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione]);
+    for (const p of ['pino', 'ginepro']) {
+      const c = stato.conifere[p];
+      c.sete = Math.min(SETE_MASSIMA, c.sete + giorni * FATTORE_SETE[stagione] * SETE_SPECIE[p]);
+    }
     const max = saluteMassima(a.sete);
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
     else if (a.sete < 2 && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t));
@@ -268,6 +284,11 @@ function nuovoGiorno(stato, ora) {
 function scegliSfida(stato, ora) {
   const a = stato.albero;
   const { stagione, giornoStagione } = calendario(stato.inizio, ora);
+  // se l'acero non beve, magari ha davvero sete una conifera (quella più asciutta): per lei la sfida
+  // arriva solo quando ha sete, non appena il terriccio si asciuga, così restano anche le altre sfide
+  const conifera = ['pino', 'ginepro'].filter(p => stato.conifere[p].sete >= FASI[1].da)
+    .sort((x, y) => stato.conifere[y].sete - stato.conifere[x].sete)[0];
+  if (a.sete < SETE_PER_ANNAFFIARE && conifera && !stato.oggi.acqua) { stato.oggi.sfida = { tipo: 'acqua', pianta: conifera, fatta: false }; return; }
   const tipo = a.sete >= SETE_PER_ANNAFFIARE ? 'acqua'
     : stagione === 3 && giornoStagione % 2 === 0 ? 'filo'
     : stagione === 2 && giornoStagione % 2 === 0 && !concimeAttivo(a, ora) ? 'concime'
@@ -277,9 +298,9 @@ function scegliSfida(stato, ora) {
 }
 
 // Un'azione completa la sfida del giorno se è quella richiesta. Restituisce i Semi guadagnati.
-function completaSfida(stato, tipo) {
+function completaSfida(stato, tipo, pianta = 'acero') {
   const s = stato.oggi.sfida;
-  if (!s || s.fatta || s.tipo !== tipo) return 0;
+  if (!s || s.fatta || s.tipo !== tipo || (s.pianta ?? 'acero') !== pianta) return 0;
   s.fatta = true;
   stato.semi += SEMI.sfida;
   return SEMI.sfida;
@@ -295,13 +316,15 @@ function registraCura(stato, ora) {
 }
 
 // esito: 'ok' oppure 'umido' (terriccio ancora bagnato, l'acqua non viene assorbita)
-export function annaffia(stato, ora) {
+// pianta: 'acero' (predefinita), 'pino' o 'ginepro'
+export function annaffia(stato, ora, pianta = 'acero') {
   avanza(stato, ora);
-  const a = stato.albero;
+  const a = pianta === 'acero' ? stato.albero : stato.conifere[pianta];
+  if (!a) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
   if (a.sete < SETE_PER_ANNAFFIARE) return { esito: 'umido', semi: 0, bonusSerie: 0 };
   a.sete = 0; a.ultimaAcqua = ora;
-  stato.oggi.acqua = true;
-  const semi = completaSfida(stato, 'acqua');
+  if (pianta === 'acero') stato.oggi.acqua = true;
+  const semi = completaSfida(stato, 'acqua', pianta);
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', semi, bonusSerie };
 }
@@ -412,6 +435,21 @@ export function scegliVaso(stato, id) {
 }
 
 
+const DOVE = { pino: 'il pino', ginepro: 'il ginepro' };
+const testoSfida = (s) => s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta] : SFIDE[s.tipo];
+// come sta una pianta con l'acqua, dalla sua sete
+function vistaAcqua(sete) {
+  let fase = 0;
+  FASI.forEach((f, i) => { if (sete >= f.da) fase = i; });
+  return {
+    sete, fase, nomeFase: FASI[fase].nome,
+    haSete: sete >= FASI[1].da,
+    puoAnnaffiare: sete >= SETE_PER_ANNAFFIARE,
+    acqua: limita(1 - sete / FASI[4].da),
+    ingiallimento: limita((sete - .5) / 3.5),
+    terriccio: limita(sete / 1.5),
+  };
+}
 const giorniFino = (fino, t) => Math.ceil((fino - t) / GIORNO - 1e-9);
 function vistaCura(c, t, stagione) {
   const ore = oreParassiti(c, t);
@@ -491,6 +529,8 @@ export function vista(stato) {
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,
     annaffiatoOggi: stato.oggi.acqua,
     // sfida del giorno: tipo ('acqua', 'pota', 'filo'), testo da mostrare e se è già fatta
-    sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: SFIDE[stato.oggi.sfida.tipo] } : null,
+    sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: testoSfida(stato.oggi.sfida) } : null,
+    // pino e ginepro: la loro acqua (stessi campi dell'acero qui sopra)
+    conifere: { pino: vistaAcqua(stato.conifere.pino.sete), ginepro: vistaAcqua(stato.conifere.ginepro.sete) },
   };
 }

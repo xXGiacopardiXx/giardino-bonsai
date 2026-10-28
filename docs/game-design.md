@@ -146,6 +146,17 @@ Valori iniziali in `app/src/gioco/stato.js`, da ritoccare con i test sul telefon
 - **Etichetta dell'acero:** sotto il nome la fase (Sta bene, Ha sete, Stress lieve, medio, forte, Sopravvivenza) con un colore che segue la gravità: verde, azzurro, arancione, rosso. Due barre separate: **acqua** (riserva nel terriccio: piena appena annaffiata, vuota dopo una settimana senz'acqua; azzurra, poi arancione, poi rossa) e **chioma** (quanto è folta, in percentuale). Le due cose sono diverse: la sete arriva in un giorno, mentre la chioma si dirada solo dopo vari giorni di stress forte. Per questo si può essere in stress medio con la chioma ancora al 95%.
 - **Sulla pianta:** con la sete le foglie ingialliscono e il terriccio schiarisce. Dallo stress medio la chioma si affloscia verso il basso, le foglie diventano spente e marroni, cadono foglie secche e l'anello a terra passa dall'azzurro all'arancione. Con lo stress forte la chioma si dirada.
 
+### 6.1.4 L'acqua di ogni specie
+
+Principio: cura **realistica**, con esigenze diverse per specie (e più avanti per varietà), ma sempre almeno un'azione da fare ogni giorno, per l'abitudine di aprire il giardino.
+
+- **Acero:** foglie larghe e radici fini, asciuga il vaso in circa un giorno d'estate.
+- **Pino nero e ginepro:** aghi e squame trattengono l'acqua, e vogliono il terriccio quasi asciutto tra un'annaffiatura e l'altra. Bevono circa un terzo dell'acero (pino 0,28, ginepro 0,33): si possono annaffiare dopo circa 2 giorni d'estate e hanno sete dopo 3–4, il doppio d'inverno. Le fasi della sete sono le stesse dell'acero, ma arrivano più tardi.
+- **Come si vede:** come l'acero, anello azzurro a terra e terriccio che schiarisce; gli aghi del pino e le squame del ginepro ingialliscono a chiazze. L'etichetta di ogni conifera mostra la fase ("Sta bene", "Ha sete"...) e la barra dell'acqua.
+- **Come si annaffia:** **Acqua** nella barra annaffia la pianta che ha il terriccio asciutto; se sono più d'una, le piante con l'anello azzurro aspettano un tocco per scegliere. Dalla tendina di una pianta (anche pino e ginepro ora hanno **Acqua**) si annaffia lei. Se il terriccio è ancora umido, un messaggio spiega che le conifere lo vogliono quasi asciutto.
+- **Sfida del giorno:** se l'acero non beve ma una conifera ha davvero sete, la sfida è "Annaffia il pino" (o il ginepro).
+- Per ora sulle conifere la sete lunga si vede (colori e fase) ma non dirada la chioma: la pianta non muore mai.
+
 ### 6.2 Ritorno dopo una lunga assenza
 
 - All'apertura una breve sequenza: la gemma verde in evidenza e il messaggio *"Ti stava aspettando"*. Nessun rimprovero.
@@ -167,7 +178,7 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 
 ### 6.5 Cura nell'app: prodotti, inventario, concimi e trattamenti
 
-Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Acqua, potatura e filo restano per ora solo sull'acero.
+Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anche l'acqua vale per tutte, ognuna con la sua sete (sezione 6.1.4); potatura e filo restano per ora solo sull'acero.
 
 - **Prodotti:** si comprano nel **negozio, scheda Cura**, a confezioni da 3 dosi; ogni uso consuma una dose. Alcuni sono **specifici** per una pianta (più efficaci), altri **generali** per tutte:
 
