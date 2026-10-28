@@ -165,15 +165,29 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 - Sono visibili prima con lo zoom ravvicinato, poi anche da lontano.
 - Sfida: intervenire entro 24 ore. Chi li scopre presto con lo zoom riceve una ricompensa extra.
 
-### 6.5 Cura nell'app: concime e trattamento (acero)
+### 6.5 Cura nell'app: prodotti, inventario, concimi e trattamenti
 
-Si aprono da **Cura** nella barra o dalla tendina dell'acero: un pannello con due schede.
+Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Acqua, potatura e filo restano per ora solo sull'acero.
 
-- **Concime** (granuli a lenta cessione color crema, che si vedono sul terriccio e si consumano con i giorni): dura una stagione (7 giorni). Germogli, gemme e presa del filo crescono una volta e mezza più in fretta, la chioma si riprende più in fretta e i parassiti arrivano la metà delle volte. D'inverno la pianta riposa e il concime non serve; finché fa effetto non se ne può dare altro. Conta come cura del giorno. In autunno, a giorni alterni, la sfida del giorno può essere "Concima l'acero" (sezione 4.1).
-- **Parassiti (afidi):** al massimo un attacco alla volta, su uno dei 5 cuscinetti più visibili della chioma. Probabilità al giorno: 12% in primavera ed estate, 6% in autunno, mai d'inverno; doppia se la pianta ha sete (stress lieve o più), dimezzata con il concime. Il caso è prevedibile: la stessa partita nello stesso giorno dà sempre lo stesso risultato.
-- **Come si vedono:** puntini neri e verde chiaro sulle foglie, che crescono di numero e grandezza. Nelle prime 12 ore sono minuscoli e si scoprono solo avvicinandosi; poi l'etichetta dice "Ha gli afidi", sul pulsante Cura compare il "!" e un messaggio gentile avvisa.
-- **Trattamento:** lo spray fa una nuvola fine sul cuscinetto e gli afidi cadono e spariscono. Entro 24 ore: +20 Semi; scoperti prima dell'avviso: +10 in più. Conta come cura del giorno. Se non ci sono parassiti, un messaggio invita a guardare da vicino ogni tanto.
-- **Se restano:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri.
+- **Prodotti:** si comprano nel **negozio, scheda Cura**, a confezioni da 3 dosi; ogni uso consuma una dose. Alcuni sono **specifici** per una pianta (più efficaci), altri **generali** per tutte:
+
+| Prodotto | Per | Effetto | Prezzo (3 dosi) |
+|---|---|---|---|
+| Concime per aceri | acero | concime, crescita ×1,6 | 30 |
+| Concime per conifere | pino e ginepro | concime, crescita ×1,6 | 30 |
+| Concime universale | tutte | concime, crescita ×1,3 | 20 |
+| Sapone molle | tutte | toglie gli afidi | 20 |
+| Olio di neem | tutte | toglie gli afidi e li tiene lontani per una stagione (si può usare anche prima) | 35 |
+
+  Si comincia con un kit: 2 dosi di concime universale e 2 di sapone molle.
+- **Inventario:** **Cura** nella barra in basso apre l'inventario: i prodotti che hai, divisi tra concimi e trattamenti, con le dosi rimaste, e un pulsante per il negozio. Da qui non si usano: servono a sapere cosa c'è.
+- **Curare una pianta:** si tocca la pianta e nella sua tendina si sceglie **Cura** (pino e ginepro hanno per ora solo questa voce). Il pannello dice come sta (afidi, concime, protezione) e mostra solo i prodotti adatti a lei, prima gli specifici, con il pulsante Usa e le dosi; quelli che non hai sono spenti.
+- **Concime** (granuli a lenta cessione color crema, che si vedono sul terriccio della pianta e si consumano con i giorni): dura una stagione (7 giorni). Sull'acero germogli, gemme e presa del filo crescono più in fretta (×1,6 con il concime per aceri, ×1,3 con l'universale) e la chioma si riprende più in fretta; su tutte le piante i parassiti arrivano la metà delle volte. D'inverno la pianta riposa e il concime non serve; finché fa effetto non se ne può dare altro. Conta come cura del giorno. In autunno, a giorni alterni, la sfida del giorno può essere "Concima l'acero" (sezione 4.1).
+- **Parassiti (afidi):** al massimo un attacco alla volta per pianta, su uno dei 5 cuscinetti più visibili della chioma. Probabilità al giorno per l'acero: 12% in primavera ed estate, 6% in autunno, mai d'inverno; doppia se ha sete (stress lieve o più). Le conifere, robuste, ne prendono il 60%. Dimezzata con il concime, nulla con l'olio di neem attivo. Il caso è prevedibile: la stessa partita nello stesso giorno dà sempre lo stesso risultato.
+- **Come si vedono:** puntini neri e verde chiaro sulle foglie, che crescono di numero e grandezza. Nelle prime 12 ore sono minuscoli e si scoprono solo avvicinandosi; poi l'etichetta della pianta dice "Ha gli afidi", sul pulsante Cura compare il "!" e un messaggio gentile avvisa.
+- **Trattamento:** la telecamera si avvicina, lo spray fa una nuvola fine sul cuscinetto e gli afidi cadono e spariscono. Entro 24 ore: +20 Semi; scoperti prima dell'avviso: +10 in più. Il sapone molle senza afidi non si spreca (un messaggio invita a guardare da vicino ogni tanto); l'olio di neem invece si può dare anche prima, come protezione.
+- **Se restano sull'acero:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri. Sulle conifere per ora non fanno danni oltre ai Semi persi.
+- Concimi e trattamenti su qualunque pianta contano come cura del giorno per la serie.
 
 ## 7. Sfide, serie ed economia
 

@@ -5,8 +5,9 @@
 import * as THREE from 'three';
 import { toon, sequenza } from './strumenti.js';
 
-// cuscinetti della chioma dove possono stare i parassiti (POSTI_PARASSITI del motore): i più visibili
-const CUSCINETTI = [0, 1, 2, 6, 3];
+// cuscinetti della chioma dove possono stare i parassiti (POSTI_PARASSITI del motore): per l'acero
+// i più visibili; pino e ginepro ne hanno 5 in tutto
+const CUSCINETTI = { acero: [0, 1, 2, 6, 3], pino: [0, 1, 2, 3, 4], ginepro: [0, 1, 2, 3, 4] };
 const AFIDI = 70;
 const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 
@@ -20,11 +21,13 @@ const nebbiaTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 
-// pianta: l'acero di scena/alberi.js (ciuffiDi, gruppoDi, potTop)
-export function creaCura(scene, pianta) {
+// pianta: una pianta di scena/alberi.js (cure.acero, cure.pino, cure.ginepro: ciuffiDi, gruppoDi, potTop);
+// id: 'acero', 'pino' o 'ginepro'
+export function creaCura(scene, pianta, id = 'acero') {
+  const semeBase = { acero: 0, pino: 500, ginepro: 900 }[id];
   // --- afidi: un InstancedMesh per ogni cuscinetto possibile, nel gruppo che si piega col filo ---
-  const colonie = CUSCINETTI.map((pad, posto) => {
-    const rnd = sequenza(301 + posto * 17);
+  const colonie = CUSCINETTI[id].map((pad, posto) => {
+    const rnd = sequenza(301 + semeBase + posto * 17);
     // i ciuffi più in alto e più verso chi guarda: lì gli afidi si notano
     const ciuffi = pianta.ciuffiDi(pad).slice().sort((a, b) => (b.pos.y + b.pos.z * .6) - (a.pos.y + a.pos.z * .6)).slice(0, 7);
     const m = new THREE.InstancedMesh(afideGeo, toon({ color: 0xffffff }), AFIDI);
@@ -58,11 +61,11 @@ export function creaCura(scene, pianta) {
   }
 
   // --- concime: granuli sul terriccio, che si consumano con i giorni ---
-  const rg = sequenza(77);
+  const rg = sequenza(77 + semeBase), raggio = pianta.raggioTerra ?? 1;
   const granuli = new THREE.InstancedMesh(granoGeo, toon({ color: 0xffffff }), 16);
   const granPos = [];
   for (let i = 0; i < 16; i++) {
-    const a = rg() * Math.PI * 2, r = .2 + rg() * .45;
+    const a = rg() * Math.PI * 2, r = (.2 + rg() * .45) * raggio;
     granPos.push(new THREE.Vector3(pianta.potTop.x + Math.cos(a) * r, pianta.potTop.y + .02, pianta.potTop.z + Math.sin(a) * r * .8));
     // granuli a lenta cessione, color crema: si vedono bene sul terriccio scuro
     granuli.setColorAt(i, new THREE.Color(rg() < .5 ? 0xf0dc9a : 0xe2c47a));

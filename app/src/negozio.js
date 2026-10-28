@@ -1,7 +1,9 @@
-// Negozio dei vasi e sezione Aspetto (fase 5 della roadmap), nello stesso pannello.
-// Negozio: si apre da Negozio nella barra e dal "+" dei Semi, mostra tutti i vasi da comprare.
+// Negozio e sezione Aspetto (fase 5 della roadmap), nello stesso pannello.
+// Negozio: si apre da Negozio nella barra e dal "+" dei Semi, con due schede: Vasi e Cura
+// (concimi e trattamenti a confezioni di 3 dosi, che finiscono nell'inventario).
 // Aspetto: si apre dalla tendina dell'acero, mostra solo i vasi già comprati da mettere in uso.
-// Il catalogo arriva dalla vista del motore; comprare e scegliere li decide main.js.
+// I cataloghi arrivano dalla vista del motore; comprare e scegliere li decide main.js.
+import { iconaProdotto, perChi } from './icone-cura.js';
 
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
@@ -18,7 +20,7 @@ const DISEGNI = {
 const ALBERELLO = `<path d="M32 28c-1-6 2-9 0-15" stroke="#6b5444" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="24" cy="13" r="8" fill="#c94b2b"/><circle cx="38" cy="11" r="8" fill="#e3462a"/><circle cx="31" cy="6" r="6" fill="#f0702c"/>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;
 
-// azioni: compra(id), usa(id)
+// azioni: compra(id), usa(id), compraProdotto(id)
 export function creaNegozio(azioni) {
   const el = document.createElement('section');
   el.className = 'negozio'; el.hidden = true;
@@ -30,6 +32,7 @@ export function creaNegozio(azioni) {
         <span class="negozio-semi">${SEME}<b data-v="semi"></b></span>
         <button class="negozio-x" data-a="chiudi" aria-label="Chiudi il negozio">×</button>
       </div>
+      <div class="negozio-schede" data-v="schede"><button class="scheda" data-scheda="vasi">Vasi</button><button class="scheda" data-scheda="cura">Cura</button></div>
       <p class="negozio-sotto" data-v="sotto">Vasi per l'acero</p>
       <div class="negozio-lista" data-v="lista"></div>
       <button class="negozio-vai" data-a="negozio" hidden>Altri vasi nel negozio</button>
@@ -37,7 +40,7 @@ export function creaNegozio(azioni) {
   document.getElementById('screen').appendChild(el);
   const v = (nome) => el.querySelector(`[data-v="${nome}"]`);
   const lista = v('lista'), semiEl = v('semi'), vai = el.querySelector('.negozio-vai');
-  let ultimaVista = null, modo = 'negozio';
+  let ultimaVista = null, modo = 'negozio', scheda = 'vasi';
 
   function chiudi() { el.hidden = true; }
   el.addEventListener('click', (e) => {
@@ -48,16 +51,23 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'compra') azioni.compra(b.dataset.id);
     else if (b.dataset.a === 'usa') azioni.usa(b.dataset.id);
     else if (b.dataset.a === 'negozio') api.apri('negozio');
+    else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
+    else if (b.dataset.scheda) api.apri('negozio', b.dataset.scheda);
   });
 
   const api = {
     get aperto() { return !el.hidden; },
     get modo() { return modo; },
-    // nuovoModo: 'negozio' (comprare) o 'aspetto' (mettere in uso i vasi comprati)
-    apri(nuovoModo = 'negozio') {
-      modo = nuovoModo; el.hidden = false;
+    get scheda() { return scheda; },
+    // nuovoModo: 'negozio' (comprare) o 'aspetto' (mettere in uso i vasi comprati);
+    // nuovaScheda, nel negozio: 'vasi' o 'cura'
+    apri(nuovoModo = 'negozio', nuovaScheda = 'vasi') {
+      modo = nuovoModo; scheda = nuovaScheda; el.hidden = false;
       v('titolo').textContent = modo === 'aspetto' ? 'Aspetto' : 'Negozio';
-      v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero' : 'Vasi per l\'acero';
+      v('schede').hidden = modo === 'aspetto';
+      el.querySelectorAll('.scheda').forEach(b => b.classList.toggle('on', b.dataset.scheda === scheda));
+      v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
+        : scheda === 'cura' ? 'Concimi e trattamenti: ogni confezione ha 3 dosi' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -66,6 +76,11 @@ export function creaNegozio(azioni) {
       ultimaVista = vista;
       if (el.hidden) return;
       semiEl.textContent = vista.semi;
+      if (modo === 'negozio' && scheda === 'cura') {
+        vai.hidden = true;
+        lista.innerHTML = vista.prodotti.map(p => `<div class="vaso prodotto"><div class="vaso-img">${iconaProdotto(p.id)}</div><span class="vaso-nome">${p.nome}</span><span class="prodotto-per">${perChi(p.piante)}</span><span class="prodotto-dosi">${p.dosi ? `Ne hai ${p.dosi}` : 'Non ne hai'}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="prodotto" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('');
+        return;
+      }
       const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi;
       vai.hidden = modo !== 'aspetto' || vista.vasi.every(x => x.tuo);
       lista.innerHTML = vasi.map(x => {

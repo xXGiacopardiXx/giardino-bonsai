@@ -176,6 +176,19 @@ export function creaAlberi(world) {
     filo.quandoPiega = () => acero.aggiornaPieghe();
   }
 
+  // per la cura di pino e ginepro (scena/cura.js): i ciuffi di ogni cuscinetto letti dalla chioma,
+  // il gruppo che li porta e il terriccio dove cadono i granuli di concime
+  const cure = {};
+  function curabile(f, tr, terra, raggioTerra) {
+    const m4 = new THREE.Matrix4();
+    const forme = f.pad.map((_, i) => {
+      f.m.getMatrixAt(i, m4);
+      const pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+      m4.decompose(pos, q, sc); return { pos, sc };
+    });
+    return { ciuffiDi: (pad) => forme.filter((_, i) => f.pad[i] === pad), gruppoDi: () => tr, potTop: terra, raggioTerra };
+  }
+
   let ginepro;
   // Ginepro su una lastra di pietra, con legno secco (jin) chiaro
   {
@@ -198,6 +211,7 @@ export function creaAlberi(world) {
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     rametti(tr, padsG, legnoG, 13);
     trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
+    cure.ginepro = curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6);
     // d'inverno il ginepro cinese prende un colore bronzeo, che torna verde a fine stagione
     const bronzo = fg.toni.map(x => new THREE.Color(['#4f4a2e', '#5e5432', '#6e5e36', '#7d6a3c', '#8b7443', '#9a7f4c'][Math.round(x * 5)]));
     const c = new THREE.Color();
@@ -226,15 +240,19 @@ export function creaAlberi(world) {
     [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]].forEach(p => tube(p, .07, .02, legnoP, tr, 10));
     const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
     // i colori della sete restano preparati (la sequenza col seme non deve cambiare) ma per ora non si usano
-    foliage(tr, pads,
+    const fp = foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     rametti(tr, pads, legnoP, 5);
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
+    cure.pino = curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8);
   }
 
+  cure.acero = acero;
   return {
     trees,
     acero,
+    // le tre piante viste dalla cura: ciuffi dei cuscinetti, gruppi e terriccio
+    cure,
     // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino' oppure null
     tocca(raycaster) {
       let meglio = null, d = Infinity;

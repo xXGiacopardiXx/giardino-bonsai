@@ -25,7 +25,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, concima, tratta, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -94,7 +94,8 @@ function avvia() {
   // La pianta del motore è l'acero, unica specie da curare nell'MVP (game-design.md, sezione 14.1)
   const acero = alberi.acero;
   const germogli = creaGermogli(scene, acero);
-  const curaScena = creaCura(scene, acero);
+  // afidi, concime e spray su tutte e tre le piante
+  const curaScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaCura(scene, alberi.cure[p], p)]));
 
   // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
   let stato = carica(Date.now());
@@ -104,7 +105,8 @@ function avvia() {
 
   let pannello, negozio, cure;
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
-  let avvisoAfidi = false;
+  const avvisati = new Set();
+  const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro' };
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
     const base = giorniAnteprima > 0 ? avanza(structuredClone(stato), ora() + giorniAnteprima * GIORNO) : stato;
@@ -123,12 +125,18 @@ function avvia() {
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
     cure?.mostra(v);
-    curaScena.setParassiti(v.parassiti);
-    curaScena.setConcime(v.concime);
-    document.getElementById('t-care').classList.toggle('needs', !!v.parassiti?.visibili);
-    // la prima volta che gli afidi diventano evidenti, un avviso gentile
-    if (v.parassiti?.visibili && !avvisoAfidi && giorniAnteprima === 0) { avvisoAfidi = true; setTimeout(() => ui.toast('Ci sono degli afidi sull\'acero! Tocca Cura per trattarli.', 4000), 600); }
-    if (!v.parassiti) avvisoAfidi = false;
+    for (const p in curaScene) {
+      const c = v.cura[p];
+      curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime);
+      // la prima volta che gli afidi diventano evidenti, un avviso gentile
+      if (c.parassiti?.visibili && !avvisati.has(p) && giorniAnteprima === 0) {
+        avvisati.add(p);
+        setTimeout(() => ui.toast(`Ci sono degli afidi ${SULLA[p]}! Tocca la pianta e scegli Cura.`, 4000), 600);
+      }
+      if (!c.parassiti) avvisati.delete(p);
+      if (p !== 'acero') document.getElementById(p + '-afidi').hidden = !c.parassiti?.visibili;
+    }
+    document.getElementById('t-care').classList.toggle('needs', Object.values(v.cura).some(c => c.parassiti?.visibili));
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
@@ -205,36 +213,45 @@ function avvia() {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') aggiornaStato(); else salva(stato); });
   window.addEventListener('pagehide', () => salva(stato));
 
-  // --- Cura: concime e trattamento contro i parassiti (sezioni 4 e 6.4) ---
+  // --- Cura (sezione 6.5): dalla barra l'inventario, dalla tendina di una pianta i prodotti adatti a lei ---
   const ANTEPRIMA_CURA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
   const giorniTesto = (n) => n === 1 ? 'un giorno' : `${n} giorni`;
-  function premia(esito) {
+  function premia(esito, pianta) {
     const semi = esito.semi + esito.bonusSerie;
-    if (semi) { ui.guadagnaSemi(semi, stato.semi, 'acero'); suoni.semi(); }
+    if (semi) { ui.guadagnaSemi(semi, stato.semi, pianta); suoni.semi(); }
   }
+  // la pianta e il punto da guardare quando si spruzza
+  const fuocoDi = (p) => p === 'acero' ? acero.fuoco : alberi.trees[p].radice.position.clone().add(new THREE.Vector3(0, 1.7, 0));
   cure = creaCure({
-    concima() {
+    usa(pianta, id) {
       if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
-      const esito = concima(stato, ora());
-      if (esito.esito === 'attivo') { ui.toast(`Ha già il concime: fa effetto ancora ${giorniTesto(vista(stato).concime.giorni)}.`); return; }
-      if (esito.esito === 'inverno') { ui.toast('D\'inverno l\'acero riposa: il concime lo darai in primavera.'); return; }
-      salva(stato); cure.chiudi(); curaScena.concima(); suoni.concime(); disegna(); premia(esito);
-      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
-        : 'Concime dato! Per una stagione l\'acero crescerà di più e resisterà meglio ai parassiti.', 4000);
-    },
-    tratta() {
-      if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
-      const esito = tratta(stato, ora());
-      if (esito.esito === 'nessuno') { ui.toast('Non ci sono parassiti: l\'acero sta bene. Ogni tanto guardalo da vicino: all\'inizio gli afidi sono minuscoli.', 4500); return; }
-      // la telecamera si avvicina all'acero, per vedere lo spray
-      salva(stato); cure.chiudi(); vola(acero.fuoco, baseDist * .45); curaScena.spruzza(); suoni.spray(); premia(esito);
-      setTimeout(disegna, 1700);
-      ui.toast(esito.presto ? `Scoperti prima che si notassero: che occhio! +${esito.semi} Semi`
+      const esito = usaProdotto(stato, ora(), pianta, id);
+      const prodotto = vista(stato).prodotti.find(p => p.id === id), nome = nomiPiante[pianta].toLowerCase();
+      if (esito.esito === 'attivo') { ui.toast(`Ha già il concime: fa effetto ancora ${giorniTesto(vista(stato).cura[pianta].concime.giorni)}.`); return; }
+      if (esito.esito === 'inverno') { ui.toast('D\'inverno le piante riposano: il concime lo darai in primavera.'); return; }
+      if (esito.esito === 'niente') { ui.toast(`Non ci sono afidi ${SULLA[pianta]}: il sapone molle non serve. Ogni tanto guarda da vicino: all\'inizio sono minuscoli.`, 4500); return; }
+      if (esito.esito === 'finito') { ui.toast(`Hai finito il ${prodotto.nome.toLowerCase()}: lo trovi nel negozio, scheda Cura.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); cure.chiudi();
+      if (prodotto.tipo === 'concime') {
+        curaScene[pianta].concima(); suoni.concime(); disegna(); premia(esito, pianta);
+        ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+          : `Concime dato! Per una stagione ${pianta === 'acero' ? 'l\'acero crescerà di più e ' : 'la pianta '}resisterà meglio ai parassiti.`, 4000);
+        return;
+      }
+      // trattamento: la telecamera si avvicina alla pianta, per vedere lo spray
+      vola(fuocoDi(pianta), baseDist * .45); suoni.spray(); premia(esito, pianta);
+      if (esito.tolti) { curaScene[pianta].spruzza(); setTimeout(disegna, 1700); } else disegna();
+      ui.toast(!esito.tolti ? `Olio di neem spruzzato: per una stagione niente afidi ${SULLA[pianta]}.`
+        : esito.presto ? `Scoperti prima che si notassero: che occhio! +${esito.semi} Semi`
         : esito.inTempo ? `Via gli afidi, in tempo! +${esito.semi} Semi`
-        : 'Via gli afidi. Con acqua e cure la chioma si riprenderà in pochi giorni.', 4000);
+        : `Via gli afidi. Con le cure ${nome === 'acero giapponese' ? 'la chioma si riprenderà' : 'si riprenderà'} in pochi giorni.`, 4000);
     },
+    negozio() { negozio.apri('negozio', 'cura'); disegna(); },
   });
-  document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(false); filatura(false); cure.apri(); disegna(); });
+  // dalla barra: l'inventario dei prodotti di cura
+  document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(false); filatura(false); cure.apri('inventario'); disegna(); });
+  const curaPianta = (p) => { chiudiMenu(); potatura(false); filatura(false); cure.apri('pianta', p); disegna(); };
 
   // --- Negozio dei vasi: il vaso comprato va subito all'acero ---
   const nomeVaso = (id) => VASI.find(x => x.id === id).nome.toLowerCase();
@@ -247,6 +264,14 @@ function avvia() {
       negozio.chiudi();
       ui.toast(`Ecco il vaso ${nomeVaso(id)}! Per cambiarlo tocca l'acero e scegli Aspetto.`, 3500);
     },
+    compraProdotto(id) {
+      const esito = compraProdotto(stato, id);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); disegna(); suoni.semi();
+      const p = vista(stato).prodotti.find(x => x.id === id);
+      ui.toast(`${p.nome}: ${p.dosi} dosi nell\'inventario. Per usarlo tocca una pianta e scegli Cura.`, 3500);
+    },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
       salva(stato); disegna(); suoni.magia();
@@ -257,9 +282,12 @@ function avvia() {
   document.getElementById('t-shop').addEventListener('click', apriNegozio);
   document.getElementById('plus').addEventListener('click', apriNegozio);
 
-  // --- Tendina dell'acero: si apre toccando la pianta, con Acqua, Pota e Aspetto ---
+  // --- Tendine delle piante: si aprono toccando la pianta. L'acero ha Acqua, Pota, Filo, Cura e Aspetto;
+  // pino e ginepro per ora solo Cura ---
   const menuAcero = document.getElementById('menu-acero');
-  function chiudiMenu() { menuAcero.hidden = true; }
+  const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro') };
+  function chiudiMenu() { for (const m of Object.values(menuPiante)) m.hidden = true; }
+  for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => { if (e.target.closest('button')) curaPianta(p); });
   menuAcero.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
@@ -267,9 +295,9 @@ function avvia() {
     else if (a === 'pota') document.getElementById('t-prune').click();
     else if (a === 'filo') document.getElementById('t-wire').click();
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
-    else if (a === 'cura') document.getElementById('t-care').click();
+    else if (a === 'cura') curaPianta('acero');
   });
-  const nomiPiante = { pino: 'Il pino nero', ginepro: 'Il ginepro' };
+  const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
 
   // --- Potatura: Pota avvicina la telecamera all'acero, un tocco su un germoglio lo taglia ---
   const pruneBtn = document.getElementById('t-prune');
@@ -417,9 +445,10 @@ function avvia() {
       // fuori dalla potatura un tocco su una pianta apre la sua tendina
       if (potando) return;
       const quale = alberi.tocca(raycaster);
-      if (quale === 'acero') { menuAcero.hidden = !menuAcero.hidden; if (!menuAcero.hidden) suoni.fruscio(.1); return; }
+      const m = menuPiante[quale];
+      const apri = m && m.hidden;
       chiudiMenu();
-      if (quale) ui.toast(`${nomiPiante[quale]} per ora si gode il giardino: per adesso si cura solo l'acero.`);
+      if (apri) { m.hidden = false; suoni.fruscio(.1); }
       return;
     }
     if (!potando) { ui.toast('Per tagliare un germoglio scegli prima Pota.'); return; }
@@ -452,7 +481,7 @@ function avvia() {
     controls.update();
     alberi.aggiorna(clock);
     germogli.aggiorna(dt, clock);
-    curaScena.aggiorna(dt);
+    for (const p in curaScene) curaScene[p].aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
     annaffiatura.aggiorna(dt);

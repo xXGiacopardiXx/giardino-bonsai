@@ -2,7 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, concima, tratta, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+
+// concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
+const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; return s; };
+const concima = (s, t) => usaProdotto(pieno(s), t, 'acero', 'concime-universale');
+const tratta = (s, t) => usaProdotto(pieno(s), t, 'acero', 'sapone-molle');
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -382,4 +387,65 @@ test('scoperti da vicino prima dell\'avviso, i parassiti danno qualche Seme in p
   s.albero.parassiti = { posto: 1, da: T0 + ORA };
   assert.equal(vista(s).parassiti.visibili, false);
   assert.equal(tratta(s, T0 + 3 * ORA).semi, SEMI.parassiti + SEMI.scoperti);
+});
+
+test('si parte con un piccolo kit; i prodotti si comprano a confezioni e ogni uso consuma una dose', () => {
+  const s = nuovoStato(T0);
+  const dosi = (id) => vista(s).prodotti.find(p => p.id === id).dosi;
+  assert.equal(dosi('concime-universale'), 2);
+  assert.equal(dosi('sapone-molle'), 2);
+  assert.equal(dosi('concime-acero'), 0);
+  assert.equal(usaProdotto(s, T0, 'acero', 'concime-acero').esito, 'finito');
+  s.semi = 100;
+  assert.equal(compraProdotto(s, 'concime-acero').esito, 'ok');
+  assert.equal(s.semi, 100 - PRODOTTI.find(p => p.id === 'concime-acero').prezzo);
+  assert.equal(dosi('concime-acero'), DOSI_PER_CONFEZIONE);
+  assert.equal(usaProdotto(s, T0, 'acero', 'concime-acero').esito, 'ok');
+  assert.equal(dosi('concime-acero'), DOSI_PER_CONFEZIONE - 1);
+  s.semi = 5;
+  assert.deepEqual(compraProdotto(s, 'olio-neem'), { esito: 'pochi', mancano: 30 });
+});
+
+test('i prodotti specifici vanno solo sulla loro pianta, quelli generali su tutte', () => {
+  const s = nuovoStato(T0);
+  s.semi = 200; compraProdotto(s, 'concime-acero'); compraProdotto(s, 'concime-conifere');
+  assert.equal(usaProdotto(s, T0, 'pino', 'concime-acero').esito, 'non-adatto');
+  assert.equal(usaProdotto(s, T0, 'acero', 'concime-conifere').esito, 'non-adatto');
+  assert.equal(usaProdotto(s, T0, 'pino', 'concime-conifere').esito, 'ok');
+  assert.equal(usaProdotto(s, T0, 'ginepro', 'concime-universale').esito, 'ok');
+  assert.equal(vista(s).cura.pino.concime.attivo, true);
+  assert.equal(vista(s).cura.ginepro.concime.attivo, true);
+  assert.equal(vista(s).cura.acero.concime.attivo, false);
+  // lo specifico spinge di più dell'universale
+  assert.ok(PRODOTTI.find(p => p.id === 'concime-acero').spinta > PRODOTTI.find(p => p.id === 'concime-universale').spinta);
+});
+
+test('il sapone molle senza parassiti non si spreca; l\'olio di neem protegge per una stagione', () => {
+  const s = nuovoStato(T0);
+  assert.equal(usaProdotto(s, T0, 'ginepro', 'sapone-molle').esito, 'niente');
+  assert.equal(vista(s).prodotti.find(p => p.id === 'sapone-molle').dosi, 2);
+  s.semi = 100; compraProdotto(s, 'olio-neem');
+  assert.equal(usaProdotto(s, T0, 'acero', 'olio-neem').esito, 'ok');
+  assert.equal(vista(s).cura.acero.protezione, 7);
+  for (let g = 0; g < 7; g++) { annaffia(s, dopo(g)); avanza(s, dopo(g + 0.9)); assert.equal(s.albero.parassiti, null); }
+});
+
+test('anche pino e ginepro prendono gli afidi, e si trattano con i prodotti generali', () => {
+  const s = nuovoStato(T0);
+  let g = 0;
+  while (!s.conifere.pino.parassiti && !s.conifere.ginepro.parassiti && g < 60) { annaffia(s, dopo(g)); usaProdotto(pieno(s), dopo(g), 'acero', 'sapone-molle'); g++; avanza(s, dopo(g - 0.42)); }
+  const quale = s.conifere.pino.parassiti ? 'pino' : 'ginepro';
+  assert.ok(s.conifere[quale].parassiti, 'in due mesi arrivano anche sulle conifere');
+  const esito = usaProdotto(pieno(s), dopo(g - 0.4), quale, 'sapone-molle');
+  assert.equal(esito.esito, 'ok'); assert.equal(esito.tolti, true);
+  assert.equal(vista(s).cura[quale].parassiti, null);
+});
+
+test('un salvataggio della versione 7 riceve il kit e la cura delle conifere', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 7; delete vecchio.inventario; delete vecchio.conifere; delete vecchio.albero.protezione;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).cura.pino.parassiti, null);
+  assert.equal(vista(s).prodotti.find(p => p.id === 'sapone-molle').dosi, 2);
 });

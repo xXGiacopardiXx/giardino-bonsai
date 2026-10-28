@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 7;
+export const VERSIONE = 8;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
@@ -66,7 +66,8 @@ const SEGNO_SVANISCE = 0.05;           // tolto il filo, il segno sparisce in ci
 
 const limita = (v) => Math.min(1, Math.max(0, v));
 
-// Cura (sezione 4 e 6.4): concime e trattamento contro i parassiti.
+// Cura (sezioni 4, 6.4 e 6.5): concimi e trattamenti, comprati a confezioni nel negozio e tenuti
+// nell'inventario. Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro).
 // Il concime dura una stagione (7 giorni): la pianta cresce e si riprende più in fretta e i parassiti
 // attaccano meno. D'inverno la pianta riposa e il concime non serve.
 // I parassiti (afidi) arrivano a caso su un cuscinetto della chioma, più spesso in primavera ed estate
@@ -74,9 +75,29 @@ const limita = (v) => Math.min(1, Math.max(0, v));
 // l'avviso. Trattati entro un giorno danno Semi (di più se scoperti prima dell'avviso); dopo, rallentano
 // la crescita e diradano un po' la chioma, mai sotto la metà: la pianta non muore.
 const DURATA_CONCIME = 7;              // giorni
-const SPINTA_CONCIME = 1.5;            // crescita e ripresa con il concime
+const DURATA_PROTEZIONE = 7;           // giorni in cui l'olio di neem tiene lontani i parassiti
 export const POSTI_PARASSITI = 5;      // cuscinetti della chioma dove possono comparire (li sceglie la scena)
 const PROBABILITA_PARASSITI = [0.12, 0.12, 0.06, 0]; // al giorno: primavera, estate, autunno, inverno
+const PROBABILITA_CONIFERE = 0.6;      // le conifere, robuste e sempre ben curate, ne prendono meno
+
+export const PIANTE = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
+// Prodotti di cura: alcuni specifici per una pianta (più efficaci), altri generali per tutte.
+// tipo: 'concime' (spinta: crescita e ripresa) o 'trattamento' (toglie i parassiti; protezione: giorni senza)
+export const DOSI_PER_CONFEZIONE = 3;
+export const PRODOTTI = [
+  { id: 'concime-acero', nome: 'Concime per aceri', tipo: 'concime', piante: ['acero'], spinta: 1.6, prezzo: 30,
+    descrizione: 'Organico, ricco di ferro: foglie più vivaci e crescita forte.' },
+  { id: 'concime-conifere', nome: 'Concime per conifere', tipo: 'concime', piante: ['pino', 'ginepro'], spinta: 1.6, prezzo: 30,
+    descrizione: 'A lenta cessione, poco azoto: aghi corti e compatti.' },
+  { id: 'concime-universale', nome: 'Concime universale', tipo: 'concime', piante: ['acero', 'pino', 'ginepro'], spinta: 1.3, prezzo: 20,
+    descrizione: 'Va bene per tutti i bonsai, un po\' meno efficace.' },
+  { id: 'sapone-molle', nome: 'Sapone molle', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro'], protezione: 0, prezzo: 20,
+    descrizione: 'Spray delicato: toglie gli afidi.' },
+  { id: 'olio-neem', nome: 'Olio di neem', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro'], protezione: DURATA_PROTEZIONE, prezzo: 35,
+    descrizione: 'Toglie gli afidi e li tiene lontani per una stagione. Si può usare anche prima.' },
+];
+// il kit con cui si comincia
+const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2 };
 const ORE_NASCOSTI = 12;               // prima dell'avviso: si scoprono solo guardando da vicino
 const ORE_IN_TEMPO = 24;               // trattati entro un giorno: nessun danno e Semi
 const DANNO_PARASSITI = 0.06;          // chioma persa al giorno, dopo il primo giorno
@@ -90,6 +111,11 @@ function caso(testo) {
   return ((h ^ h >>> 16) >>> 0) / 4294967296;
 }
 const concimeAttivo = (a, t) => !!a.concime && t < a.concime.fino;
+const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
+const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
+const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
+// la parte di stato che riguarda la cura di una pianta (per l'acero è l'albero stesso)
+const curaDi = (stato, pianta) => pianta === 'acero' ? stato.albero : stato.conifere[pianta];
 const oreParassiti = (a, t) => a.parassiti ? (t - a.parassiti.da) / ORA : 0;
 
 export function nuovoStato(ora) {
@@ -102,6 +128,9 @@ export function nuovoStato(ora) {
     albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane() },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
+    // pino e ginepro: per ora si curano solo con concimi e trattamenti
+    conifere: { pino: curaNuova(), ginepro: curaNuova() },
+    inventario: { ...INVENTARIO_INIZIALE },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
     // si comincia annaffiando, perché la pianta ha già sete
@@ -114,7 +143,7 @@ const ramiNuovi = () => Array.from({ length: RAMI }, () => ({ piega: 0, filo: nu
 
 // Germogli e gemme di una partita nuova: due germogli pronti, così Pota si prova subito
 function alberoGiovane() {
-  const a = { germogli: [], gemme: [], contatore: 0, rami: ramiNuovi(), concime: null, parassiti: null };
+  const a = { germogli: [], gemme: [], contatore: 0, rami: ramiNuovi(), ...curaNuova() };
   spuntaGermoglio(a, 0.4); spuntaGermoglio(a, 0.55);
   return a;
 }
@@ -130,6 +159,13 @@ export function migra(stato) {
   // ora si legano tutti i rami principali: si aggiungono quelli che mancano, senza toccare gli altri
   if (stato.versione === 5) { while (stato.albero.rami.length < RAMI) stato.albero.rami.push({ piega: 0, filo: null, segno: 0 }); stato.versione = 6; }
   if (stato.versione === 6) { stato.albero.concime = null; stato.albero.parassiti = null; stato.versione = 7; }
+  // prodotti a confezioni nell'inventario e cura anche per le conifere: si parte con il kit iniziale
+  if (stato.versione === 7) {
+    stato.albero.protezione = null;
+    stato.conifere = { pino: curaNuova(), ginepro: curaNuova() };
+    stato.inventario = { ...INVENTARIO_INIZIALE };
+    stato.versione = 8;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -150,7 +186,7 @@ function vigore(stagione, sete) {
 }
 // la crescita vera: il concime la spinge, i parassiti non curati la frenano
 function vigoreDi(a, stagione, t) {
-  return vigore(stagione, a.sete) * (concimeAttivo(a, t) ? SPINTA_CONCIME : 1) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1);
+  return vigore(stagione, a.sete) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1);
 }
 
 // Fin dove può arrivare la chioma con una certa sete: a lungo senz'acqua si perdono i rametti periferici
@@ -175,7 +211,7 @@ export function avanza(stato, ora) {
     a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione]);
     const max = saluteMassima(a.sete);
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
-    else if (a.sete < 2 && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * (concimeAttivo(a, t) ? SPINTA_CONCIME : 1));
+    else if (a.sete < 2 && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t));
     if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
@@ -215,13 +251,16 @@ function nuovoGiorno(stato, ora) {
   const a = stato.albero;
   const { stagione } = calendario(stato.inizio, ora);
   if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
-  // parassiti: al massimo un attacco alla volta
-  if (!a.parassiti) {
-    const p = PROBABILITA_PARASSITI[stagione] * (a.sete >= 2 ? 2 : 1) * (concimeAttivo(a, ora) ? 0.5 : 1);
-    const giorno = stato.inizio + ':' + giornoLocale(ora);
-    if (caso(giorno) < p) a.parassiti = { posto: Math.floor(caso(giorno + ':posto') * POSTI_PARASSITI), da: ora };
+  // parassiti: al massimo un attacco alla volta per pianta; mai con l'olio di neem che fa effetto
+  for (const pianta in PIANTE) {
+    const c = curaDi(stato, pianta);
+    if (c.concime && ora >= c.concime.fino) c.concime = null;
+    if (c.protezione && ora >= c.protezione.fino) c.protezione = null;
+    if (c.parassiti || protetta(c, ora)) continue;
+    const p = PROBABILITA_PARASSITI[stagione] * (pianta === 'acero' ? (a.sete >= 2 ? 2 : 1) : PROBABILITA_CONIFERE) * (concimeAttivo(c, ora) ? 0.5 : 1);
+    const giorno = stato.inizio + ':' + giornoLocale(ora) + (pianta === 'acero' ? '' : ':' + pianta);
+    if (caso(giorno) < p) c.parassiti = { posto: Math.floor(caso(giorno + ':posto') * POSTI_PARASSITI), da: ora };
   }
-  if (a.concime && ora >= a.concime.fino) a.concime = null;
   // la sfida si sceglie quando il giocatore vede il giorno (alla fine di avanza)
   stato.oggi = { giorno: giornoLocale(ora), acqua: false, sfida: null };
 }
@@ -309,30 +348,48 @@ export function togliFilo(stato, ora, ramo) {
   return { esito: 'ok', semi, presa, bonusSerie: registraCura(stato, ora) };
 }
 
-// Concima la pianta per una stagione. esito: 'ok', 'attivo' (ce n'è ancora) o 'inverno' (riposa).
-// Conta per la serie.
-export function concima(stato, ora) {
-  avanza(stato, ora);
-  const a = stato.albero, { stagione } = calendario(stato.inizio, ora);
-  if (stagione === 3) return { esito: 'inverno', semi: 0, bonusSerie: 0 };
-  if (concimeAttivo(a, ora)) return { esito: 'attivo', semi: 0, bonusSerie: 0 };
-  a.concime = { fino: ora + DURATA_CONCIME * GIORNO };
-  const semi = completaSfida(stato, 'concime');
-  return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
+// Compra una confezione di un prodotto di cura (DOSI_PER_CONFEZIONE dosi nell'inventario).
+// esito: 'ok', 'pochi' (Semi insufficienti) o 'nessuno'
+export function compraProdotto(stato, id) {
+  const p = PRODOTTI.find(x => x.id === id);
+  if (!p) return { esito: 'nessuno', mancano: 0 };
+  if (stato.semi < p.prezzo) return { esito: 'pochi', mancano: p.prezzo - stato.semi };
+  stato.semi -= p.prezzo;
+  stato.inventario[id] = (stato.inventario[id] ?? 0) + DOSI_PER_CONFEZIONE;
+  return { esito: 'ok', mancano: 0 };
 }
 
-// Tratta i parassiti. esito: 'ok' o 'nessuno'. In tempo (entro un giorno) danno Semi,
-// e qualcuno in più se scoperti da vicino prima dell'avviso. Conta per la serie.
-export function tratta(stato, ora) {
+// Usa una dose di un prodotto su una pianta. Conta per la serie.
+// esito: 'ok', 'finito' (nessuna dose), 'non-adatto', 'nessuno' (pianta o prodotto sconosciuti),
+// per i concimi 'attivo' (ce n'è ancora) e 'inverno' (la pianta riposa),
+// per i trattamenti 'niente' (nessun parassita: il sapone molle non serve; il neem invece protegge).
+// I parassiti tolti entro un giorno danno Semi, e qualcuno in più se scoperti prima dell'avviso.
+export function usaProdotto(stato, ora, pianta, id) {
   avanza(stato, ora);
-  const a = stato.albero;
-  if (!a.parassiti) return { esito: 'nessuno', semi: 0, inTempo: false, presto: false, bonusSerie: 0 };
-  const ore = oreParassiti(a, ora);
-  const presto = ore < ORE_NASCOSTI, inTempo = ore <= ORE_IN_TEMPO;
-  const semi = (inTempo ? SEMI.parassiti : 0) + (presto ? SEMI.scoperti : 0);
+  const p = PRODOTTI.find(x => x.id === id), c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
+  const vuoto = { semi: 0, bonusSerie: 0, inTempo: false, presto: false, tolti: false };
+  if (!p || !c) return { esito: 'nessuno', ...vuoto };
+  if (!p.piante.includes(pianta)) return { esito: 'non-adatto', ...vuoto };
+  if (!stato.inventario[id]) return { esito: 'finito', ...vuoto };
+  let semi = 0, inTempo = false, presto = false, tolti = false;
+  if (p.tipo === 'concime') {
+    if (calendario(stato.inizio, ora).stagione === 3) return { esito: 'inverno', ...vuoto };
+    if (concimeAttivo(c, ora)) return { esito: 'attivo', ...vuoto };
+    c.concime = { fino: ora + DURATA_CONCIME * GIORNO, spinta: p.spinta, prodotto: id };
+    if (pianta === 'acero') semi += completaSfida(stato, 'concime');
+  } else {
+    if (!c.parassiti && !p.protezione) return { esito: 'niente', ...vuoto };
+    if (c.parassiti) {
+      const ore = oreParassiti(c, ora);
+      presto = ore < ORE_NASCOSTI; inTempo = ore <= ORE_IN_TEMPO; tolti = true;
+      semi += (inTempo ? SEMI.parassiti : 0) + (presto ? SEMI.scoperti : 0);
+      c.parassiti = null;
+    }
+    if (p.protezione) c.protezione = { fino: ora + p.protezione * GIORNO };
+  }
+  stato.inventario[id] -= 1;
   stato.semi += semi;
-  a.parassiti = null;
-  return { esito: 'ok', semi, inTempo, presto, bonusSerie: registraCura(stato, ora) };
+  return { esito: 'ok', semi, inTempo, presto, tolti, bonusSerie: registraCura(stato, ora) };
 }
 
 // Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
@@ -354,6 +411,30 @@ export function scegliVaso(stato, id) {
   return true;
 }
 
+
+const giorniFino = (fino, t) => Math.ceil((fino - t) / GIORNO - 1e-9);
+function vistaCura(c, t, stagione) {
+  const ore = oreParassiti(c, t);
+  return {
+    // concime: attivo per altri N giorni; si può dare fuori dall'inverno se non ce n'è già
+    concime: {
+      attivo: concimeAttivo(c, t),
+      giorni: concimeAttivo(c, t) ? giorniFino(c.concime.fino, t) : 0,
+      prodotto: concimeAttivo(c, t) ? c.concime.prodotto ?? null : null,
+      inverno: stagione === 3,
+    },
+    // parassiti: posto (cuscinetto), quanto sono cresciuti (0..1), se c'è già l'avviso, se fanno danno
+    parassiti: c.parassiti ? {
+      posto: c.parassiti.posto,
+      grandezza: limita(ore / 48),
+      visibili: ore >= ORE_NASCOSTI,
+      danno: ore > ORE_IN_TEMPO,
+      oreInTempo: Math.max(0, Math.ceil(ORE_IN_TEMPO - ore)),
+    } : null,
+    // olio di neem: giorni di protezione dai parassiti
+    protezione: protetta(c, t) ? giorniFino(c.protezione.fino, t) : 0,
+  };
+}
 
 // Tutto quello che serve per disegnare: calcolato dallo stato, senza modificarlo.
 export function vista(stato) {
@@ -398,20 +479,13 @@ export function vista(stato) {
       segno: r.segno,
     })),
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
-    // concime: attivo per altri N giorni; si può dare fuori dall'inverno se non ce n'è già
-    concime: {
-      attivo: concimeAttivo(a, stato.aggiornato),
-      giorni: concimeAttivo(a, stato.aggiornato) ? Math.ceil((a.concime.fino - stato.aggiornato) / GIORNO - 1e-9) : 0,
-      inverno: cal.stagione === 3,
-    },
-    // parassiti: posto (cuscinetto), quanto sono cresciuti (0..1), se c'è già l'avviso, se fanno danno
-    parassiti: a.parassiti ? {
-      posto: a.parassiti.posto,
-      grandezza: limita(oreParassiti(a, stato.aggiornato) / 48),
-      visibili: oreParassiti(a, stato.aggiornato) >= ORE_NASCOSTI,
-      danno: oreParassiti(a, stato.aggiornato) > ORE_IN_TEMPO,
-      oreInTempo: Math.max(0, Math.ceil(ORE_IN_TEMPO - oreParassiti(a, stato.aggiornato))),
-    } : null,
+    // cura di ogni pianta: concime, parassiti e protezione (l'acero anche qui sotto, per comodità)
+    cura: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
+    concime: vistaCura(a, stato.aggiornato, cal.stagione).concime,
+    parassiti: vistaCura(a, stato.aggiornato, cal.stagione).parassiti,
+    // inventario: tutti i prodotti del catalogo con le dosi che hai
+    prodotti: PRODOTTI.map(p => ({ ...p, dosi: stato.inventario[p.id] ?? 0 })),
+    nomiPiante: PIANTE,
     puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
     // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,
