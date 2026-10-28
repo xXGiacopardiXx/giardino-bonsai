@@ -21,6 +21,7 @@ import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
 import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
+import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
 import { nuovoStato, avanza, annaffia, pota, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
@@ -31,7 +32,7 @@ THREE.ColorManagement.enabled = false;
 // Su iPhone il pizzico non deve ingrandire la pagina, solo la scena
 document.addEventListener('gesturestart', e => e.preventDefault());
 // l'audio del telefono si sblocca solo con un tocco
-document.addEventListener('pointerdown', suoni.sblocca, true);
+document.addEventListener('pointerdown', () => { suoni.sblocca(); musica.avvia(); }, true);
 
 const screenEl = document.getElementById('screen'), canvas = document.getElementById('c');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -115,7 +116,7 @@ function avvia() {
     negozio?.mostra(v);
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
-    alberi.setStagione(pAnno); giardino.setStagione(pAnno);
+    alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
     germogli.sincronizza(v.germogli, v.gemme);
     pannello?.mostra(v, base.aggiornato);
   }
@@ -169,6 +170,15 @@ function avvia() {
   }
   suoniBtn.addEventListener('click', () => { suoni.attivaSuoni(!suoni.suoniAttivi()); mostraSuoni(); });
   mostraSuoni();
+  const musicaBtn = document.getElementById('musica');
+  const ICONE_MUSICA = { si: musicaBtn.innerHTML, no: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17V5l10-2v12" stroke="#3b2716" stroke-width="1.8" fill="none" stroke-linejoin="round"/><ellipse cx="6.5" cy="17.5" rx="3" ry="2.4" fill="#d9cdb6" stroke="#3b2716" stroke-width="1.6"/><ellipse cx="16.5" cy="15.5" rx="3" ry="2.4" fill="#d9cdb6" stroke="#3b2716" stroke-width="1.6"/><path d="M3 3l18 18" stroke="#c4291c" stroke-width="2.2" stroke-linecap="round"/></svg>` };
+  function mostraMusica() {
+    const si = musica.musicaAttiva();
+    musicaBtn.innerHTML = si ? ICONE_MUSICA.si : ICONE_MUSICA.no;
+    musicaBtn.setAttribute('aria-pressed', si); musicaBtn.setAttribute('aria-label', si ? 'Musica accesa' : 'Musica spenta');
+  }
+  musicaBtn.addEventListener('click', () => { musica.attivaMusica(!musica.musicaAttiva()); mostraMusica(); });
+  mostraMusica();
   // un piccolo "pop" a ogni pulsante dell'interfaccia
   document.addEventListener('click', (e) => { if (e.target.closest('.tool, .mp, .vaso-b, .negozio-x, .negozio-vai, .guida-avanti, .suoni-b, .plus, .prova button')) suoni.tocco(); });
 

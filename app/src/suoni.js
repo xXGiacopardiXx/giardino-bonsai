@@ -24,6 +24,8 @@ export function sblocca() {
 }
 
 export const suoniAttivi = () => attivi;
+// il contesto audio condiviso, per la musica (musica.js)
+export const contesto = () => ctx;
 export function attivaSuoni(si) {
   attivi = si;
   try { localStorage.setItem(CHIAVE, si ? 'si' : 'no'); } catch (e) { /* niente da fare */ }
