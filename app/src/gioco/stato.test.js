@@ -215,3 +215,12 @@ test('saltando più giorni in una volta spunta un germoglio per ogni giorno', ()
   // primavera: due germogli al giorno
   assert.equal(vista(s).germogli.length, 4);
 });
+
+test('la guida si mostra alla prima partita, non a chi giocava già', () => {
+  assert.equal(nuovoStato(T0).guida.fatta, false);
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 3; delete vecchio.guida;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(s.guida.fatta, true);
+});

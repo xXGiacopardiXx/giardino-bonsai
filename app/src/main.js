@@ -19,6 +19,8 @@ import { creaGermogli } from './scena/germogli.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
+import { creaGuida } from './guida.js';
+import * as suoni from './suoni.js';
 import { GIORNO } from './gioco/tempo.js';
 import { nuovoStato, avanza, annaffia, pota, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
@@ -28,6 +30,8 @@ THREE.ColorManagement.enabled = false;
 
 // Su iPhone il pizzico non deve ingrandire la pagina, solo la scena
 document.addEventListener('gesturestart', e => e.preventDefault());
+// l'audio del telefono si sblocca solo con un tocco
+document.addEventListener('pointerdown', suoni.sblocca, true);
 
 const screenEl = document.getElementById('screen'), canvas = document.getElementById('c');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -120,14 +124,15 @@ function avvia() {
   const waterBtn = document.getElementById('t-water');
   let ultimoEsito = null;
   const annaffiatura = creaAnnaffiatura(scene, acero, {
-    assorbita: () => ui.nascondiAvvisoSete(),
+    assorbita: () => { ui.nascondiAvvisoSete(); suoni.assorbe(); },
     completata: () => {
       ui.mostraIdratato();
       const { semi, bonusSerie } = ultimoEsito;
-      if (semi) ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'acero');
-      if (bonusSerie) setTimeout(() => ui.guadagnaSemi(bonusSerie, stato.semi, 'acero'), 900);
+      if (semi) { ui.guadagnaSemi(semi, stato.semi - bonusSerie, 'acero'); suoni.semi(); }
+      if (bonusSerie) setTimeout(() => { ui.guadagnaSemi(bonusSerie, stato.semi, 'acero'); suoni.semi(); }, 900);
       ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.');
       disegna();
+      guida.evento('annaffiato');
     },
   });
   waterBtn.addEventListener('click', () => {
@@ -138,6 +143,7 @@ function avvia() {
     ultimoEsito = esito;
     salva(stato);
     annaffiatura.avvia();
+    suoni.acqua();
     waterBtn.classList.remove('needs');
     disegna();
   });
@@ -145,10 +151,27 @@ function avvia() {
   pannello = creaPannelloProva({
     anteprima: () => disegna(),
     applica: (giorni) => { stato.debug.spostamento += giorni * GIORNO; aggiornaStato(); },
-    azzera: () => { cancella(); stato = nuovoStato(Date.now()); aggiornaStato(); },
+    azzera: () => { cancella(); stato = nuovoStato(Date.now()); aggiornaStato(); guida.avvia(); },
+    guida: () => guida.avvia(),
   });
 
   disegna();
+
+  // --- Guida dei primi passi e suoni ---
+  const guida = creaGuida({ vista: () => vista(stato), finita: () => { stato.guida.fatta = true; salva(stato); } });
+  if (!stato.guida.fatta) guida.avvia();
+  const suoniBtn = document.getElementById('suoni');
+  const ICONE_SUONI = { si: suoniBtn.innerHTML, no: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#d9cdb6" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="#c4291c" stroke-width="2" stroke-linecap="round"/></svg>` };
+  function mostraSuoni() {
+    const si = suoni.suoniAttivi();
+    suoniBtn.innerHTML = si ? ICONE_SUONI.si : ICONE_SUONI.no;
+    suoniBtn.setAttribute('aria-pressed', si); suoniBtn.setAttribute('aria-label', si ? 'Suoni accesi' : 'Suoni spenti');
+  }
+  suoniBtn.addEventListener('click', () => { suoni.attivaSuoni(!suoni.suoniAttivi()); mostraSuoni(); });
+  mostraSuoni();
+  // un piccolo "pop" a ogni pulsante dell'interfaccia
+  document.addEventListener('click', (e) => { if (e.target.closest('.tool, .mp, .vaso-b, .negozio-x, .negozio-vai, .guida-avanti, .suoni-b, .plus, .prova button')) suoni.tocco(); });
+
   // ritorno dopo una lunga assenza: nessun rimprovero (game-design.md, sezione 6.2)
   if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere.', 4500);
 
@@ -171,13 +194,13 @@ function avvia() {
       const esito = compra(stato, id);
       if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni annaffiando ogni giorno.`); return; }
       if (esito.esito !== 'ok') return;
-      salva(stato); disegna();
+      salva(stato); disegna(); suoni.magia();
       negozio.chiudi();
       ui.toast(`Ecco il vaso ${nomeVaso(id)}! Per cambiarlo tocca l'acero e scegli Aspetto.`, 3500);
     },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
-      salva(stato); disegna();
+      salva(stato); disegna(); suoni.magia();
       negozio.chiudi();
     },
   });
@@ -244,7 +267,7 @@ function avvia() {
       // fuori dalla potatura un tocco su una pianta apre la sua tendina
       if (potando) return;
       const quale = alberi.tocca(raycaster);
-      if (quale === 'acero') { menuAcero.hidden = !menuAcero.hidden; return; }
+      if (quale === 'acero') { menuAcero.hidden = !menuAcero.hidden; if (!menuAcero.hidden) suoni.fruscio(.1); return; }
       chiudiMenu();
       if (quale) ui.toast(`${nomiPiante[quale]} per ora si gode il giardino: per adesso si cura solo l'acero.`);
       return;
@@ -256,9 +279,11 @@ function avvia() {
     if (esito.esito !== 'ok') return;
     ui.forbici(e.clientX - r.left, e.clientY - r.top);
     germogli.taglia(id);
+    suoni.forbici(); setTimeout(() => suoni.fruscio(), 350);
+    guida.evento('potato');
     salva(stato);
     disegna();
-    if (esito.bonusSerie) ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero');
+    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
     ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
       : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
     // finiti i germogli da tagliare, la telecamera torna indietro da sola

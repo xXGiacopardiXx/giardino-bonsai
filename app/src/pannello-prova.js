@@ -5,7 +5,7 @@
 const fmtData = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const fmtNum = (n, cifre = 1) => n.toLocaleString('it-IT', { maximumFractionDigits: cifre });
 
-// azioni: anteprima(giorni), applica(giorni), azzera()
+// azioni: anteprima(giorni), applica(giorni), azzera(), guida()
 export function creaPannelloProva(azioni) {
   const el = document.createElement('section');
   el.className = 'prova'; el.hidden = true;
@@ -26,6 +26,7 @@ export function creaPannelloProva(azioni) {
     <div class="prova-pulsanti">
       <button data-a="ora">+1 ora</button>
       <button data-a="applica" class="principale">Fai passare il tempo</button>
+      <button data-a="guida">Rivedi la guida</button>
       <button data-a="azzera" class="pericolo">Nuova partita</button>
     </div>`;
   document.getElementById('screen').appendChild(el);
@@ -42,6 +43,7 @@ export function creaPannelloProva(azioni) {
     if (a === 'chiudi') { el.hidden = true; azzeraCursore(); }
     else if (a === 'ora') { azzeraCursore(); azioni.applica(1 / 24); }
     else if (a === 'applica') { const g = giorni(); azzeraCursore(); if (g > 0) azioni.applica(g); }
+    else if (a === 'guida') { el.hidden = true; azzeraCursore(); azioni.guida(); }
     else if (a === 'azzera' && confirm('Ricominciare da capo? La partita salvata verrà cancellata.')) { azzeraCursore(); azioni.azzera(); }
   });
 

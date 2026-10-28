@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 3;
+export const VERSIONE = 4;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, acqua: 5, serie7: 50 };
@@ -59,6 +59,8 @@ export function nuovoStato(ora) {
     albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane() },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
+    // la guida dei primi passi si mostra una volta sola, alla prima partita
+    guida: { fatta: false },
     oggi: { giorno: giornoLocale(ora), acqua: false },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
   };
@@ -76,6 +78,8 @@ export function migra(stato) {
   if (!stato || typeof stato !== 'object') return null;
   if (stato.versione === 1) { Object.assign(stato.albero, alberoGiovane()); stato.versione = 2; }
   if (stato.versione === 2) { stato.vasi = { posseduti: [VASI[0].id], scelto: VASI[0].id }; stato.versione = 3; }
+  // chi stava già giocando conosce i comandi: niente guida (si può rivedere dal pannello di prova)
+  if (stato.versione === 3) { stato.guida = { fatta: true }; stato.versione = 4; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
