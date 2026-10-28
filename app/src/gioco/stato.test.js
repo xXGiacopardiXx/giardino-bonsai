@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, concima, tratta, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -73,7 +73,8 @@ test('dopo una lunga assenza la chioma si riprende in circa una settimana di cur
   const s = nuovoStato(T0);
   avanza(s, dopo(40));
   assert.equal(vista(s).lungaAssenza, true);
-  for (let g = 40; g <= 47; g++) { annaffia(s, dopo(g)); }
+  // le cure di ogni giorno: acqua e, se sono arrivati durante l'assenza, via i parassiti
+  for (let g = 40; g <= 47; g++) { annaffia(s, dopo(g)); tratta(s, dopo(g)); }
   assert.equal(s.albero.salute, 1);
 });
 
@@ -322,4 +323,63 @@ test('un salvataggio della versione 5 riceve i rami nuovi e tiene il filo già m
   assert.equal(vista(s).rami.length, RAMI);
   assert.equal(vista(s).rami[1].filo, true);
   assert.equal(mettiFilo(s, T0, RAMI - 1, 0.4).esito, 'ok');
+});
+
+test('il concime dura una stagione, fa crescere di più e d\'inverno non serve', () => {
+  const con = nuovoStato(T0), senza = nuovoStato(T0);
+  assert.equal(concima(con, T0).esito, 'ok');
+  assert.equal(concima(con, T0 + ORA).esito, 'attivo');
+  assert.equal(vista(con).concime.giorni, 7);
+  for (const s of [con, senza]) { s.albero.germogli = [{ id: 99, punta: 0, lunghezza: 0.3 }]; s.albero.parassiti = null; annaffia(s, T0); avanza(s, T0 + 12 * ORA); }
+  assert.ok(con.albero.germogli.find(g => g.id === 99).lunghezza > senza.albero.germogli.find(g => g.id === 99).lunghezza);
+  avanza(con, dopo(8));
+  assert.equal(vista(con).concime.attivo, false);
+  const inverno = nuovoStato(T0);
+  avanza(inverno, dopo(22));
+  assert.equal(concima(inverno, dopo(22)).esito, 'inverno');
+});
+
+test('i parassiti arrivano a caso, si vedono dopo mezza giornata e trattati in tempo danno Semi', () => {
+  const s = nuovoStato(T0);
+  // un giocatore che passa ogni giorno a mezzogiorno e poi alle 2 di notte
+  let g = 0;
+  while (!s.albero.parassiti && g < 30) { annaffia(s, dopo(g)); g++; avanza(s, dopo(g - 0.42)); }
+  assert.ok(s.albero.parassiti, 'in un mese di bella stagione arrivano');
+  const da = s.albero.parassiti.da;
+  assert.equal(vista(s).parassiti.visibili, false);
+  assert.equal(vista(avanza(s, da + 13 * ORA)).parassiti.visibili, true);
+  const semi = s.semi, esito = tratta(s, da + 2 * ORA);
+  assert.equal(esito.semi, SEMI.parassiti + SEMI.scoperti, 'scoperti da vicino prima dell\'avviso');
+  assert.equal(s.semi, semi + esito.semi);
+  assert.equal(vista(s).parassiti, null);
+});
+
+test('i parassiti lasciati lì diradano la chioma, ma non oltre la metà', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  s.albero.parassiti = { posto: 2, da: T0 };
+  for (let g = 1; g <= 20; g++) { s.albero.sete = 0; avanza(s, dopo(g)); }
+  assert.ok(vista(s).parassiti.danno);
+  assert.equal(s.albero.salute, 0.5);
+  const esito = tratta(s, dopo(20));
+  assert.equal(esito.semi, 0);
+  assert.equal(esito.inTempo, false);
+});
+
+test('un salvataggio della versione 6 riceve concime e parassiti', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 6; delete vecchio.albero.concime; delete vecchio.albero.parassiti;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).parassiti, null);
+  assert.equal(vista(s).concime.attivo, false);
+});
+
+test('scoperti da vicino prima dell\'avviso, i parassiti danno qualche Seme in più', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  avanza(s, T0 + ORA);
+  s.albero.parassiti = { posto: 1, da: T0 + ORA };
+  assert.equal(vista(s).parassiti.visibili, false);
+  assert.equal(tratta(s, T0 + 3 * ORA).semi, SEMI.parassiti + SEMI.scoperti);
 });

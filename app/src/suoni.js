@@ -128,6 +128,18 @@ export function slega() {
   for (let i = 0; i < 6; i++) nota({ t: .12 + i * .06, freq: 2600 - i * 140, durata: .06, volume: .03, tipo: 'triangle' });
 }
 
+// concime: granuli che cadono sul terriccio, un ticchettio fitto e morbido
+export function concime() {
+  if (!pronto()) return;
+  for (let i = 0; i < 14; i++) soffio({ t: i * .035 + Math.random() * .02, durata: .05, tipo: 'bandpass', freq: 1400 + Math.random() * 900, q: 3, volume: .09, attacco: .003 });
+}
+
+// spray del trattamento: tre soffi rapidi e nebulizzati
+export function spray() {
+  if (!pronto()) return;
+  [0, .22, .44].forEach(t => soffio({ t, durata: .18, tipo: 'highpass', freq: 3800, q: .6, volume: .16, attacco: .01 }));
+}
+
 // Semi guadagnati: due note che salgono
 export function semi() {
   if (!pronto()) return;

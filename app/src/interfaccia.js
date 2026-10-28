@@ -81,6 +81,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
       // fase scritta col colore della gravità; acqua e chioma su due barre separate
       $('acero-fase').textContent = v.nomeFase;
       $('acero-fase').dataset.livello = v.fase === 0 ? 'bene' : v.fase === 1 ? 'sete' : v.fase < 4 ? 'stress' : 'grave';
+      // gli afidi evidenti si segnalano sull'etichetta (quelli appena arrivati si scoprono solo da vicino)
+      if (v.parassiti?.visibili && v.fase < 4) { $('acero-fase').textContent = 'Ha gli afidi'; $('acero-fase').dataset.livello = 'stress'; }
       $('acero-salute').textContent = salute;
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';

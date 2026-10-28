@@ -165,6 +165,16 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 - Sono visibili prima con lo zoom ravvicinato, poi anche da lontano.
 - Sfida: intervenire entro 24 ore. Chi li scopre presto con lo zoom riceve una ricompensa extra.
 
+### 6.5 Cura nell'app: concime e trattamento (acero)
+
+Si aprono da **Cura** nella barra o dalla tendina dell'acero: un pannello con due schede.
+
+- **Concime** (granuli a lenta cessione color crema, che si vedono sul terriccio e si consumano con i giorni): dura una stagione (7 giorni). Germogli, gemme e presa del filo crescono una volta e mezza più in fretta, la chioma si riprende più in fretta e i parassiti arrivano la metà delle volte. D'inverno la pianta riposa e il concime non serve; finché fa effetto non se ne può dare altro. Conta come cura del giorno. In autunno, a giorni alterni, la sfida del giorno può essere "Concima l'acero" (sezione 4.1).
+- **Parassiti (afidi):** al massimo un attacco alla volta, su uno dei 5 cuscinetti più visibili della chioma. Probabilità al giorno: 12% in primavera ed estate, 6% in autunno, mai d'inverno; doppia se la pianta ha sete (stress lieve o più), dimezzata con il concime. Il caso è prevedibile: la stessa partita nello stesso giorno dà sempre lo stesso risultato.
+- **Come si vedono:** puntini neri e verde chiaro sulle foglie, che crescono di numero e grandezza. Nelle prime 12 ore sono minuscoli e si scoprono solo avvicinandosi; poi l'etichetta dice "Ha gli afidi", sul pulsante Cura compare il "!" e un messaggio gentile avvisa.
+- **Trattamento:** lo spray fa una nuvola fine sul cuscinetto e gli afidi cadono e spariscono. Entro 24 ore: +20 Semi; scoperti prima dell'avviso: +10 in più. Conta come cura del giorno. Se non ci sono parassiti, un messaggio invita a guardare da vicino ogni tanto.
+- **Se restano:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri.
+
 ## 7. Sfide, serie ed economia
 
 ### 7.1 Sfide
@@ -173,7 +183,7 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 - **Settimanali:** per esempio rinvasare nella stagione giusta, eliminare i parassiti in tempo.
 - **Di lungo periodo:** completare uno stile.
 - La potatura **non completa sfide da sola**: è lo strumento per raggiungere lo stile. Unica eccezione, la sfida del giorno "Pota un germoglio": è una cimatura leggera dei germogli nuovi, che non fa male alla pianta.
-- **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", l'azione tipica della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 5 Semi.
+- **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", e in autunno, a giorni alterni e se non ha già il concime, "Concima l'acero": le azioni tipiche della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 5 Semi.
 
 ### 7.2 Serie di giorni consecutivi
 
@@ -190,7 +200,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Sfida del giorno (acqua, potatura o filo) | 5 |
 | Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
-| Parassiti eliminati in tempo | 20 |
+| Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
 | Rinvaso nella stagione giusta | 40 |
 | Fioritura o primi colori autunnali | 30 |
 | Stile completato | 300–500 |
@@ -329,7 +339,7 @@ Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a
 | Nell'MVP | Rimandato |
 |---|---|
 | **Una specie: l'acero giapponese.** Cambia aspetto in ogni stagione (verde, rosso, spoglio), e da spoglio in inverno mostra i rami da potare | Pino, ginepro, altre specie |
-| **Acqua, Pota e Filo** (il filo è arrivato dopo l'MVP, sezione 4.2.1) | Cura, Rinvaso, parassiti, troppa acqua |
+| **Acqua, Pota, Filo e Cura** (filo, concime e parassiti sono arrivati dopo l'MVP, sezioni 4.2.1 e 6.5) | Rinvaso, troppa acqua |
 | Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
 | Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
 | Un solo albero da curare (l'acero); il giardino è un ecosistema di piante, ognuna nel suo spazio: pino e ginepro restano, per ora senza cure | Cure per più alberi, zoom a 4 livelli |
@@ -348,7 +358,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Cura fatta: concime e afidi con trattamento (sezione 6.5).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

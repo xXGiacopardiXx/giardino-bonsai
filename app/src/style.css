@@ -151,6 +151,9 @@ button{touch-action:manipulation}
 .vaso-stato.tuo{color:#8a6a48}
 .negozio-vai{all:unset;cursor:pointer;display:block;margin:3cqw auto 0;padding:2cqw 4cqw;border-radius:3cqw;background:linear-gradient(#ffe08a,#f2b93e);border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);font:700 3.5cqw/1 var(--display);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
 .negozio-vai[hidden]{display:none}
+/* pannello Cura: due schede come quelle del negozio */
+.cure-lista{display:grid;grid-template-columns:repeat(2,1fr);gap:2.6cqw}
+.cura-stato{font:600 2.8cqw/1.25 var(--display);color:#8a6a48;min-height:7cqw;display:grid;place-items:center;padding:0 1cqw}
 .negozio-vai:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
 
 /* tendina della pianta: compare toccando l'acero, sotto la sua etichetta */

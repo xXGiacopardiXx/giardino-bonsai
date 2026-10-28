@@ -4,16 +4,16 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 6;
+export const VERSIONE = 7;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10 };
+export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
 
 // Sfida del giorno (sezione 7.1): sempre fattibile. Si sceglie la prima volta che si apre il gioco
 // in quel giorno, guardando la pianta in quel momento: annaffiare se il terriccio è asciutto,
 // altrimenti potare un germoglio (ogni giorno ne spunta uno); in inverno, a giorni alterni,
 // mettere il filo, l'azione tipica della stagione (sezione 4.1).
-export const SFIDE = { acqua: 'Annaffia l\'acero', pota: 'Pota un germoglio', filo: 'Metti il filo a un ramo' };
+export const SFIDE = { acqua: 'Annaffia l\'acero', pota: 'Pota un germoglio', filo: 'Metti il filo a un ramo', concime: 'Concima l\'acero' };
 
 // Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
 // Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
@@ -66,6 +66,32 @@ const SEGNO_SVANISCE = 0.05;           // tolto il filo, il segno sparisce in ci
 
 const limita = (v) => Math.min(1, Math.max(0, v));
 
+// Cura (sezione 4 e 6.4): concime e trattamento contro i parassiti.
+// Il concime dura una stagione (7 giorni): la pianta cresce e si riprende più in fretta e i parassiti
+// attaccano meno. D'inverno la pianta riposa e il concime non serve.
+// I parassiti (afidi) arrivano a caso su un cuscinetto della chioma, più spesso in primavera ed estate
+// e quando la pianta ha sete. Per mezza giornata sono piccoli e si vedono solo da vicino; poi compare
+// l'avviso. Trattati entro un giorno danno Semi (di più se scoperti prima dell'avviso); dopo, rallentano
+// la crescita e diradano un po' la chioma, mai sotto la metà: la pianta non muore.
+const DURATA_CONCIME = 7;              // giorni
+const SPINTA_CONCIME = 1.5;            // crescita e ripresa con il concime
+export const POSTI_PARASSITI = 5;      // cuscinetti della chioma dove possono comparire (li sceglie la scena)
+const PROBABILITA_PARASSITI = [0.12, 0.12, 0.06, 0]; // al giorno: primavera, estate, autunno, inverno
+const ORE_NASCOSTI = 12;               // prima dell'avviso: si scoprono solo guardando da vicino
+const ORE_IN_TEMPO = 24;               // trattati entro un giorno: nessun danno e Semi
+const DANNO_PARASSITI = 0.06;          // chioma persa al giorno, dopo il primo giorno
+const SALUTE_CON_PARASSITI = 0.5;      // i parassiti da soli non la diradano oltre la metà
+
+// numero tra 0 e 1 sempre uguale per la stessa partita e lo stesso giorno: i test si ripetono
+function caso(testo) {
+  let h = 2166136261;
+  for (let i = 0; i < testo.length; i++) h = Math.imul(h ^ testo.charCodeAt(i), 16777619);
+  h = Math.imul(h ^ h >>> 15, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909);
+  return ((h ^ h >>> 16) >>> 0) / 4294967296;
+}
+const concimeAttivo = (a, t) => !!a.concime && t < a.concime.fino;
+const oreParassiti = (a, t) => a.parassiti ? (t - a.parassiti.da) / ORA : 0;
+
 export function nuovoStato(ora) {
   return {
     versione: VERSIONE,
@@ -88,7 +114,7 @@ const ramiNuovi = () => Array.from({ length: RAMI }, () => ({ piega: 0, filo: nu
 
 // Germogli e gemme di una partita nuova: due germogli pronti, così Pota si prova subito
 function alberoGiovane() {
-  const a = { germogli: [], gemme: [], contatore: 0, rami: ramiNuovi() };
+  const a = { germogli: [], gemme: [], contatore: 0, rami: ramiNuovi(), concime: null, parassiti: null };
   spuntaGermoglio(a, 0.4); spuntaGermoglio(a, 0.55);
   return a;
 }
@@ -103,6 +129,7 @@ export function migra(stato) {
   if (stato.versione === 4) { stato.albero.rami = ramiNuovi(); stato.versione = 5; }
   // ora si legano tutti i rami principali: si aggiungono quelli che mancano, senza toccare gli altri
   if (stato.versione === 5) { while (stato.albero.rami.length < RAMI) stato.albero.rami.push({ piega: 0, filo: null, segno: 0 }); stato.versione = 6; }
+  if (stato.versione === 6) { stato.albero.concime = null; stato.albero.parassiti = null; stato.versione = 7; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -120,6 +147,10 @@ function spuntaGermoglio(a, lunghezza = LUNGHEZZA_INIZIALE) {
 // Quanto cresce la pianta: con la stagione, e meno quando ha sete (sezione 6.1: lo stress lieve rallenta, il medio ferma)
 function vigore(stagione, sete) {
   return VIGORE[stagione] * (sete < 2 ? 1 : sete < 4 ? 0.4 : 0);
+}
+// la crescita vera: il concime la spinge, i parassiti non curati la frenano
+function vigoreDi(a, stagione, t) {
+  return vigore(stagione, a.sete) * (concimeAttivo(a, t) ? SPINTA_CONCIME : 1) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1);
 }
 
 // Fin dove può arrivare la chioma con una certa sete: a lungo senz'acqua si perdono i rametti periferici
@@ -144,8 +175,9 @@ export function avanza(stato, ora) {
     a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione]);
     const max = saluteMassima(a.sete);
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
-    else if (a.sete < 2) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO);
-    const v = giorni * vigore(stagione, a.sete);
+    else if (a.sete < 2 && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * (concimeAttivo(a, t) ? SPINTA_CONCIME : 1));
+    if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
+    const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     for (const r of a.rami) {
@@ -183,6 +215,13 @@ function nuovoGiorno(stato, ora) {
   const a = stato.albero;
   const { stagione } = calendario(stato.inizio, ora);
   if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
+  // parassiti: al massimo un attacco alla volta
+  if (!a.parassiti) {
+    const p = PROBABILITA_PARASSITI[stagione] * (a.sete >= 2 ? 2 : 1) * (concimeAttivo(a, ora) ? 0.5 : 1);
+    const giorno = stato.inizio + ':' + giornoLocale(ora);
+    if (caso(giorno) < p) a.parassiti = { posto: Math.floor(caso(giorno + ':posto') * POSTI_PARASSITI), da: ora };
+  }
+  if (a.concime && ora >= a.concime.fino) a.concime = null;
   // la sfida si sceglie quando il giocatore vede il giorno (alla fine di avanza)
   stato.oggi = { giorno: giornoLocale(ora), acqua: false, sfida: null };
 }
@@ -192,6 +231,7 @@ function scegliSfida(stato, ora) {
   const { stagione, giornoStagione } = calendario(stato.inizio, ora);
   const tipo = a.sete >= SETE_PER_ANNAFFIARE ? 'acqua'
     : stagione === 3 && giornoStagione % 2 === 0 ? 'filo'
+    : stagione === 2 && giornoStagione % 2 === 0 && !concimeAttivo(a, ora) ? 'concime'
     : a.germogli.some(g => g.lunghezza >= POTABILE_DA) ? 'pota' : 'filo';
   // salvataggi di prima della sfida variabile: se oggi ha già annaffiato, la sfida era l'acqua ed è fatta
   stato.oggi.sfida = stato.oggi.acqua ? { tipo: 'acqua', fatta: true } : { tipo, fatta: false };
@@ -269,6 +309,32 @@ export function togliFilo(stato, ora, ramo) {
   return { esito: 'ok', semi, presa, bonusSerie: registraCura(stato, ora) };
 }
 
+// Concima la pianta per una stagione. esito: 'ok', 'attivo' (ce n'è ancora) o 'inverno' (riposa).
+// Conta per la serie.
+export function concima(stato, ora) {
+  avanza(stato, ora);
+  const a = stato.albero, { stagione } = calendario(stato.inizio, ora);
+  if (stagione === 3) return { esito: 'inverno', semi: 0, bonusSerie: 0 };
+  if (concimeAttivo(a, ora)) return { esito: 'attivo', semi: 0, bonusSerie: 0 };
+  a.concime = { fino: ora + DURATA_CONCIME * GIORNO };
+  const semi = completaSfida(stato, 'concime');
+  return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
+}
+
+// Tratta i parassiti. esito: 'ok' o 'nessuno'. In tempo (entro un giorno) danno Semi,
+// e qualcuno in più se scoperti da vicino prima dell'avviso. Conta per la serie.
+export function tratta(stato, ora) {
+  avanza(stato, ora);
+  const a = stato.albero;
+  if (!a.parassiti) return { esito: 'nessuno', semi: 0, inTempo: false, presto: false, bonusSerie: 0 };
+  const ore = oreParassiti(a, ora);
+  const presto = ore < ORE_NASCOSTI, inTempo = ore <= ORE_IN_TEMPO;
+  const semi = (inTempo ? SEMI.parassiti : 0) + (presto ? SEMI.scoperti : 0);
+  stato.semi += semi;
+  a.parassiti = null;
+  return { esito: 'ok', semi, inTempo, presto, bonusSerie: registraCura(stato, ora) };
+}
+
 // Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
 export function compra(stato, id) {
   const vaso = VASI.find(v => v.id === id);
@@ -328,10 +394,24 @@ export function vista(stato) {
       presa: r.filo ? r.filo.presa : 1,
       pronto: !!r.filo && r.filo.presa >= 1,
       // giorni che mancano alla presa, con il ritmo di adesso (null se sotto stress non cresce)
-      giorniAllaPresa: r.filo && r.filo.presa < 1 ? (vigore(cal.stagione, a.sete) > 0 ? Math.ceil((1 - r.filo.presa) / (PRESA_AL_GIORNO * vigore(cal.stagione, a.sete)) - 1e-9) : null) : 0,
+      giorniAllaPresa: r.filo && r.filo.presa < 1 ? (vigoreDi(a, cal.stagione, stato.aggiornato) > 0 ? Math.ceil((1 - r.filo.presa) / (PRESA_AL_GIORNO * vigoreDi(a, cal.stagione, stato.aggiornato)) - 1e-9) : null) : 0,
       segno: r.segno,
     })),
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
+    // concime: attivo per altri N giorni; si può dare fuori dall'inverno se non ce n'è già
+    concime: {
+      attivo: concimeAttivo(a, stato.aggiornato),
+      giorni: concimeAttivo(a, stato.aggiornato) ? Math.ceil((a.concime.fino - stato.aggiornato) / GIORNO - 1e-9) : 0,
+      inverno: cal.stagione === 3,
+    },
+    // parassiti: posto (cuscinetto), quanto sono cresciuti (0..1), se c'è già l'avviso, se fanno danno
+    parassiti: a.parassiti ? {
+      posto: a.parassiti.posto,
+      grandezza: limita(oreParassiti(a, stato.aggiornato) / 48),
+      visibili: oreParassiti(a, stato.aggiornato) >= ORE_NASCOSTI,
+      danno: oreParassiti(a, stato.aggiornato) > ORE_IN_TEMPO,
+      oreInTempo: Math.max(0, Math.ceil(ORE_IN_TEMPO - oreParassiti(a, stato.aggiornato))),
+    } : null,
     puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
     // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,

@@ -365,6 +365,10 @@ function pianta(f, soil, ring, dati) {
     scalaGermogli: 1.5,
     // 1 = chioma piena, 0,2 = quasi spoglia (resta sempre qualche ciuffo)
     setSalute(v) { salute = v; chioma(); },
+    // i ciuffi di un cuscinetto (posizione e grandezza, nel gruppo del tronco) e il gruppo che li porta:
+    // servono a posare i parassiti sulle foglie
+    ciuffiDi(pad) { return forme.filter((_, i) => dati.padDi?.[i] === pad); },
+    gruppoDi(pad) { return dati.pieghe?.[pad] ?? dati.g; },
     // un ramo col filo si è mosso: i suoi ciuffi lo seguono
     aggiornaPieghe() { chiavePrima = ''; chioma(); },
     // 0 = idratata, 1 = assetata: sfuma il colore di ogni ciuffo verso le foglie secche
