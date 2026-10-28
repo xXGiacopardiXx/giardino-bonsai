@@ -1,14 +1,9 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { readFileSync } from 'node:fs';
-
-const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 
 export default defineConfig({
   // Percorsi relativi: l'app funziona anche in una sottocartella (es. GitHub Pages)
   base: './',
-  // la versione dell'app finisce nel parere dei tester (parere.js)
-  define: { __VERSIONE__: JSON.stringify(version) },
   // Three.js da solo pesa circa 600 kB: è normale, non serve l'avviso
   build: { chunkSizeWarningLimit: 900 },
   plugins: [

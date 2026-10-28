@@ -12,7 +12,6 @@ Gioco mobile rilassante sulla cura di bonsai digitali in un giardino giapponese.
 - `app/src/guida.js`: guida dei primi passi (una volta sola, flag `guida` nel salvataggio). `app/src/suoni.js`: suoni generati con la Web Audio API, niente file audio. `app/src/musica.js`: musica di sottofondo composta dal codice, con lo stesso contesto audio.
 - `app/src/negozio.js`: negozio dei vasi (catalogo `VASI` e acquisti nel motore, forme dei vasi in `scena/alberi.js`).
 - `docs/guida-iphone.md`: come provare e installare l'app sull'iPhone, gratis.
-- `app/src/parere.js`: scheda "Il tuo parere" per i tester (fase 6), inviata con la condivisione del telefono. `docs/guida-tester.md`: come organizzare la prova con gli amici e il messaggio da mandare.
 - `.github/workflows/pubblica.yml`: pubblica `app/` su GitHub Pages a ogni push su `main`.
 
 ## App
