@@ -6,7 +6,7 @@ Gioco mobile rilassante sulla cura di bonsai digitali in un giardino giapponese.
 
 - `docs/game-design.md`: tutte le decisioni di design (tempo, cure, trascuratezza, economia, stile, architettura, roadmap). **È la fonte di riferimento**: leggerlo prima di proporre o modificare qualcosa.
 - `prototipo/giardino-bonsai.html`: prototipo di stile della homepage, scena 3D in Three.js in un'unica pagina HTML.
-- `app/`: l'app vera (PWA), Three.js + Vite in JavaScript semplice. Codice della scena in `app/src/scena/` (germogli e gemme della potatura in `germogli.js`), interfaccia in `app/src/interfaccia.js`, avvio in `app/src/main.js`.
+- `app/`: l'app vera (PWA), Three.js + Vite in JavaScript semplice. Codice della scena in `app/src/scena/` (germogli e gemme della potatura in `germogli.js`, rami piegati col filo in `filo.js`), interfaccia in `app/src/interfaccia.js`, avvio in `app/src/main.js`.
 - `app/src/gioco/`: il motore senza grafica (tempo compresso, stato della partita, salvataggio in `localStorage`) con i test in `stato.test.js`. Le funzioni ricevono l'ora come parametro; la scena si disegna solo da `vista(stato)`.
 - `app/src/pannello-prova.js`: pannello per far passare il tempo, si apre con 3 tocchi sulla stagione.
 - `app/src/guida.js`: guida dei primi passi (una volta sola, flag `guida` nel salvataggio). `app/src/suoni.js`: suoni generati con la Web Audio API, niente file audio. `app/src/musica.js`: musica di sottofondo composta dal codice, con lo stesso contesto audio.

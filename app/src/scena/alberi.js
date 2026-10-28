@@ -4,6 +4,7 @@
 // (scena/germogli.js). Pino e ginepro fanno parte del giardino e per ora stanno sempre bene.
 // I dettagli non consumano numeri della sequenza col seme.
 import * as THREE from 'three';
+import { creaFilo } from './filo.js';
 import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
@@ -105,11 +106,21 @@ export function creaAlberi(world) {
     const legnoA = corteccia(0x857262, { chiaro: .18, scuro: .25 });
     tube([[0, -.05, 0], [.08, .35, .02], [-.12, .75, .05], [.04, 1.15, 0], [0, 1.55, 0]], .2, .06, legnoA, tr);
     for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2 + .3; tube([[0, .06, 0], [Math.cos(a) * .22, 0, Math.sin(a) * .18], [Math.cos(a) * .42, -.03, Math.sin(a) * .3]], .075, .02, legnoA, tr, 6); }
-    [[[-.1, .7, .04], [-.55, .9, .12], [-1.0, 1.05, .1]], [[.03, 1.0, 0], [.5, 1.2, -.08], [.95, 1.35, -.05]], [[.02, 1.3, 0], [-.25, 1.55, .18], [-.45, 1.75, .2]], [[.03, 1.15, -.02], [.15, 1.35, -.35], [.2, 1.5, -.55]], [[0, 1.5, 0], [.15, 1.75, -.05], [.2, 1.95, -.1]], [[.02, 1.2, .02], [.3, 1.45, .25], [.45, 1.7, .3]]].forEach(p => tube(p, .075, .022, legnoA, tr, 10));
+    const ramiA = [[[-.1, .7, .04], [-.55, .9, .12], [-1.0, 1.05, .1]], [[.03, 1.0, 0], [.5, 1.2, -.08], [.95, 1.35, -.05]], [[.02, 1.3, 0], [-.25, 1.55, .18], [-.45, 1.75, .2]], [[.03, 1.15, -.02], [.15, 1.35, -.35], [.2, 1.5, -.55]], [[0, 1.5, 0], [.15, 1.75, -.05], [.2, 1.95, -.1]], [[.02, 1.2, .02], [.3, 1.45, .25], [.45, 1.7, .3]]];
     const padsA = [[-1.0, 1.08, .1, .56], [.95, 1.38, -.05, .56], [-.45, 1.82, .2, .5], [.2, 2.0, -.1, .6], [.2, 1.55, -.55, .46], [-.5, 1.42, -.3, .42], [.45, 1.75, .3, .44]];
+    // rami da legare col filo (l'ordine è quello di RAMI nel motore): [ramo qui sopra, cuscinetto che porta]
+    // ognuno ha un gruppo che ruota attorno all'attacco sul tronco, con il ramo e i suoi rametti
+    const LEGABILI = [[0, 0], [1, 1], [2, 2], [5, 6]];
+    const gruppoRamo = {}, gruppoPad = {};
+    for (const [b, pad] of LEGABILI) { const g = new THREE.Group(); g.matrixAutoUpdate = false; tr.add(g); gruppoRamo[b] = gruppoPad[pad] = g; }
+    ramiA.forEach((p, b) => tube(p, .075, .022, legnoA, gruppoRamo[b] ?? tr, 10));
     const f = foliage(tr, padsA,
       { palette: ACERO.autunno, density: 72, size: .37, flat: .78, detail: 1, geo: ciuffoFoglie({ n: 7, lobi: 5, incavo: .32, nucleo: .1, grandezza: .74 }) });
-    const puntiRametti = rametti(tr, padsA, legnoA, 21);
+    const puntiRametti = rametti(pad => gruppoPad[pad] ?? tr, padsA, legnoA, 21);
+    const filo = creaFilo(LEGABILI.map(([b, pad]) => {
+      const [x, y, z, r] = padsA[pad];
+      return { gruppo: gruppoRamo[b], punti: ramiA[b], r0: .075, r1: .022, cima: new THREE.Vector3(x, y + r * .5, z) };
+    }));
     // anello azzurro a terra, attorno al tavolo: indica la pianta che ha bisogno
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.38, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
     ring.rotation.x = -PI / 2; ring.position.y = .025; t.add(ring);
@@ -131,9 +142,10 @@ export function creaAlberi(world) {
         .sort((a, b) => b.voto - a.voto).slice(0, 2).map(x => x.q);
     });
     const punte = [0, 1].flatMap(j => scelti.map(coppia => {
-      const { da, a } = coppia[j];
-      // il germoglio prosegue il rametto piegando verso l'alto, verso la luce
-      return { p: a.clone(), d: a.clone().sub(da).normalize().add(new THREE.Vector3(0, 1.3, 0)).normalize() };
+      const { da, a, pad } = coppia[j];
+      // il germoglio prosegue il rametto piegando verso l'alto, verso la luce;
+      // gruppo: sta sul ramo e si piega con lui quando si mette il filo
+      return { p: a.clone(), d: a.clone().sub(da).normalize().add(new THREE.Vector3(0, 1.3, 0)).normalize(), gruppo: gruppoPad[pad] };
     }));
     acero = pianta(f, soil, ring, {
       // il primo vaso (quello del salvataggio) si mette senza stelline
@@ -141,6 +153,10 @@ export function creaAlberi(world) {
       scintille,
       g: tr,
       punte,
+      filo,
+      // cuscinetto di ogni ciuffo e gruppo che lo piega: le foglie seguono il ramo col filo
+      padDi: f.pad,
+      pieghe: gruppoPad,
       aghi: false,
       legno: legnoA,
       // dove guarda la telecamera durante la potatura
@@ -155,6 +171,7 @@ export function creaAlberi(world) {
         return out;
       },
     });
+    filo.quandoPiega = () => acero.aggiornaPieghe();
   }
 
   let ginepro;
@@ -309,7 +326,10 @@ function pianta(f, soil, ring, dati) {
       const { pos, q, sc } = forme[idx];
       vp.copy(pos); vp.y -= appassimento * (.06 + .1 * f.periferia[idx]);
       vs.copy(sc); vs.y *= 1 - .4 * appassimento; vs.x *= 1 - .08 * appassimento; vs.z *= 1 - .08 * appassimento;
-      f.m.setMatrixAt(idx, m4.compose(vp, q, vs));
+      m4.compose(vp, q, vs);
+      const piega = dati.pieghe?.[dati.padDi[idx]];
+      if (piega) m4.premultiply(piega.matrix);
+      f.m.setMatrixAt(idx, m4);
       visibili.push(idx);
     });
     f.m.instanceMatrix.needsUpdate = true;
@@ -343,6 +363,8 @@ function pianta(f, soil, ring, dati) {
     scalaGermogli: 1.5,
     // 1 = chioma piena, 0,2 = quasi spoglia (resta sempre qualche ciuffo)
     setSalute(v) { salute = v; chioma(); },
+    // un ramo col filo si è mosso: i suoi ciuffi lo seguono
+    aggiornaPieghe() { chiavePrima = ''; chioma(); },
     // 0 = idratata, 1 = assetata: sfuma il colore di ogni ciuffo verso le foglie secche
     setThirst(v) { this.thirst = v; colora(); },
     // 0 = sta bene, 1 = soffre molto: chioma afflosciata, foglie spente, anello arancione
@@ -366,6 +388,7 @@ function pianta(f, soil, ring, dati) {
     aggiorna(clock) {
       const dt = orologio === null ? 0 : Math.min(.05, clock - orologio); orologio = clock;
       this.scintille?.aggiorna(dt);
+      this.filo?.aggiorna(clock);
       // più soffre, più foglie secche cadono (fino a 2 al secondo)
       const ritmo = Math.max(appassimento * 2, (this.thirst - .7) * 2);
       if (ritmo > 0 && visibili.length) {
@@ -373,10 +396,11 @@ function pianta(f, soil, ring, dati) {
         while (accumulo > 1) {
           accumulo--;
           const c = cadute.find(x => !x.attiva); if (!c) break;
-          const { pos } = forme[visibili[(Math.random() * visibili.length) | 0]];
-          c.m.position.copy(pos); c.m.rotation.set(0, Math.random() * 6, 0);
+          const idx = visibili[(Math.random() * visibili.length) | 0], piega = dati.pieghe?.[dati.padDi[idx]];
+          c.m.position.copy(forme[idx].pos); if (piega) c.m.position.applyMatrix4(piega.matrix);
+          c.m.rotation.set(0, Math.random() * 6, 0);
           // si posa sul tavolo se ci cade sopra, altrimenti a terra
-          c.terra = Math.abs(pos.x) < 1.05 && Math.abs(pos.z) < .65 ? -.33 : -1.14;
+          c.terra = Math.abs(c.m.position.x) < 1.05 && Math.abs(c.m.position.z) < .65 ? -.33 : -1.14;
           c.v = .3 + Math.random() * .2; c.t = 0; c.attiva = true; c.m.visible = true; c.m.scale.setScalar(1);
         }
       }

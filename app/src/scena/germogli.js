@@ -83,7 +83,7 @@ export function creaGermogli(scene, albero) {
       const tocco = new THREE.Mesh(toccoGeo, toccoMat); tocco.userData.id = g.id; o.add(tocco);
       const alone = new THREE.Mesh(aloneGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
       o.add(alone);
-      albero.g.add(o);
+      (albero.punte[g.punta].gruppo ?? albero.g).add(o);
       return { o, fusto, ciuffi, punta, tocco, alone, mat, piega, L: -1, potabile: false, nato: performance.now() };
     }
     const fusto = new THREE.Mesh(fustoGeo, fustoMat); fusto.castShadow = true; o.add(fusto);
@@ -97,7 +97,7 @@ export function creaGermogli(scene, albero) {
     const tocco = new THREE.Mesh(toccoGeo, toccoMat); tocco.userData.id = g.id; o.add(tocco);
     const alone = new THREE.Mesh(aloneGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
     o.add(alone);
-    albero.g.add(o);
+    (albero.punte[g.punta].gruppo ?? albero.g).add(o);
     return { o, fusto, ciuffi, punta, tocco, alone, mat, potabile: false, nato: performance.now() };
   }
 
@@ -144,7 +144,7 @@ export function creaGermogli(scene, albero) {
     const m = new THREE.Mesh(gemmaGeo, toon({ color: GEMMA.clone(), side: THREE.DoubleSide })); m.castShadow = true;
     m.position.copy(p).add(off);
     m.rotation.set(hash(punta * 11 + k) * PI, hash(punta * 13 + k) * PI, 0);
-    albero.g.add(m);
+    (albero.punte[punta].gruppo ?? albero.g).add(m);
     return { m, nato: performance.now(), crescita: 0 };
   }
 

@@ -111,6 +111,23 @@ export function fruscio(volume = .14) {
   for (let i = 0; i < 3; i++) soffio({ t: i * .07, durata: .28, tipo: 'bandpass', freq: 3000 + i * 600, q: .9, volume: volume * (1 - i * .25), attacco: .04 });
 }
 
+// filo di rame avvolto sul ramo: piccoli tintinnii metallici che girano, sopra un fruscio
+export function filo() {
+  if (!pronto()) return;
+  for (let i = 0; i < 9; i++) {
+    nota({ t: .05 + i * .075, freq: 2200 + i * 90 + Math.random() * 120, durata: .07, volume: .035, tipo: 'triangle' });
+    soffio({ t: .05 + i * .075, durata: .06, tipo: 'highpass', freq: 5000, q: .7, volume: .05, attacco: .004 });
+  }
+  fruscio(.08);
+}
+
+// filo tolto: uno scatto di tronchesina e il filo che si srotola
+export function slega() {
+  if (!pronto()) return;
+  soffio({ durata: .05, tipo: 'highpass', freq: 4200, q: 1, volume: .28, attacco: .002 });
+  for (let i = 0; i < 6; i++) nota({ t: .12 + i * .06, freq: 2600 - i * 140, durata: .06, volume: .03, tipo: 'triangle' });
+}
+
 // Semi guadagnati: due note che salgono
 export function semi() {
   if (!pronto()) return;

@@ -4,10 +4,10 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 4;
+export const VERSIONE = 5;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, acqua: 5, serie7: 50 };
+export const SEMI = { iniziali: 50, acqua: 5, serie7: 50, filo: 10 };
 
 // Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
 // Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
@@ -49,6 +49,17 @@ const CRESCITA_GERMOGLIO = 0.3;        // al giorno, in estate: da cimabile a ge
 const CRESCITA_GEMMA = 0.5;            // al giorno, in estate: una gemma diventa un ciuffo in 2 giorni
 const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
 
+// Filo (sezione 4.2): si avvolge un ramo e lo si piega; crescendo il ramo "prende" la posizione.
+// Poi il filo va tolto: se resta troppo a lungo segna la corteccia (segno che sparisce piano).
+// piega: da -1 (ramo abbassato al massimo) a 1 (alzato al massimo); l'angolo vero lo decide la scena.
+export const RAMI = 4;                 // rami dell'acero che si possono legare (li disegna la scena)
+const PRESA_AL_GIORNO = 0.25;          // in estate: il ramo prende la forma in 4 giorni (più in fretta in primavera)
+const TOLLERANZA_FILO = 2;             // giorni dopo la presa in cui il filo non fa ancora danni
+const SEGNO_AL_GIORNO = 0.25;          // poi il segno sulla corteccia si fa pieno in 4 giorni
+const SEGNO_SVANISCE = 0.05;           // tolto il filo, il segno sparisce in circa 20 giorni
+
+const limita = (v) => Math.min(1, Math.max(0, v));
+
 export function nuovoStato(ora) {
   return {
     versione: VERSIONE,
@@ -66,9 +77,11 @@ export function nuovoStato(ora) {
   };
 }
 
+const ramiNuovi = () => Array.from({ length: RAMI }, () => ({ piega: 0, filo: null, segno: 0 }));
+
 // Germogli e gemme di una partita nuova: due germogli pronti, così Pota si prova subito
 function alberoGiovane() {
-  const a = { germogli: [], gemme: [], contatore: 0 };
+  const a = { germogli: [], gemme: [], contatore: 0, rami: ramiNuovi() };
   spuntaGermoglio(a, 0.4); spuntaGermoglio(a, 0.55);
   return a;
 }
@@ -80,6 +93,7 @@ export function migra(stato) {
   if (stato.versione === 2) { stato.vasi = { posseduti: [VASI[0].id], scelto: VASI[0].id }; stato.versione = 3; }
   // chi stava già giocando conosce i comandi: niente guida (si può rivedere dal pannello di prova)
   if (stato.versione === 3) { stato.guida = { fatta: true }; stato.versione = 4; }
+  if (stato.versione === 4) { stato.albero.rami = ramiNuovi(); stato.versione = 5; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -125,6 +139,15 @@ export function avanza(stato, ora) {
     const v = giorni * vigore(stagione, a.sete);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
+    for (const r of a.rami) {
+      if (!r.filo) { r.segno = Math.max(0, r.segno - giorni * SEGNO_SVANISCE); continue; }
+      // il ramo prende la forma crescendo: come i germogli, si ferma sotto stress
+      if (r.filo.presa < 1) r.filo.presa = Math.min(1, r.filo.presa + v * PRESA_AL_GIORNO);
+      else {
+        r.filo.oltre += giorni;
+        r.segno = Math.max(r.segno, limita((r.filo.oltre - TOLLERANZA_FILO) * SEGNO_AL_GIORNO));
+      }
+    }
     t += passo;
     // ogni giorno nuovo, anche quando si salta avanti di molti giorni in una volta
     if (giornoLocale(t) !== stato.oggi.giorno) nuovoGiorno(stato, t);
@@ -188,6 +211,31 @@ export function pota(stato, ora, id) {
   return { esito: 'ok', gemme, bonusSerie };
 }
 
+// Avvolge il filo su un ramo e lo piega (piega da -1 a 1). Se c'era già un filo, lo rifà da capo.
+// Conta per la serie. esito: 'ok' o 'nessuno'.
+export function mettiFilo(stato, ora, ramo, piega) {
+  avanza(stato, ora);
+  const r = stato.albero.rami[ramo];
+  if (!r) return { esito: 'nessuno', bonusSerie: 0 };
+  r.filo = { piega: Math.max(-1, Math.min(1, piega)), presa: 0, oltre: 0 };
+  return { esito: 'ok', bonusSerie: registraCura(stato, ora) };
+}
+
+// Toglie il filo. Il ramo resta piegato quanto ha preso: tolto presto, torna in parte indietro.
+// Tolto al momento giusto (forma presa, corteccia senza segni) regala qualche Seme.
+// esito: 'ok' o 'nessuno'; presa: quanto della piega è rimasto (da 0 a 1)
+export function togliFilo(stato, ora, ramo) {
+  avanza(stato, ora);
+  const r = stato.albero.rami[ramo];
+  if (!r?.filo) return { esito: 'nessuno', semi: 0, presa: 0, bonusSerie: 0 };
+  const { piega, presa } = r.filo;
+  r.piega += (piega - r.piega) * presa;
+  r.filo = null;
+  const semi = presa >= 1 && r.segno < 0.05 ? SEMI.filo : 0;
+  stato.semi += semi;
+  return { esito: 'ok', semi, presa, bonusSerie: registraCura(stato, ora) };
+}
+
 // Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
 export function compra(stato, id) {
   const vaso = VASI.find(v => v.id === id);
@@ -207,7 +255,6 @@ export function scegliVaso(stato, id) {
   return true;
 }
 
-const limita = (v) => Math.min(1, Math.max(0, v));
 
 // Tutto quello che serve per disegnare: calcolato dallo stato, senza modificarlo.
 export function vista(stato) {
@@ -241,6 +288,17 @@ export function vista(stato) {
     lungaAssenza: a.sete >= FASI[4].da,
     germogli: a.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
     gemme: a.gemme.map(g => ({ ...g })),
+    // rami da legare: piega attuale (col filo, quella voluta), stato del filo e segni sulla corteccia
+    rami: a.rami.map(r => ({
+      piega: r.filo ? r.filo.piega : r.piega,
+      filo: !!r.filo,
+      presa: r.filo ? r.filo.presa : 1,
+      pronto: !!r.filo && r.filo.presa >= 1,
+      // giorni che mancano alla presa, con il ritmo di adesso (null se sotto stress non cresce)
+      giorniAllaPresa: r.filo && r.filo.presa < 1 ? (vigore(cal.stagione, a.sete) > 0 ? Math.ceil((1 - r.filo.presa) / (PRESA_AL_GIORNO * vigore(cal.stagione, a.sete)) - 1e-9) : null) : 0,
+      segno: r.segno,
+    })),
+    filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
     puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
     // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,

@@ -23,7 +23,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -68,7 +68,7 @@ function avvia() {
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, { enablePan: false, enableDamping: true, dampingFactor: .08, rotateSpeed: .55, zoomSpeed: .8, minPolarAngle: .55, maxPolarAngle: 1.2 });
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
-  let baseDist = 30, potando = false;
+  let baseDist = 30, potando = false, filando = false;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
     const w = screenEl.clientWidth, h = screenEl.clientHeight; if (!w || !h) return;
@@ -77,7 +77,7 @@ function avvia() {
     baseDist = Math.min(44, Math.max(16, hw / (Math.tan(camera.fov / 2 * Math.PI / 180) * Math.min(a, 1))));
     camera.updateProjectionMatrix();
     // durante la potatura ci si può avvicinare di più, per toccare i germogli
-    controls.minDistance = baseDist * (potando ? .2 : .45); controls.maxDistance = baseDist * 1.15;
+    controls.minDistance = baseDist * (potando || filando ? .2 : .45); controls.maxDistance = baseDist * 1.15;
     scene.fog.near = baseDist + 8; scene.fog.far = baseDist + 62;
   }
   fit();
@@ -113,6 +113,8 @@ function avvia() {
       acero.ring.visible = v.haSete;
       acero.setAppassimento(v.appassimento);
     }
+    acero.filo.setRami(v.rami);
+    document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere);
     acero.setSalute(v.salute);
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
@@ -194,7 +196,6 @@ function avvia() {
 
   // Strumenti non ancora attivi
   const prossimamente = {
-    't-wire': 'Filo: trascina un ramo per piegarlo nella forma voluta. Arriva più avanti.',
     't-care': 'Cura: concime e trattamenti contro i parassiti. Arriva più avanti.',
   };
   for (const id in prossimamente) document.getElementById(id).addEventListener('click', () => ui.toast(prossimamente[id]));
@@ -228,6 +229,7 @@ function avvia() {
     chiudiMenu();
     if (a === 'acqua') waterBtn.click();
     else if (a === 'pota') document.getElementById('t-prune').click();
+    else if (a === 'filo') document.getElementById('t-wire').click();
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
   });
   const nomiPiante = { pino: 'Il pino nero', ginepro: 'Il ginepro' };
@@ -244,6 +246,7 @@ function avvia() {
   }
   function potatura(on) {
     if (on === potando) return;
+    if (on) filatura(false);
     potando = on; germogli.potatura = on;
     if (on) chiudiMenu();
     pruneBtn.classList.toggle('attivo', on);
@@ -264,6 +267,104 @@ function avvia() {
   });
 
   const raycaster = new THREE.Raycaster(), puntatore = new THREE.Vector2();
+  function punta(e) {
+    const r = canvas.getBoundingClientRect();
+    puntatore.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    raycaster.setFromCamera(puntatore, camera);
+  }
+
+  // --- Filo (sezione 4.2): Filo avvicina la telecamera e mostra un pallino di rame sulla punta
+  // di ogni ramo. Trascinandolo su o giù il ramo si piega e il filo si avvolge; quando il ramo ha
+  // preso la forma il pallino diventa verde: toccandolo si toglie il filo. ---
+  const wireBtn = document.getElementById('t-wire');
+  function filatura(on) {
+    if (on === filando) return;
+    if (on) potatura(false);
+    filando = on; acero.filo.maniglie = on;
+    if (on) chiudiMenu();
+    wireBtn.classList.toggle('attivo', on);
+    if (on) {
+      distanzaPrima = camera.position.distanceTo(controls.target);
+      controls.minDistance = baseDist * .2;
+      vola(acero.fuoco, baseDist * .36);
+    } else {
+      vola(centro, Math.max(distanzaPrima, baseDist * .45));
+      controls.minDistance = baseDist * .45;
+    }
+  }
+  const giorni = (n) => n === 1 ? 'un giorno' : `${n} giorni`;
+  const ANTEPRIMA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
+  wireBtn.addEventListener('click', () => {
+    if (filando) { filatura(false); return; }
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    filatura(true);
+    ui.toast(vista(stato).filoDaTogliere ? 'Un ramo ha preso la forma: tocca il pallino verde per togliere il filo.'
+      : 'Trascina un pallino di rame su o giù per piegare il ramo. Tocca Filo per finire.', 3800);
+  });
+  // trascinamento di un pallino: si ascolta prima della telecamera, così il dito piega il ramo invece di ruotare la scena
+  let tiro = null, ultimoTocco = { ramo: -1, t: 0 };
+  screenEl.addEventListener('pointerdown', (e) => {
+    if (!filando || e.target !== canvas || tiro) return;
+    punta(e);
+    const i = acero.filo.tocca(raycaster);
+    if (i === null) return;
+    e.stopPropagation();
+    controls.enabled = false;
+    const piega = vista(stato).rami[i].piega;
+    tiro = { i, id: e.pointerId, y: e.clientY, piega, ora: piega, mosso: false };
+  }, true);
+  window.addEventListener('pointermove', (e) => {
+    if (!tiro || e.pointerId !== tiro.id) return;
+    const dy = tiro.y - e.clientY;
+    if (Math.abs(dy) > 8) tiro.mosso = true;
+    if (!tiro.mosso) return;
+    // un quarto dello schermo in verticale = tutta la piega possibile in un verso
+    tiro.ora = Math.max(-1, Math.min(1, tiro.piega + dy / (canvas.clientHeight * .25)));
+    acero.filo.anteprima(tiro.i, tiro.ora);
+  });
+  const fineTiro = (e) => {
+    if (!tiro || e.pointerId !== tiro.id) return;
+    const { i, mosso, ora: piega } = tiro; tiro = null;
+    controls.enabled = true;
+    acero.filo.anteprima(i, null);
+    if (e.type === 'pointercancel') return;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    if (mosso) legaRamo(i, piega); else toccaRamo(i);
+  };
+  window.addEventListener('pointerup', fineTiro);
+  window.addEventListener('pointercancel', fineTiro);
+
+  function legaRamo(i, piega) {
+    const esito = mettiFilo(stato, ora(), i, piega);
+    if (esito.esito !== 'ok') return;
+    salva(stato); disegna();
+    acero.filo.avvolgi(i); suoni.filo();
+    const r = vista(stato).rami[i];
+    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+      : r.giorniAllaPresa ? `Filo avvolto! Crescendo, il ramo prenderà questa forma in circa ${giorni(r.giorniAllaPresa)}.`
+      : 'Filo avvolto! Il ramo crescerà di nuovo quando la pianta starà meglio: intanto il filo lo tiene.', 3800);
+  }
+  function toccaRamo(i) {
+    const r = vista(stato).rami[i];
+    if (!r.filo) { ui.toast('Trascina il pallino su o giù per piegare il ramo.'); return; }
+    // toglierlo in anticipo chiede un secondo tocco: il ramo torna in parte indietro
+    const secondo = ultimoTocco.ramo === i && performance.now() - ultimoTocco.t < 3500;
+    ultimoTocco = { ramo: i, t: performance.now() };
+    if (!r.pronto && !secondo) {
+      ui.toast(r.giorniAllaPresa ? `Il ramo sta prendendo la forma: ancora circa ${giorni(r.giorniAllaPresa)}. Tocca di nuovo per togliere il filo adesso.`
+        : 'Il ramo cresce solo quando la pianta sta bene. Tocca di nuovo per togliere il filo adesso.', 4000);
+      return;
+    }
+    ultimoTocco.ramo = -1;
+    const esito = togliFilo(stato, ora(), i);
+    if (esito.esito !== 'ok') return;
+    salva(stato); disegna(); suoni.slega();
+    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    ui.toast(esito.presa >= 1
+      ? (esito.semi ? `Filo tolto al momento giusto: il ramo resta così. +${esito.semi} Semi!` : 'Filo tolto: il ramo resta così. La corteccia è un po\' segnata, ma col tempo il segno sparirà.')
+      : 'Filo tolto prima del tempo: il ramo torna un po\' indietro.', 4000);
+  }
   // un tocco è breve e quasi fermo: così non si confonde con la rotazione della scena
   const dita = new Map();
   canvas.addEventListener('pointerdown', e => dita.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now(), multi: dita.size > 0 }));

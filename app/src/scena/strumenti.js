@@ -55,12 +55,12 @@ export function tube(pts, r0, r1, col, parent, seg = 20) {
 // Se o.stress è dato, prepara anche i colori "sofferenti" per la sete.
 export function foliage(parent, pads, o) {
   const items = [];
-  pads.forEach(([x, y, z, r]) => {
+  pads.forEach(([x, y, z, r], pad) => {
     const n = Math.round(r * o.density);
     for (let i = 0; i < n; i++) {
       const a = rnd() * PI * 2, d = Math.sqrt(rnd()) * r, dn = d / r;
       const dome = (1 - dn * dn) * r * .34 * (.45 + rnd() * .75);
-      items.push({ p: [x + Math.cos(a) * d, y + dome - .04, z + Math.sin(a) * d * .9], s: r * o.size * (.75 + rnd() * .5) * (1 - .35 * dn), h: dome / (r * .34) * .8 + (1 - dn) * .25, dn });
+      items.push({ p: [x + Math.cos(a) * d, y + dome - .04, z + Math.sin(a) * d * .9], s: r * o.size * (.75 + rnd() * .5) * (1 - .35 * dn), h: dome / (r * .34) * .8 + (1 - dn) * .25, dn, pad });
     }
   });
   // o.geo: forma del singolo ciuffo (aghi, foglie); senza, una pallina sfaccettata
@@ -80,7 +80,8 @@ export function foliage(parent, pads, o) {
   parent.add(m);
   // periferia: 0 al centro del ciuffo, 1 sul bordo (i rametti esterni si perdono per primi)
   // toni: posizione di ogni ciuffo nella tavolozza (0 = primo colore), per ricolorarlo con le stagioni
-  return { m, healthy, stressed, toni, periferia: items.map(it => it.dn) };
+  // pad: il cuscinetto di ogni ciuffo (serve a piegare i rami col filo)
+  return { m, healthy, stressed, toni, periferia: items.map(it => it.dn), pad: items.map(it => it.pad) };
 }
 
 // --- Dettagli realistici dei bonsai: aghi, foglie palmate, corteccia ---
@@ -227,13 +228,14 @@ export function corteccia(hex, { chiaro = .22, scuro = .38 } = {}) {
 
 // Rametti sottili che dal ramo entrano nel cuscinetto di foglie: si intravedono tra le foglie.
 // Restituisce le punte dei rametti ({ pad, da, a }), dove possono spuntare i germogli.
+// parent: gruppo, oppure funzione (cuscinetto) => gruppo, per i rami che si piegano col filo
 export function rametti(parent, pads, mat, seme = 5) {
   const rnd = sequenza(seme), punte = [];
   pads.forEach(([x, y, z, r], pad) => {
     for (let i = 0; i < 4; i++) {
       const a = rnd() * PI * 2, d = r * (.45 + rnd() * .4);
       const p0 = [x * .9, y - r * .18, z * .9], p2 = [x + Math.cos(a) * d, y + r * .05, z + Math.sin(a) * d * .9];
-      tube([p0, [(p0[0] + p2[0]) / 2, y - r * .02, (p0[2] + p2[2]) / 2], p2], .022, .008, mat, parent, 6);
+      tube([p0, [(p0[0] + p2[0]) / 2, y - r * .02, (p0[2] + p2[2]) / 2], p2], .022, .008, mat, typeof parent === 'function' ? parent(pad) : parent, 6);
       punte.push({ pad, da: new THREE.Vector3(...p0), a: new THREE.Vector3(...p2) });
     }
   });

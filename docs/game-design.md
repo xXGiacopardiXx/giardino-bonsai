@@ -74,6 +74,14 @@ Su un bonsai vero potare ogni giorno è dannoso. Per questo la serie quotidiana 
 - Il ramo legato mantiene la nuova posizione dopo un certo tempo.
 - Se il filo resta troppo a lungo segna la corteccia. Il segno si nota solo con lo zoom ravvicinato: è un avvertimento discreto.
 
+#### 4.2.1 Come funziona nell'app (acero)
+
+- **Rami:** sull'acero si possono legare 4 rami, i più visibili (i due bassi, quello in alto a sinistra e quello davanti a destra). Con il ramo si muovono le sue foglie, i rametti e i germogli.
+- **Gesto:** Filo (nella barra o nella tendina dell'acero) avvicina la telecamera e mostra un pallino di rame sulla punta di ogni ramo. Trascinandolo su o giù il ramo si alza o si abbassa (si abbassa di più: come nei bonsai veri, i rami bassi danno un'aria antica) e una spirale di filo di rame si avvolge sul ramo. Mettere il filo conta come cura del giorno per la serie.
+- **Presa:** il ramo prende la forma crescendo, con lo stesso ritmo dei germogli: circa 3 giorni in primavera, 4 in estate, 7 in autunno, 8 in inverno; sotto stress medio non cresce e il filo lo tiene fermo. Toccando il pallino si vede quanto manca.
+- **Togliere il filo:** a forma presa il pallino diventa verde e sul pulsante Filo compare il "!". Toccandolo si toglie il filo: il ramo resta piegato e arrivano 10 Semi. Si può togliere anche prima (con un secondo tocco), ma il ramo torna indietro in proporzione a quanto non ha ancora preso.
+- **Segni:** dopo 2 giorni di tolleranza a forma presa, sotto il filo compare una spirale scura sulla corteccia, che si fa piena in 4 giorni; tolto il filo svanisce in circa 20 giorni. Togliendo un filo che ha già segnato la corteccia non si guadagnano Semi, senza rimproveri.
+
 ## 5. Piante e stili
 
 ### 5.1 Specie
@@ -319,7 +327,7 @@ Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a
 | Nell'MVP | Rimandato |
 |---|---|
 | **Una specie: l'acero giapponese.** Cambia aspetto in ogni stagione (verde, rosso, spoglio), e da spoglio in inverno mostra i rami da potare | Pino, ginepro, altre specie |
-| **Acqua e Pota** | Filo, Cura, Rinvaso, parassiti, troppa acqua |
+| **Acqua, Pota e Filo** (il filo è arrivato dopo l'MVP, sezione 4.2.1) | Cura, Rinvaso, parassiti, troppa acqua |
 | Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
 | Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
 | Un solo albero da curare (l'acero); il giardino è un ecosistema di piante, ognuna nel suo spazio: pino e ginepro restano, per ora senza cure | Cure per più alberi, zoom a 4 livelli |
@@ -338,7 +346,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico.
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

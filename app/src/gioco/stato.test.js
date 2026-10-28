@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, SEMI, VASI, VERSIONE } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -223,4 +223,61 @@ test('la guida si mostra alla prima partita, non a chi giocava già', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(s.guida.fatta, true);
+});
+
+// annaffia ogni giorno, così la pianta cresce a pieno ritmo
+const curaFinoA = (s, giorni) => { for (let g = 0; g <= giorni; g++) annaffia(s, dopo(g)); };
+
+test('il filo piega il ramo, che prende la forma crescendo', () => {
+  const s = nuovoStato(T0);
+  assert.equal(vista(s).rami.length, RAMI);
+  assert.equal(mettiFilo(s, T0, 0, -0.8).esito, 'ok');
+  let r = vista(s).rami[0];
+  assert.equal(r.filo, true); assert.equal(r.piega, -0.8); assert.equal(r.pronto, false);
+  assert.ok(r.giorniAllaPresa >= 2);
+  // primavera: 0,35 al giorno, la forma è presa in 3 giorni
+  curaFinoA(s, 3);
+  r = vista(s).rami[0];
+  assert.equal(r.pronto, true);
+  assert.equal(vista(s).filoDaTogliere, true);
+  const semi = s.semi, esito = togliFilo(s, dopo(3), 0);
+  assert.equal(esito.semi, SEMI.filo);
+  assert.equal(s.semi, semi + SEMI.filo);
+  r = vista(s).rami[0];
+  assert.equal(r.filo, false); assert.equal(r.piega, -0.8);
+});
+
+test('tolto troppo presto, il ramo torna in parte indietro', () => {
+  const s = nuovoStato(T0);
+  mettiFilo(s, T0, 1, 1);
+  curaFinoA(s, 1);
+  const esito = togliFilo(s, dopo(1.5), 1);
+  assert.equal(esito.semi, 0);
+  const r = vista(s).rami[1];
+  assert.ok(r.piega > 0 && r.piega < 1);
+});
+
+test('il filo lasciato troppo a lungo segna la corteccia; tolto, il segno svanisce', () => {
+  const s = nuovoStato(T0);
+  mettiFilo(s, T0, 2, 0.5);
+  curaFinoA(s, 12);
+  assert.ok(vista(s).rami[2].segno > 0.5);
+  assert.equal(togliFilo(s, dopo(12), 2).semi, 0);
+  curaFinoA(s, 40);
+  assert.ok(vista(s).rami[2].segno < 0.05);
+});
+
+test('mettere il filo conta per la serie', () => {
+  const s = nuovoStato(T0);
+  mettiFilo(s, T0, 3, 0.2);
+  assert.equal(s.serie.giorni, 1);
+  assert.equal(mettiFilo(s, T0, 9, 0).esito, 'nessuno');
+});
+
+test('un salvataggio della versione 4 riceve i rami da legare', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 4; delete vecchio.albero.rami;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).rami.length, RAMI);
 });
