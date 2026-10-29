@@ -140,11 +140,18 @@ export function spray() {
   [0, .22, .44].forEach(t => soffio({ t, durata: .18, tipo: 'highpass', freq: 3800, q: .6, volume: .16, attacco: .01 }));
 }
 
-// rinvaso: la zolla che esce dal vaso e il terriccio nuovo che scende, colpi morbidi e granulosi
+// rinvaso: il terriccio nuovo che scende nel vaso, un fruscio granuloso fitto
 export function terra() {
   if (!pronto()) return;
-  soffio({ durata: .5, tipo: 'lowpass', freq: 500, freqFine: 180, q: 1, volume: .18, attacco: .05 });
-  for (let i = 0; i < 18; i++) soffio({ t: 1.2 + i * .04 + Math.random() * .03, durata: .05, tipo: 'bandpass', freq: 900 + Math.random() * 700, q: 2.5, volume: .07, attacco: .003 });
+  soffio({ durata: .7, tipo: 'bandpass', freq: 1200, q: .8, volume: .06, attacco: .1 });
+  for (let i = 0; i < 26; i++) soffio({ t: i * .028 + Math.random() * .03, durata: .045, tipo: 'bandpass', freq: 900 + Math.random() * 900, q: 2.5, volume: .07, attacco: .003 });
+}
+
+// la pianta si posa nel vaso nuovo: un tonfo morbido e tre note di legno che salgono
+export function posa() {
+  if (!pronto()) return;
+  soffio({ durata: .35, tipo: 'lowpass', freq: 380, freqFine: 120, q: 1, volume: .22, attacco: .01 });
+  [392, 494, 659].forEach((f, i) => nota({ t: .12 + i * .11, freq: f, durata: .5, volume: .09, tipo: 'triangle' }));
 }
 
 // Semi guadagnati: due note che salgono

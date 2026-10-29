@@ -318,12 +318,17 @@ function avvia() {
     if (esito.esito !== 'ok') return;
     salva(stato); chiudiMenu(); potatura(null); filatura(null);
     vola(fuocoPianta(p), baseDist * .4);
-    suoni.terra();
-    rinvasoScena.rinvasa(p, () => { disegna(); suoni.fruscio(.12); });
-    setTimeout(() => {
-      ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi();
-      ui.toast(`Rinvasato con ${nome}! Radici accorciate e terriccio nuovo: il prossimo rinvaso tra ${anniTesto(esito.anni)}. +${esito.semi} Semi`, 4500);
-    }, 2600);
+    suoni.fruscio(.14);
+    // la sequenza ha i suoi momenti: forbici sulle radici, granuli che cadono, la pianta che si posa
+    rinvasoScena.rinvasa(p, scelto, {
+      taglio: () => suoni.forbici(),
+      pioggia: () => suoni.terra(),
+      posata: () => { disegna(); suoni.posa(); },
+      fine: () => {
+        ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi();
+        ui.toast(`Rinvasato con ${nome}! Radici accorciate e terriccio nuovo: il prossimo rinvaso tra ${anniTesto(esito.anni)}. +${esito.semi} Semi`, 4500);
+      },
+    });
   }
 
   const curaPianta = (p) => { chiudiMenu(); potatura(null); filatura(null); cure.apri('pianta', p); disegna(); };
