@@ -50,7 +50,7 @@ export function creaCura(scene, pianta, id = 'acero') {
     const n = Math.round(8 + (AFIDI - 8) * g);
     colonia.m.count = n;
     // da piccolissimi (si vedono solo da vicino) a puntini ben visibili
-    const s = (.009 + .035 * g) * svanisce;
+    const s = (.009 + .02 * g) * svanisce;
     colonia.posti.slice(0, n).forEach((x, i) => {
       colonia.d.position.copy(x.p); if (svanisce < 1) colonia.d.position.y -= (1 - svanisce) * .15;
       colonia.d.rotation.set(0, x.rot, 0);

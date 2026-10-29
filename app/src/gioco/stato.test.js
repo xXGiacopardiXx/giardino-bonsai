@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
 const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; return s; };
@@ -487,4 +487,84 @@ test('un salvataggio della versione 8 riceve la sete di pino e ginepro', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).conifere.pino.haSete, false);
+});
+
+test("il pino mette le candele in primavera, si cimano senza lasciare gemme", () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g < 2; g++) { s.conifere.pino.sete = 0; annaffia(s, dopo(g)); }
+  s.conifere.pino.sete = 0;
+  avanza(s, dopo(2));
+  const v = vista(s).conifere.pino;
+  assert.ok(v.germogli.length >= 2, 'candele in primavera');
+  assert.equal(v.puoPotare, true);
+  const id = v.germogli.find(x => x.potabile).id;
+  const esito = pota(s, dopo(2), id, 'pino');
+  assert.equal(esito.esito, 'ok');
+  assert.equal(esito.gemme, 0);
+  assert.equal(vista(s).conifere.pino.germogli.some(x => x.id === id), false);
+});
+
+test("in autunno sul pino compaiono aghi vecchi da togliere; d'inverno le conifere riposano", () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g <= 16; g++) { s.albero.sete = 0; s.conifere.pino.sete = 0; s.conifere.ginepro.sete = 0; avanza(s, dopo(g)); }
+  const v = vista(s).conifere.pino;
+  assert.equal(vista(s).stagione, 2);
+  assert.ok(v.vecchi.length >= 1);
+  const esito = togliAghi(s, dopo(16), v.vecchi[0].id);
+  assert.equal(esito.esito, 'ok');
+  assert.equal(vista(s).conifere.pino.vecchi.length, v.vecchi.length - 1);
+  // inverno: niente candele né punte nuove
+  s.conifere.pino.germogli = []; s.conifere.ginepro.germogli = [];
+  for (let g = 22; g <= 26; g++) { s.conifere.pino.sete = 0; s.conifere.ginepro.sete = 0; avanza(s, dopo(g)); }
+  assert.equal(vista(s).conifere.pino.germogli.length, 0);
+  assert.equal(vista(s).conifere.ginepro.germogli.length, 0);
+});
+
+test("il ginepro si pizzica in primavera ed estate", () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g <= 3; g++) { s.conifere.ginepro.sete = 0; avanza(s, dopo(g)); }
+  const v = vista(s).conifere.ginepro;
+  assert.ok(v.germogli.length >= 3);
+  assert.equal(pota(s, dopo(3), v.germogli.find(x => x.potabile).id, 'ginepro').esito, 'ok');
+});
+
+test("il filo sulle conifere fa presa più piano che sull'acero", () => {
+  const s = nuovoStato(T0);
+  assert.equal(vista(s).conifere.pino.rami.length, 5);
+  assert.equal(vista(s).conifere.ginepro.rami.length, 4);
+  mettiFilo(s, T0, 0, -0.6);
+  assert.equal(mettiFilo(s, T0, 0, -0.6, 'pino').esito, 'ok');
+  for (let g = 0; g <= 3; g++) { s.albero.sete = 0; s.conifere.pino.sete = 0; avanza(s, dopo(g)); }
+  assert.equal(vista(s).rami[0].pronto, true);
+  assert.equal(vista(s).conifere.pino.rami[0].pronto, false);
+  let g = 4;
+  while (!vista(s).conifere.pino.filoDaTogliere && g < 12) { s.conifere.pino.sete = 0; avanza(s, dopo(g++)); }
+  assert.equal(vista(s).conifere.pino.filoDaTogliere, true);
+  assert.equal(togliFilo(s, dopo(g - 1), 0, 'pino').semi, SEMI.filo);
+  assert.equal(vista(s).conifere.pino.rami[0].piega, -0.6);
+});
+
+test("se l'acero non ha niente da potare, la sfida può essere la potatura di una conifera", () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0 + 9 * ORA);
+  const mattina = new Date(2026, 9, 27, 7).getTime();
+  avanza(s, mattina);
+  s.albero.germogli = []; s.conifere.ginepro.sete = 0; s.conifere.pino.sete = 0;
+  s.conifere.pino.germogli = [{ id: 50, punta: 1, lunghezza: 0.5 }];
+  s.oggi.sfida = null; avanza(s, mattina + 1000);
+  const v = vista(s);
+  assert.equal(v.sfida.tipo, 'pota');
+  assert.equal(v.sfida.pianta, 'pino');
+  assert.equal(v.sfida.testo, 'Cima le candele del pino');
+  assert.equal(pota(s, mattina + 2000, 50, 'pino').semi, SEMI.sfida);
+});
+
+test('un salvataggio della versione 9 riceve potatura e rami delle conifere', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 9;
+  for (const p of ['pino', 'ginepro']) { delete vecchio.conifere[p].germogli; delete vecchio.conifere[p].rami; delete vecchio.conifere[p].vecchi; }
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).conifere.ginepro.rami.length, 4);
+  assert.deepEqual(vista(s).conifere.pino.vecchi, []);
 });

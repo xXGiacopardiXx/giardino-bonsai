@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 9;
+export const VERSIONE = 10;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
@@ -14,6 +14,8 @@ export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 2
 // altrimenti potare un germoglio (ogni giorno ne spunta uno); in inverno, a giorni alterni,
 // mettere il filo, l'azione tipica della stagione (sezione 4.1).
 export const SFIDE = { acqua: 'Annaffia l\'acero', pota: 'Pota un germoglio', filo: 'Metti il filo a un ramo', concime: 'Concima l\'acero' };
+// sfide di potatura delle conifere, con la tecnica giusta per ognuna
+const SFIDE_POTA = { candele: 'Cima le candele del pino', aghi: 'Togli gli aghi vecchi del pino', pizzica: 'Pizzica il ginepro' };
 
 // Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
 // Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
@@ -64,7 +66,20 @@ const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
 // Poi il filo va tolto: se resta troppo a lungo segna la corteccia (segno che sparisce piano).
 // piega: da -1 (ramo abbassato al massimo) a 1 (alzato al massimo); l'angolo vero lo decide la scena.
 export const RAMI = 6;                 // rami principali dell'acero, tutti legabili (li disegna la scena)
+export const RAMI_SPECIE = { acero: RAMI, pino: 5, ginepro: 4 };
 const PRESA_AL_GIORNO = 0.25;          // in estate: il ramo prende la forma in 4 giorni (più in fretta in primavera)
+// il legno delle conifere è più duro e cresce più piano: il filo ci mette il doppio (o quasi) a fare presa
+const PRESA_SPECIE = { acero: 1, pino: 0.5, ginepro: 0.6 };
+
+// Potatura delle conifere (sezione 4.3), ognuna con la sua tecnica:
+// - pino nero: in primavera e all'inizio dell'estate spuntano le "candele", getti chiari e dritti
+//   da cimare; in autunno sui cuscinetti compaiono ciuffi di aghi vecchi, ingialliti, da togliere.
+// - ginepro: in primavera ed estate le punte nuove escono dalla sagoma e si pizzicano con le dita
+//   (le forbici imbrunirebbero le squame).
+// Non lasciano gemme come l'acero: tengono la chioma compatta. D'inverno le conifere riposano.
+const POSTI_VECCHI = 5;                // cuscinetti del pino dove possono esserci aghi vecchi
+const VECCHI_MASSIMI = 3;
+const GERMOGLI_CONIFERE = 4;           // candele o punte al massimo, finché non si potano
 const TOLLERANZA_FILO = 2;             // giorni dopo la presa in cui il filo non fa ancora danni
 const SEGNO_AL_GIORNO = 0.25;          // poi il segno sulla corteccia si fa pieno in 4 giorni
 const SEGNO_SVANISCE = 0.05;           // tolto il filo, il segno sparisce in circa 20 giorni
@@ -120,7 +135,11 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = () => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, ...potaturaConifera(p) });
+// germogli (candele o punte), aghi vecchi e rami da legare di una conifera
+function potaturaConifera(p) {
+  return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
+}
 // la parte di stato che riguarda la cura di una pianta (per l'acero è l'albero stesso)
 const curaDi = (stato, pianta) => pianta === 'acero' ? stato.albero : stato.conifere[pianta];
 const oreParassiti = (a, t) => a.parassiti ? (t - a.parassiti.da) / ORA : 0;
@@ -136,7 +155,7 @@ export function nuovoStato(ora) {
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
-    conifere: { pino: coniferaNuova(), ginepro: coniferaNuova() },
+    conifere: { pino: coniferaNuova('pino'), ginepro: coniferaNuova('ginepro') },
     inventario: { ...INVENTARIO_INIZIALE },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
@@ -169,7 +188,7 @@ export function migra(stato) {
   // prodotti a confezioni nell'inventario e cura anche per le conifere: si parte con il kit iniziale
   if (stato.versione === 7) {
     stato.albero.protezione = null;
-    stato.conifere = { pino: coniferaNuova(), ginepro: coniferaNuova() };
+    stato.conifere = { pino: coniferaNuova('pino'), ginepro: coniferaNuova('ginepro') };
     stato.inventario = { ...INVENTARIO_INIZIALE };
     stato.versione = 8;
   }
@@ -178,12 +197,17 @@ export function migra(stato) {
     for (const p of ['pino', 'ginepro']) Object.assign(stato.conifere[p], { sete: 0.3, ultimaAcqua: null });
     stato.versione = 9;
   }
+  // potatura e filo anche per le conifere
+  if (stato.versione === 9) {
+    for (const p of ['pino', 'ginepro']) if (!stato.conifere[p].germogli) Object.assign(stato.conifere[p], potaturaConifera(p));
+    stato.versione = 10;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
 // Fa spuntare un germoglio su una punta libera, scelta in modo prevedibile (niente Math.random: i test devono ripetersi)
-function spuntaGermoglio(a, lunghezza = LUNGHEZZA_INIZIALE) {
-  if (a.germogli.length >= GERMOGLI_MASSIMI) return null;
+function spuntaGermoglio(a, lunghezza = LUNGHEZZA_INIZIALE, massimi = GERMOGLI_MASSIMI) {
+  if (a.germogli.length >= massimi) return null;
   const libere = [];
   for (let p = 0; p < PUNTE; p++) if (!a.germogli.some(g => g.punta === p)) libere.push(p);
   const id = ++a.contatore;
@@ -232,14 +256,11 @@ export function avanza(stato, ora) {
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
-    for (const r of a.rami) {
-      if (!r.filo) { r.segno = Math.max(0, r.segno - giorni * SEGNO_SVANISCE); continue; }
-      // il ramo prende la forma crescendo: come i germogli, si ferma sotto stress
-      if (r.filo.presa < 1) r.filo.presa = Math.min(1, r.filo.presa + v * PRESA_AL_GIORNO);
-      else {
-        r.filo.oltre += giorni;
-        r.segno = Math.max(r.segno, limita((r.filo.oltre - TOLLERANZA_FILO) * SEGNO_AL_GIORNO));
-      }
+    cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni);
+    for (const p of ['pino', 'ginepro']) {
+      const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t);
+      for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
+      cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni);
     }
     t += passo;
     // ogni giorno nuovo, anche quando si salta avanti di molti giorni in una volta
@@ -261,12 +282,38 @@ export function avanza(stato, ora) {
   return stato;
 }
 
+// il ramo col filo prende la forma crescendo (presa: quanto ne prende in questo passo): come i germogli,
+// si ferma sotto stress; a forma presa il filo comincia a segnare la corteccia
+function cresceFilo(rami, presa, giorni) {
+  for (const r of rami) {
+    if (!r.filo) { r.segno = Math.max(0, r.segno - giorni * SEGNO_SVANISCE); continue; }
+    if (r.filo.presa < 1) r.filo.presa = Math.min(1, r.filo.presa + presa);
+    else {
+      r.filo.oltre += giorni;
+      r.segno = Math.max(r.segno, limita((r.filo.oltre - TOLLERANZA_FILO) * SEGNO_AL_GIORNO));
+    }
+  }
+}
+
 // Inizio di un giorno del calendario: la sfida riparte e spunta almeno un germoglio da cimare
 // (due in primavera), se la pianta non è sotto stress
 function nuovoGiorno(stato, ora) {
   const a = stato.albero;
-  const { stagione } = calendario(stato.inizio, ora);
+  const { stagione, giornoStagione } = calendario(stato.inizio, ora);
   if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
+  // conifere: candele del pino in primavera e nei primi giorni d'estate, punte del ginepro in primavera
+  // ed estate, aghi vecchi del pino in autunno
+  const pino = stato.conifere.pino, ginepro = stato.conifere.ginepro;
+  if (vigore(stagione, pino.sete) > 0) {
+    if (stagione === 0) { spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE); spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE); }
+    if (stagione === 1 && giornoStagione <= 3) spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
+  }
+  if (stagione === 2 && pino.vecchi.length < VECCHI_MASSIMI) {
+    const liberi = []; for (let p = 0; p < POSTI_VECCHI; p++) if (!pino.vecchi.some(x => x.posto === p)) liberi.push(p);
+    const id = ++pino.contatore;
+    pino.vecchi.push({ id, posto: liberi[(id * 3 + 1) % liberi.length] });
+  }
+  if (vigore(stagione, ginepro.sete) > 0 && stagione <= 1) spuntaGermoglio(ginepro, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
   // parassiti: al massimo un attacco alla volta per pianta; mai con l'olio di neem che fa effetto
   for (const pianta in PIANTE) {
     const c = curaDi(stato, pianta);
@@ -289,6 +336,14 @@ function scegliSfida(stato, ora) {
   const conifera = ['pino', 'ginepro'].filter(p => stato.conifere[p].sete >= FASI[1].da)
     .sort((x, y) => stato.conifere[y].sete - stato.conifere[x].sete)[0];
   if (a.sete < SETE_PER_ANNAFFIARE && conifera && !stato.oggi.acqua) { stato.oggi.sfida = { tipo: 'acqua', pianta: conifera, fatta: false }; return; }
+  // se l'acero non ha niente da potare, la potatura del giorno può essere quella di una conifera
+  const potaConifera = !a.germogli.some(g => g.lunghezza >= POTABILE_DA) && (
+    stato.conifere.pino.vecchi.length ? { pianta: 'pino', tecnica: 'aghi' }
+    : stato.conifere.pino.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'pino', tecnica: 'candele' }
+    : stato.conifere.ginepro.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'ginepro', tecnica: 'pizzica' } : null);
+  if (a.sete < SETE_PER_ANNAFFIARE && !stato.oggi.acqua && !(stagione === 3 && giornoStagione % 2 === 0) && !(stagione === 2 && giornoStagione % 2 === 0 && !concimeAttivo(a, ora)) && potaConifera) {
+    stato.oggi.sfida = { tipo: 'pota', ...potaConifera, fatta: false }; return;
+  }
   const tipo = a.sete >= SETE_PER_ANNAFFIARE ? 'acqua'
     : stagione === 3 && giornoStagione % 2 === 0 ? 'filo'
     : stagione === 2 && giornoStagione % 2 === 0 && !concimeAttivo(a, ora) ? 'concime'
@@ -331,37 +386,42 @@ export function annaffia(stato, ora, pianta = 'acero') {
 
 // Taglia un germoglio. esito: 'ok', 'piccolo' (non è ancora cresciuto abbastanza) o 'nessuno'.
 // La potatura conta per la serie; dà Semi solo se la sfida del giorno è potare (sezione 7.1).
-export function pota(stato, ora, id) {
+// pianta: 'acero' (predefinita), 'pino' (cima una candela) o 'ginepro' (pizzica una punta)
+export function pota(stato, ora, id, pianta = 'acero') {
   avanza(stato, ora);
-  const a = stato.albero, i = a.germogli.findIndex(g => g.id === id);
+  const a = pianta === 'acero' ? stato.albero : stato.conifere[pianta];
+  const i = a ? a.germogli.findIndex(g => g.id === id) : -1;
   if (i < 0) return { esito: 'nessuno', gemme: 0, semi: 0, bonusSerie: 0 };
   const g = a.germogli[i];
   if (g.lunghezza < POTABILE_DA) return { esito: 'piccolo', gemme: 0, semi: 0, bonusSerie: 0 };
   a.germogli.splice(i, 1);
-  const gemme = Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
+  // l'acero risponde al taglio con due gemme; le conifere restano compatte
+  const gemme = pianta !== 'acero' ? 0 : Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
   for (let k = 0; k < gemme; k++) a.gemme.push({ punta: g.punta, crescita: 0 });
-  const semi = completaSfida(stato, 'pota');
+  const semi = completaSfida(stato, 'pota', pianta);
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', gemme, semi, bonusSerie };
 }
 
 // Avvolge il filo su un ramo e lo piega (piega da -1 a 1). Se c'era già un filo, lo rifà da capo.
 // Conta per la serie. esito: 'ok' o 'nessuno'.
-export function mettiFilo(stato, ora, ramo, piega) {
+// pianta: 'acero' (predefinita), 'pino' o 'ginepro'
+export function mettiFilo(stato, ora, ramo, piega, pianta = 'acero') {
   avanza(stato, ora);
-  const r = stato.albero.rami[ramo];
+  const r = curaDi(stato, pianta)?.rami?.[ramo];
   if (!r) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
   r.filo = { piega: Math.max(-1, Math.min(1, piega)), presa: 0, oltre: 0 };
-  const semi = completaSfida(stato, 'filo');
+  // la sfida del filo vale su qualunque pianta
+  const semi = completaSfida(stato, 'filo', stato.oggi.sfida?.pianta ?? 'acero');
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
 // Toglie il filo. Il ramo resta piegato quanto ha preso: tolto presto, torna in parte indietro.
 // Tolto al momento giusto (forma presa, corteccia senza segni) regala qualche Seme.
 // esito: 'ok' o 'nessuno'; presa: quanto della piega è rimasto (da 0 a 1)
-export function togliFilo(stato, ora, ramo) {
+export function togliFilo(stato, ora, ramo, pianta = 'acero') {
   avanza(stato, ora);
-  const r = stato.albero.rami[ramo];
+  const r = curaDi(stato, pianta)?.rami?.[ramo];
   if (!r?.filo) return { esito: 'nessuno', semi: 0, presa: 0, bonusSerie: 0 };
   const { piega, presa } = r.filo;
   r.piega += (piega - r.piega) * presa;
@@ -369,6 +429,16 @@ export function togliFilo(stato, ora, ramo) {
   const semi = presa >= 1 && r.segno < 0.05 ? SEMI.filo : 0;
   stato.semi += semi;
   return { esito: 'ok', semi, presa, bonusSerie: registraCura(stato, ora) };
+}
+
+// Toglie un ciuffo di aghi vecchi dal pino (autunno). esito: 'ok' o 'nessuno'. Conta come potatura.
+export function togliAghi(stato, ora, id) {
+  avanza(stato, ora);
+  const pino = stato.conifere.pino, i = pino.vecchi.findIndex(x => x.id === id);
+  if (i < 0) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
+  pino.vecchi.splice(i, 1);
+  const semi = completaSfida(stato, 'pota', 'pino');
+  return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
 // Compra una confezione di un prodotto di cura (DOSI_PER_CONFEZIONE dosi nell'inventario).
@@ -436,7 +506,20 @@ export function scegliVaso(stato, id) {
 
 
 const DOVE = { pino: 'il pino', ginepro: 'il ginepro' };
-const testoSfida = (s) => s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta] : SFIDE[s.tipo];
+const testoSfida = (s) => s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta]
+  : s.tipo === 'pota' && s.tecnica ? SFIDE_POTA[s.tecnica] : SFIDE[s.tipo];
+// i rami da legare di una pianta: piega attuale (col filo, quella voluta), stato del filo e segni sulla corteccia
+function vistaRami(rami, ritmo) {
+  return rami.map(r => ({
+    piega: r.filo ? r.filo.piega : r.piega,
+    filo: !!r.filo,
+    presa: r.filo ? r.filo.presa : 1,
+    pronto: !!r.filo && r.filo.presa >= 1,
+    // giorni che mancano alla presa, con il ritmo di adesso (null se sotto stress non cresce)
+    giorniAllaPresa: r.filo && r.filo.presa < 1 ? (ritmo > 0 ? Math.ceil((1 - r.filo.presa) / ritmo - 1e-9) : null) : 0,
+    segno: r.segno,
+  }));
+}
 // come sta una pianta con l'acqua, dalla sua sete
 function vistaAcqua(sete) {
   let fase = 0;
@@ -507,15 +590,7 @@ export function vista(stato) {
     germogli: a.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
     gemme: a.gemme.map(g => ({ ...g })),
     // rami da legare: piega attuale (col filo, quella voluta), stato del filo e segni sulla corteccia
-    rami: a.rami.map(r => ({
-      piega: r.filo ? r.filo.piega : r.piega,
-      filo: !!r.filo,
-      presa: r.filo ? r.filo.presa : 1,
-      pronto: !!r.filo && r.filo.presa >= 1,
-      // giorni che mancano alla presa, con il ritmo di adesso (null se sotto stress non cresce)
-      giorniAllaPresa: r.filo && r.filo.presa < 1 ? (vigoreDi(a, cal.stagione, stato.aggiornato) > 0 ? Math.ceil((1 - r.filo.presa) / (PRESA_AL_GIORNO * vigoreDi(a, cal.stagione, stato.aggiornato)) - 1e-9) : null) : 0,
-      segno: r.segno,
-    })),
+    rami: vistaRami(a.rami, PRESA_AL_GIORNO * vigoreDi(a, cal.stagione, stato.aggiornato)),
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
     // cura di ogni pianta: concime, parassiti e protezione (l'acero anche qui sotto, per comodità)
     cura: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
@@ -531,6 +606,17 @@ export function vista(stato) {
     // sfida del giorno: tipo ('acqua', 'pota', 'filo'), testo da mostrare e se è già fatta
     sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: testoSfida(stato.oggi.sfida) } : null,
     // pino e ginepro: la loro acqua (stessi campi dell'acero qui sopra)
-    conifere: { pino: vistaAcqua(stato.conifere.pino.sete), ginepro: vistaAcqua(stato.conifere.ginepro.sete) },
+    // pino e ginepro: acqua (stessi campi dell'acero), potatura e rami da legare
+    conifere: Object.fromEntries(['pino', 'ginepro'].map(p => {
+      const c = stato.conifere[p];
+      const rami = vistaRami(c.rami, PRESA_AL_GIORNO * PRESA_SPECIE[p] * vigoreDi(c, cal.stagione, stato.aggiornato));
+      return [p, {
+        ...vistaAcqua(c.sete),
+        germogli: c.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
+        vecchi: c.vecchi.map(x => ({ ...x })),
+        puoPotare: c.germogli.some(g => g.lunghezza >= POTABILE_DA) || c.vecchi.length > 0,
+        rami, filoDaTogliere: rami.some(r => r.pronto),
+      }];
+    })),
   };
 }

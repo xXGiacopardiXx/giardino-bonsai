@@ -190,14 +190,39 @@ export function creaAlberi(world) {
       setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
     });
   }
-  function curabile(f, tr, terra, raggioTerra) {
+  // pieghe: cuscinetto → gruppo del ramo legabile; aggiornaPieghe() sposta i ciuffi con il ramo piegato
+  function curabile(f, tr, terra, raggioTerra, pieghe = {}) {
     const m4 = new THREE.Matrix4();
-    const forme = f.pad.map((_, i) => {
-      f.m.getMatrixAt(i, m4);
+    const base = [], forme = f.pad.map((_, i) => {
+      f.m.getMatrixAt(i, m4); base.push(m4.clone());
       const pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
       m4.decompose(pos, q, sc); return { pos, sc };
     });
-    return { ciuffiDi: (pad) => forme.filter((_, i) => f.pad[i] === pad), gruppoDi: () => tr, potTop: terra, raggioTerra };
+    return {
+      ciuffiDi: (pad) => forme.filter((_, i) => f.pad[i] === pad), gruppoDi: (pad) => pieghe[pad] ?? tr, potTop: terra, raggioTerra,
+      aggiornaPieghe() {
+        f.pad.forEach((pad, i) => { const g = pieghe[pad]; f.m.setMatrixAt(i, g ? m4.copy(g.matrix).multiply(base[i]) : base[i]); });
+        f.m.instanceMatrix.needsUpdate = true;
+      },
+    };
+  }
+
+  // Rami legabili col filo di una conifera: ogni ramo in un gruppo che ruota attorno all'attacco sul tronco
+  // (come l'acero). legabili: [ramo, cuscinetto che porta]. Restituisce i gruppi per ramo e per cuscinetto.
+  function gruppiRami(tr, legabili) {
+    const gruppoRamo = {}, gruppoPad = {};
+    for (const [b, pad] of legabili) { const g = new THREE.Group(); g.matrixAutoUpdate = false; tr.add(g); gruppoRamo[b] = gruppoPad[pad] = g; }
+    return { gruppoRamo, gruppoPad };
+  }
+  // punte dove spuntano candele e punte nuove: le 2 punte di rametto più rivolte verso l'esterno e verso
+  // chi guarda, per ogni cuscinetto (come i germogli dell'acero)
+  function punteDa(rametti, pads, gruppoPad) {
+    return [0, 1].flatMap(j => pads.map((pd, n) => {
+      const fuori = new THREE.Vector3(pd[0], 0, pd[2] + .6).normalize();
+      const q = rametti.filter(x => x.pad === n).map(x => ({ x, voto: x.a.clone().sub(x.da).setY(0).normalize().dot(fuori) }))
+        .sort((a, b) => b.voto - a.voto)[j].x;
+      return { p: q.a.clone(), d: q.a.clone().sub(q.da).normalize().add(new THREE.Vector3(0, 1.6, 0)).normalize(), gruppo: gruppoPad[n] };
+    }));
   }
 
   let ginepro;
@@ -215,17 +240,29 @@ export function creaAlberi(world) {
     tube([[0, -.05, 0], [-.22, .3, .05], [.12, .62, -.05], [-.12, .95, .06], [.08, 1.3, 0], [0, 1.6, 0]], .19, .05, legnoG, tr, 26);
     tube([[.06, 1.15, 0], [.3, 1.4, .08], [.45, 1.64, .1]], .045, .012, 0xeee7d7, tr, 8);
     tube([[-.05, .25, .08], [-.2, .12, .2], [-.3, .05, .25]], .04, .012, 0xeee7d7, tr, 6);
-    [[[-.15, .85, .04], [-.5, .82, .1], [-.8, .78, .12]], [[.1, .6, -.04], [.45, .85, -.05], [.75, 1.0, -.05]], [[-.08, 1.1, .05], [-.3, 1.25, .06], [-.5, 1.32, .05]], [[.05, 1.25, .04], [.2, 1.32, .18], [.3, 1.36, .25]]].forEach(p => tube(p, .07, .02, legnoG, tr, 10));
+    const ramiG = [[[-.15, .85, .04], [-.5, .82, .1], [-.8, .78, .12]], [[.1, .6, -.04], [.45, .85, -.05], [.75, 1.0, -.05]], [[-.08, 1.1, .05], [-.3, 1.25, .06], [-.5, 1.32, .05]], [[.05, 1.25, .04], [.2, 1.32, .18], [.3, 1.36, .25]]];
+    // i 4 rami del ginepro si legano tutti (RAMI_SPECIE nel motore): [ramo, cuscinetto]
+    const LEGABILI_G = [[0, 0], [1, 1], [2, 2], [3, 4]];
+    const gG = gruppiRami(tr, LEGABILI_G);
+    ramiG.forEach((p, b) => tube(p, .07, .02, legnoG, gG.gruppoRamo[b] ?? tr, 10));
     const padsG = [[-.84, .8, .12, .5], [.76, 1.03, -.05, .48], [-.5, 1.33, .05, .4], [.04, 1.72, 0, .46], [.3, 1.38, .25, .3]];
     // il ginepro ha aghi corti e fitti
     const fg = foliage(tr, padsG,
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
-    rametti(tr, padsG, legnoG, 13);
+    const rametG = rametti(pad => gG.gruppoPad[pad] ?? tr, padsG, legnoG, 13);
     trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
-    cure.ginepro = assetabile(curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6), {
+    cure.ginepro = assetabile(curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6, gG.gruppoPad), {
       t, soil: soilG, raggioAnello: 1.08, annaffiatoio: new THREE.Vector3(.95, 1.1, .75),
       colora(v) { seteG = v; coloraG(); },
     });
+    // potatura (punte da pizzicare) e filo del ginepro
+    Object.assign(cure.ginepro, {
+      g: tr, aghi: true, punte: punteDa(rametG, padsG, gG.gruppoPad), scalaGermogli: .85,
+      verde: new THREE.Color(0x64a57c), coloreGermoglio: new THREE.Color(0xa6dc72),
+      fuoco: new THREE.Vector3(-2.3, 1.75, .6),
+      filo: creaFilo(LEGABILI_G.map(([b, pad]) => { const [x, y, z, r] = padsG[pad]; return { gruppo: gG.gruppoRamo[b], punti: ramiG[b], r0: .07, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
+    });
+    cure.ginepro.filo.quandoPiega = () => cure.ginepro.aggiornaPieghe();
     // d'inverno il ginepro cinese prende un colore bronzeo, che torna verde a fine stagione
     const bronzo = fg.toni.map(x => new THREE.Color(['#4f4a2e', '#5e5432', '#6e5e36', '#7d6a3c', '#8b7443', '#9a7f4c'][Math.round(x * 5)]));
     const c = new THREE.Color();
@@ -261,22 +298,34 @@ export function creaAlberi(world) {
     const legnoP = corteccia(0x5e4434, { chiaro: .35, scuro: .45 });
     tube([[0, -.05, 0], [.14, .38, 0], [.34, .78, .05], [.44, 1.18, 0], [.4, 1.55, 0]], .18, .05, legnoP, tr, 24);
     for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2 + .7; tube([[0, .06, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .36, -.03, Math.sin(a) * .36]], .07, .02, legnoP, tr, 6); }
-    [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]].forEach(p => tube(p, .07, .02, legnoP, tr, 10));
+    const ramiP = [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]];
+    // i 5 rami del pino si legano tutti: il ramo i porta il cuscinetto i
+    const LEGABILI_P = [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4]];
+    const gP = gruppiRami(tr, LEGABILI_P);
+    ramiP.forEach((p, b) => tube(p, .07, .02, legnoP, gP.gruppoRamo[b] ?? tr, 10));
     const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
     // i colori della sete (stress) si usano quando il pino ha sete
     const fp = foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
-    rametti(tr, pads, legnoP, 5);
+    const rametP = rametti(pad => gP.gruppoPad[pad] ?? tr, pads, legnoP, 5);
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
     // con la sete gli aghi ingialliscono a chiazze: i colori "stressed" preparati nella chioma
     const cp = new THREE.Color();
-    cure.pino = assetabile(curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8), {
+    cure.pino = assetabile(curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8, gP.gruppoPad), {
       t, soil: soilP, raggioAnello: 1.12, annaffiatoio: new THREE.Vector3(-1.0, 1.1, .8),
       colora(v) {
         for (let i = 0; i < fp.healthy.length; i++) fp.m.setColorAt(i, cp.copy(fp.healthy[i]).lerp(fp.stressed[i], v));
         fp.m.instanceColor.needsUpdate = true;
       },
     });
+    // potatura (candele da cimare) e filo del pino
+    Object.assign(cure.pino, {
+      g: tr, aghi: true, punte: punteDa(rametP, pads, gP.gruppoPad), scalaGermogli: 1.1,
+      verde: new THREE.Color(0x587c3c), coloreGermoglio: new THREE.Color(0xc8d88a),
+      fuoco: new THREE.Vector3(2.45, 1.85, 2.0),
+      filo: creaFilo(LEGABILI_P.map(([b, pad]) => { const [x, y, z, r] = pads[pad]; return { gruppo: gP.gruppoRamo[b], punti: ramiP[b], r0: .07, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
+    });
+    cure.pino.filo.quandoPiega = () => cure.pino.aggiornaPieghe();
   }
 
   cure.acero = acero;
@@ -298,6 +347,7 @@ export function creaAlberi(world) {
     setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
+      cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock);
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }
       if (acero.ring.visible) acero.ring.material.opacity = .45 + .3 * Math.sin(clock * 3.2);
       acero.aggiorna(clock);

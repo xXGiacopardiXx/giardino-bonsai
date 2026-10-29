@@ -82,6 +82,21 @@ Su un bonsai vero potare ogni giorno è dannoso. Per questo la serie quotidiana 
 - **Togliere il filo:** a forma presa il pallino diventa verde e sul pulsante Filo compare il "!". Toccandolo si toglie il filo: il ramo resta piegato e arrivano 10 Semi. Si può togliere anche prima (con un secondo tocco), ma il ramo torna indietro in proporzione a quanto non ha ancora preso.
 - **Segni:** dopo 2 giorni di tolleranza a forma presa, sotto il filo compare una spirale scura sulla corteccia, che si fa piena in 4 giorni; tolto il filo svanisce in circa 20 giorni. Togliendo un filo che ha già segnato la corteccia non si guadagnano Semi, senza rimproveri.
 
+#### 4.2.2 Filo sulle conifere
+
+Pino e ginepro si legano come l'acero: tutti i rami principali (5 sul pino, 4 sul ginepro), con il pallino di rame da trascinare. Il loro legno è più duro e cresce più piano: il filo fa presa in circa il doppio del tempo (pino 0,5, ginepro 0,6 rispetto all'acero), come nei bonsai veri, dove sulle conifere il filo resta mesi. Le altre regole (piega, segni, Semi a filo tolto in tempo) sono le stesse.
+
+### 4.3 Potatura di ogni specie
+
+Ogni specie si pota con la sua tecnica e nel suo momento dell'anno:
+
+- **Acero:** germogli da cimare ogni giorno; sotto il taglio spuntano 2 gemme (sezione 6.1.2).
+- **Pino nero:** in primavera e nei primi 3 giorni d'estate spuntano le **candele**, getti chiari e dritti in punta ai rami (2 al giorno in primavera, 1 all'inizio dell'estate, al massimo 4): si cimano con le forbici, e gli aghi nuovi restano corti e la chioma compatta. In **autunno** compaiono ciuffi di **aghi vecchi** ingialliti (uno al giorno, al massimo 3), da togliere a mano: luce e aria arrivano dentro la chioma.
+- **Ginepro:** in primavera ed estate escono **punte nuove** (una al giorno, al massimo 4) che si **pizzicano con le dita**, senza forbici, così le squame non imbruniscono.
+- Le conifere non lasciano gemme dopo il taglio: restano compatte. D'inverno riposano, e sotto stress medio non crescono.
+- **Come si fa:** Pota dalla tendina della pianta (sul ginepro si chiama Pizzica), oppure dalla barra: se più piante hanno qualcosa da sistemare si tocca quella giusta. La telecamera si avvicina e i pezzi da togliere brillano.
+- **Sfida del giorno:** se l'acero non ha niente da potare, la sfida può essere "Cima le candele del pino", "Togli gli aghi vecchi del pino" o "Pizzica il ginepro".
+
 ## 5. Piante e stili
 
 ### 5.1 Specie
@@ -178,7 +193,7 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 
 ### 6.5 Cura nell'app: prodotti, inventario, concimi e trattamenti
 
-Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anche l'acqua vale per tutte, ognuna con la sua sete (sezione 6.1.4); potatura e filo restano per ora solo sull'acero.
+Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anche acqua, potatura e filo valgono per tutte, ognuna con le sue regole (sezioni 6.1.4, 4.3 e 4.2.2).
 
 - **Prodotti:** si comprano nel **negozio, scheda Cura**, a confezioni da 3 dosi; ogni uso consuma una dose. Alcuni sono **specifici** per una pianta (più efficaci), altri **generali** per tutte:
 

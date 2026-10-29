@@ -16,6 +16,7 @@ import { creaAlberi } from './scena/alberi.js';
 import { creaGiardino } from './scena/giardino.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
+import { creaAghiVecchi } from './scena/aghi-vecchi.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
@@ -25,7 +26,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -70,7 +71,8 @@ function avvia() {
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, { enablePan: false, enableDamping: true, dampingFactor: .08, rotateSpeed: .55, zoomSpeed: .8, minPolarAngle: .55, maxPolarAngle: 1.2 });
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
-  let baseDist = 30, potando = false, filando = false;
+  // potando, filando: la pianta su cui si sta lavorando ('acero', 'pino', 'ginepro'), oppure null
+  let baseDist = 30, potando = null, filando = null;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
     const w = screenEl.clientWidth, h = screenEl.clientHeight; if (!w || !h) return;
@@ -93,7 +95,9 @@ function avvia() {
   const ui = creaInterfaccia(screenEl, camera, alberi.trees);
   // La pianta del motore è l'acero, unica specie da curare nell'MVP (game-design.md, sezione 14.1)
   const acero = alberi.acero;
-  const germogli = creaGermogli(scene, acero);
+  // germogli dell'acero, candele del pino, punte del ginepro; aghi vecchi del pino
+  const germogliScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaGermogli(scene, alberi.cure[p])]));
+  const aghiVecchi = creaAghiVecchi(alberi.cure.pino);
   // afidi, concime e spray su tutte e tre le piante
   const curaScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaCura(scene, alberi.cure[p], p)]));
 
@@ -105,6 +109,8 @@ function avvia() {
 
   let pannello, negozio, cure;
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
+  // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
+  let scelta = null;
   const avvisati = new Set();
   const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro' };
   function disegna() {
@@ -116,7 +122,7 @@ function avvia() {
     if (!annaffiando) {
       acero.setThirst(v.ingiallimento);
       acero.setSoil(v.terriccio);
-      acero.ring.visible = v.haSete || (scegliAcqua && v.puoAnnaffiare);
+      acero.ring.visible = v.haSete || (scelta === 'acqua' && v.puoAnnaffiare);
       acero.setAppassimento(v.appassimento);
     }
     // pino e ginepro: aghi che ingialliscono, terriccio che schiarisce, anello quando hanno sete
@@ -124,10 +130,11 @@ function avvia() {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
       pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio);
-      pianta.ring.visible = c.haSete || (scegliAcqua && c.puoAnnaffiare);
+      pianta.ring.visible = c.haSete || (scelta === 'acqua' && c.puoAnnaffiare);
     }
     acero.filo.setRami(v.rami);
-    document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere);
+    for (const p of ['pino', 'ginepro']) alberi.cure[p].filo.setRami(v.conifere[p].rami);
+    document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere || v.conifere.pino.filoDaTogliere || v.conifere.ginepro.filoDaTogliere);
     acero.setSalute(v.salute);
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
@@ -147,7 +154,9 @@ function avvia() {
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
-    germogli.sincronizza(v.germogli, v.gemme);
+    germogliScene.acero.sincronizza(v.germogli, v.gemme);
+    for (const p of ['pino', 'ginepro']) germogliScene[p].sincronizza(v.conifere[p].germogli, []);
+    aghiVecchi.sincronizza(v.conifere.pino.vecchi);
     pannello?.mostra(v, base.aggiornato);
   }
   function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
@@ -157,7 +166,7 @@ function avvia() {
   // si annaffia lei. ---
   const waterBtn = document.getElementById('t-water');
   const esiti = {};
-  let scegliAcqua = false;
+  const ANTEPRIMA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
   const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro' };
   const DOPO = {
     acero: 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.',
@@ -177,7 +186,7 @@ function avvia() {
     },
   })]));
   function annaffiaPianta(p) {
-    scegliAcqua = false; waterBtn.classList.remove('attivo');
+    if (scelta === 'acqua') annullaScelta();
     if (annaffiature[p].attiva) return;
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
     const esito = annaffia(stato, ora(), p);
@@ -194,17 +203,16 @@ function avvia() {
     disegna();
   }
   waterBtn.addEventListener('click', () => {
-    if (scegliAcqua) { scegliAcqua = false; waterBtn.classList.remove('attivo'); disegna(); return; }
+    if (annullaScelta()) return;
     if (Object.values(annaffiature).some(a => a.attiva)) return;
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
-    chiudiMenu();
+    chiudiMenu(); potatura(null); filatura(null);
     const v = vista(stato);
     const asciutte = [v.puoAnnaffiare && 'acero', v.conifere.pino.puoAnnaffiare && 'pino', v.conifere.ginepro.puoAnnaffiare && 'ginepro'].filter(Boolean);
     if (!asciutte.length) { ui.toast('Tutte le piante hanno il terriccio ancora umido. Riprova più tardi.'); return; }
     if (asciutte.length === 1) { annaffiaPianta(asciutte[0]); return; }
     // più piante da annaffiare: si sceglie toccandola (hanno l'anello azzurro)
-    scegliAcqua = true; waterBtn.classList.add('attivo'); disegna();
-    ui.toast('Tocca la pianta da annaffiare: quelle con l\'anello azzurro hanno il terriccio asciutto.', 4000);
+    scegli('acqua', 'Tocca la pianta da annaffiare: quelle con l\'anello azzurro hanno il terriccio asciutto.');
   });
 
   pannello = creaPannelloProva({
@@ -285,8 +293,8 @@ function avvia() {
     negozio() { negozio.apri('negozio', 'cura'); disegna(); },
   });
   // dalla barra: l'inventario dei prodotti di cura
-  document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(false); filatura(false); cure.apri('inventario'); disegna(); });
-  const curaPianta = (p) => { chiudiMenu(); potatura(false); filatura(false); cure.apri('pianta', p); disegna(); };
+  document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(null); filatura(null); cure.apri('inventario'); disegna(); });
+  const curaPianta = (p) => { chiudiMenu(); potatura(null); filatura(null); cure.apri('pianta', p); disegna(); };
 
   // --- Negozio dei vasi: il vaso comprato va subito all'acero ---
   const nomeVaso = (id) => VASI.find(x => x.id === id).nome.toLowerCase();
@@ -318,28 +326,35 @@ function avvia() {
   document.getElementById('plus').addEventListener('click', apriNegozio);
 
   // --- Tendine delle piante: si aprono toccando la pianta. L'acero ha Acqua, Pota, Filo, Cura e Aspetto;
-  // pino e ginepro per ora solo Cura ---
+  // pino e ginepro Acqua, Pota, Filo e Cura ---
   const menuAcero = document.getElementById('menu-acero');
   const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro') };
   function chiudiMenu() { for (const m of Object.values(menuPiante)) m.hidden = true; }
   for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
-    if (a === 'acqua') annaffiaPianta(p); else curaPianta(p);
+    if (a === 'acqua') annaffiaPianta(p);
+    else if (a === 'pota') potatura(p);
+    else if (a === 'filo') filatura(p);
+    else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
     if (a === 'acqua') annaffiaPianta('acero');
-    else if (a === 'pota') document.getElementById('t-prune').click();
-    else if (a === 'filo') document.getElementById('t-wire').click();
+    else if (a === 'pota') potatura('acero');
+    else if (a === 'filo') filatura('acero');
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
     else if (a === 'cura') curaPianta('acero');
   });
   const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
 
-  // --- Potatura: Pota avvicina la telecamera all'acero, un tocco su un germoglio lo taglia ---
+  // --- Potatura e filo su tutte le piante (sezioni 4.2 e 4.3). Pota e Filo avvicinano la telecamera
+  // alla pianta scelta: dalla sua tendina, oppure dalla barra (se più piante ne hanno bisogno, si tocca
+  // quella giusta). Ogni specie ha la sua tecnica: germogli dell'acero, candele e aghi vecchi del pino,
+  // punte del ginepro da pizzicare. ---
   const pruneBtn = document.getElementById('t-prune');
+  const wireBtn = document.getElementById('t-wire');
   const volo = { t: 1, daT: new THREE.Vector3(), aT: new THREE.Vector3(), daD: 0, aD: 0 };
   const centro = target.clone();
   let distanzaPrima = baseDist;
@@ -348,26 +363,85 @@ function avvia() {
     volo.t = 0; volo.daT.copy(controls.target); volo.aT.copy(versoT);
     volo.daD = camera.position.distanceTo(controls.target); volo.aD = dist;
   }
-  function potatura(on) {
-    if (on === potando) return;
-    if (on) filatura(false);
-    potando = on; germogli.potatura = on;
-    if (on) chiudiMenu();
-    pruneBtn.classList.toggle('attivo', on);
-    if (on) {
-      distanzaPrima = camera.position.distanceTo(controls.target);
-      controls.minDistance = baseDist * .2;
-      vola(acero.fuoco, baseDist * .27);
-    } else {
-      vola(centro, Math.max(distanzaPrima, baseDist * .45));
-      controls.minDistance = baseDist * .45;
-    }
+  const fuocoPianta = (p) => p === 'acero' ? acero.fuoco : alberi.cure[p].fuoco;
+  const filoDi = (p) => p === 'acero' ? acero.filo : alberi.cure[p].filo;
+  const ramiDi = (v, p) => p === 'acero' ? v.rami : v.conifere[p].rami;
+  const potabile = (v, p) => p === 'acero' ? v.puoPotare : v.conifere[p].puoPotare;
+  const daSlegare = (v, p) => p === 'acero' ? v.filoDaTogliere : v.conifere[p].filoDaTogliere;
+  function avvicina(p, dist) {
+    if (!potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
+    controls.minDistance = baseDist * .2;
+    vola(fuocoPianta(p), baseDist * dist);
   }
+  function allontana() {
+    vola(centro, Math.max(distanzaPrima, baseDist * .45));
+    controls.minDistance = baseDist * .45;
+  }
+  // il primo passo dopo Pota, per ogni specie e momento dell'anno
+  function consiglioPota(p) {
+    const v = vista(stato);
+    if (p === 'acero') return v.puoPotare ? 'Tocca un germoglio che brilla per tagliarlo. Tocca Pota per finire.' : 'Per ora l\'acero non ha niente da potare: ogni giorno spunta un germoglio nuovo.';
+    const c = v.conifere[p];
+    if (p === 'pino') return c.vecchi.length ? 'Togli gli aghi vecchi: tocca i ciuffi gialli che brillano.'
+      : c.germogli.some(g => g.potabile) ? 'Cima le candele: tocca quelle chiare che brillano, in punta ai rami.'
+      : 'Il pino mette le candele in primavera; in autunno si tolgono gli aghi vecchi. Per ora non c\'è niente da fare.';
+    return c.germogli.some(g => g.potabile) ? 'Pizzica le punte nuove che brillano: con le dita, non con le forbici, così le squame non imbruniscono.'
+      : 'Il ginepro mette punte nuove in primavera ed estate. Per ora non c\'è niente da pizzicare.';
+  }
+  // p: pianta da potare, oppure null per finire
+  function potatura(p) {
+    if (p === potando) return;
+    if (p) filatura(null);
+    if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
+    potando = p;
+    for (const q in germogliScene) germogliScene[q].potatura = q === p;
+    aghiVecchi.potatura = p === 'pino';
+    if (p) chiudiMenu();
+    pruneBtn.classList.toggle('attivo', !!p);
+    if (p) { avvicina(p, p === 'acero' ? .27 : .3); ui.toast(consiglioPota(p), 4000); } else allontana();
+  }
+
+  // --- Filo: un pallino di rame sulla punta di ogni ramo; trascinandolo su o giù il ramo si piega e il filo
+  // si avvolge; quando il ramo ha preso la forma il pallino diventa verde: toccandolo si toglie il filo ---
+  function filatura(p) {
+    if (p === filando) return;
+    if (p) potatura(null);
+    if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
+    for (const q of ['acero', 'pino', 'ginepro']) filoDi(q).maniglie = q === p;
+    filando = p;
+    if (p) chiudiMenu();
+    wireBtn.classList.toggle('attivo', !!p);
+    if (p) {
+      avvicina(p, p === 'acero' ? .36 : .32);
+      const conifera = p !== 'acero' ? ' Il legno delle conifere è duro: il filo ci mette di più a fare presa.' : '';
+      ui.toast(daSlegare(vista(stato), p) ? 'Un ramo ha preso la forma: tocca il pallino verde per togliere il filo.'
+        : 'Trascina un pallino di rame su o giù per piegare il ramo. Tocca Filo per finire.' + conifera, 4200);
+    } else allontana();
+  }
+
+  // Pota, Filo (e Acqua) dalla barra: se più piante ne hanno bisogno si sceglie toccandola
+  const bottoni = { acqua: waterBtn, pota: pruneBtn, filo: wireBtn };
+  function scegli(azione, testo) {
+    scelta = azione; bottoni[azione].classList.add('attivo'); disegna();
+    ui.toast(testo, 4000);
+  }
+  function annullaScelta() { if (!scelta) return false; bottoni[scelta].classList.remove('attivo'); scelta = null; disegna(); return true; }
   pruneBtn.addEventListener('click', () => {
-    if (potando) { potatura(false); return; }
-    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
-    potatura(true);
-    ui.toast(vista(stato).puoPotare ? 'Tocca un germoglio che brilla per tagliarlo. Tocca Pota per finire.' : 'Per ora non c\'è niente da potare: ogni giorno spunta un germoglio nuovo.', 3500);
+    if (potando) { potatura(null); return; }
+    if (annullaScelta()) return;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    const v = vista(stato), pronte = ['acero', 'pino', 'ginepro'].filter(p => potabile(v, p));
+    if (pronte.length === 0) { ui.toast('Per ora non c\'è niente da potare. Ogni giorno l\'acero mette un germoglio; il pino ha le candele in primavera e gli aghi vecchi in autunno; il ginepro le punte in primavera ed estate.', 5000); return; }
+    if (pronte.length === 1) { potatura(pronte[0]); return; }
+    chiudiMenu(); scegli('pota', 'Tocca la pianta da potare: hanno tutte qualcosa da sistemare.');
+  });
+  wireBtn.addEventListener('click', () => {
+    if (filando) { filatura(null); return; }
+    if (annullaScelta()) return;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    const v = vista(stato), pronte = ['acero', 'pino', 'ginepro'].filter(p => daSlegare(v, p));
+    if (pronte.length === 1) { filatura(pronte[0]); return; }
+    chiudiMenu(); scegli('filo', 'Tocca la pianta su cui lavorare con il filo.');
   });
 
   const raycaster = new THREE.Raycaster(), puntatore = new THREE.Vector2();
@@ -376,46 +450,18 @@ function avvia() {
     puntatore.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     raycaster.setFromCamera(puntatore, camera);
   }
-
-  // --- Filo (sezione 4.2): Filo avvicina la telecamera e mostra un pallino di rame sulla punta
-  // di ogni ramo. Trascinandolo su o giù il ramo si piega e il filo si avvolge; quando il ramo ha
-  // preso la forma il pallino diventa verde: toccandolo si toglie il filo. ---
-  const wireBtn = document.getElementById('t-wire');
-  function filatura(on) {
-    if (on === filando) return;
-    if (on) potatura(false);
-    filando = on; acero.filo.maniglie = on;
-    if (on) chiudiMenu();
-    wireBtn.classList.toggle('attivo', on);
-    if (on) {
-      distanzaPrima = camera.position.distanceTo(controls.target);
-      controls.minDistance = baseDist * .2;
-      vola(acero.fuoco, baseDist * .36);
-    } else {
-      vola(centro, Math.max(distanzaPrima, baseDist * .45));
-      controls.minDistance = baseDist * .45;
-    }
-  }
   const giorni = (n) => n === 1 ? 'un giorno' : `${n} giorni`;
-  const ANTEPRIMA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
-  wireBtn.addEventListener('click', () => {
-    if (filando) { filatura(false); return; }
-    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    filatura(true);
-    ui.toast(vista(stato).filoDaTogliere ? 'Un ramo ha preso la forma: tocca il pallino verde per togliere il filo.'
-      : 'Trascina un pallino di rame su o giù per piegare il ramo. Tocca Filo per finire.', 3800);
-  });
   // trascinamento di un pallino: si ascolta prima della telecamera, così il dito piega il ramo invece di ruotare la scena
   let tiro = null, ultimoTocco = { ramo: -1, t: 0 };
   screenEl.addEventListener('pointerdown', (e) => {
     if (!filando || e.target !== canvas || tiro) return;
     punta(e);
-    const i = acero.filo.tocca(raycaster);
+    const i = filoDi(filando).tocca(raycaster);
     if (i === null) return;
     e.stopPropagation();
     controls.enabled = false;
-    const piega = vista(stato).rami[i].piega;
-    tiro = { i, id: e.pointerId, y: e.clientY, piega, ora: piega, mosso: false };
+    const piega = ramiDi(vista(stato), filando)[i].piega;
+    tiro = { i, p: filando, id: e.pointerId, y: e.clientY, piega, ora: piega, mosso: false };
   }, true);
   window.addEventListener('pointermove', (e) => {
     if (!tiro || e.pointerId !== tiro.id) return;
@@ -424,51 +470,91 @@ function avvia() {
     if (!tiro.mosso) return;
     // un quarto dello schermo in verticale = tutta la piega possibile in un verso
     tiro.ora = Math.max(-1, Math.min(1, tiro.piega + dy / (canvas.clientHeight * .25)));
-    acero.filo.anteprima(tiro.i, tiro.ora);
+    filoDi(tiro.p).anteprima(tiro.i, tiro.ora);
   });
   const fineTiro = (e) => {
     if (!tiro || e.pointerId !== tiro.id) return;
-    const { i, mosso, ora: piega } = tiro; tiro = null;
+    const { i, p, mosso, ora: piega } = tiro; tiro = null;
     controls.enabled = true;
-    acero.filo.anteprima(i, null);
+    filoDi(p).anteprima(i, null);
     if (e.type === 'pointercancel') return;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    if (mosso) legaRamo(i, piega); else toccaRamo(i);
+    if (mosso) legaRamo(p, i, piega); else toccaRamo(p, i);
   };
   window.addEventListener('pointerup', fineTiro);
   window.addEventListener('pointercancel', fineTiro);
 
-  function legaRamo(i, piega) {
-    const esito = mettiFilo(stato, ora(), i, piega);
+  function legaRamo(p, i, piega) {
+    const esito = mettiFilo(stato, ora(), i, piega, p);
     if (esito.esito !== 'ok') return;
     salva(stato); disegna();
-    acero.filo.avvolgi(i); suoni.filo();
-    const r = vista(stato).rami[i];
-    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    filoDi(p).avvolgi(i); suoni.filo();
+    const r = ramiDi(vista(stato), p)[i];
+    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
     ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
       : r.giorniAllaPresa ? `Filo avvolto! Crescendo, il ramo prenderà questa forma in circa ${giorni(r.giorniAllaPresa)}.`
       : 'Filo avvolto! Il ramo crescerà di nuovo quando la pianta starà meglio: intanto il filo lo tiene.', 3800);
   }
-  function toccaRamo(i) {
-    const r = vista(stato).rami[i];
+  function toccaRamo(p, i) {
+    const r = ramiDi(vista(stato), p)[i];
     if (!r.filo) { ui.toast('Trascina il pallino su o giù per piegare il ramo.'); return; }
     // toglierlo in anticipo chiede un secondo tocco: il ramo torna in parte indietro
-    const secondo = ultimoTocco.ramo === i && performance.now() - ultimoTocco.t < 3500;
-    ultimoTocco = { ramo: i, t: performance.now() };
+    const chiave = p + i;
+    const secondo = ultimoTocco.ramo === chiave && performance.now() - ultimoTocco.t < 3500;
+    ultimoTocco = { ramo: chiave, t: performance.now() };
     if (!r.pronto && !secondo) {
       ui.toast(r.giorniAllaPresa ? `Il ramo sta prendendo la forma: ancora circa ${giorni(r.giorniAllaPresa)}. Tocca di nuovo per togliere il filo adesso.`
         : 'Il ramo cresce solo quando la pianta sta bene. Tocca di nuovo per togliere il filo adesso.', 4000);
       return;
     }
     ultimoTocco.ramo = -1;
-    const esito = togliFilo(stato, ora(), i);
+    const esito = togliFilo(stato, ora(), i, p);
     if (esito.esito !== 'ok') return;
     salva(stato); disegna(); suoni.slega();
-    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
+    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
     ui.toast(esito.presa >= 1
       ? (esito.semi ? `Filo tolto al momento giusto: il ramo resta così. +${esito.semi} Semi!` : 'Filo tolto: il ramo resta così. La corteccia è un po\' segnata, ma col tempo il segno sparirà.')
       : 'Filo tolto prima del tempo: il ramo torna un po\' indietro.', 4000);
   }
+
+  // potatura vera e propria: un tocco su un germoglio, una candela, una punta o un ciuffo di aghi vecchi
+  const DOPO_TAGLIO = {
+    pino: 'Candela cimata: gli aghi nuovi resteranno corti e la chioma compatta.',
+    ginepro: 'Punta pizzicata: il ginepro resterà fitto e compatto.',
+  };
+  function potaQui(e, r) {
+    const p = potando;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    // aghi vecchi del pino
+    const vecchio = p === 'pino' ? aghiVecchi.tocca(raycaster) : null;
+    if (vecchio !== null) {
+      const esito = togliAghi(stato, ora(), vecchio);
+      if (esito.esito !== 'ok') return;
+      aghiVecchi.togli(vecchio); suoni.fruscio(.16);
+      salva(stato); disegna();
+      if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
+      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!` : 'Aghi vecchi tolti: luce e aria arrivano dentro la chioma.');
+    } else {
+      const id = germogliScene[p].tocca(raycaster);
+      if (id === null) return;
+      const esito = pota(stato, ora(), id, p);
+      if (esito.esito === 'piccolo') { ui.toast('È ancora troppo piccolo: lascialo crescere un po\'.'); return; }
+      if (esito.esito !== 'ok') return;
+      germogliScene[p].taglia(id);
+      // il ginepro si pizzica con le dita: niente forbici
+      if (p === 'ginepro') suoni.fruscio(.18);
+      else { ui.forbici(e.clientX - r.left, e.clientY - r.top); suoni.forbici(); setTimeout(() => suoni.fruscio(), 350); }
+      if (p === 'acero') guida.evento('potato');
+      salva(stato); disegna();
+      if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
+      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+        : p !== 'acero' ? DOPO_TAGLIO[p]
+        : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
+    }
+    // finito il lavoro su questa pianta, la telecamera torna indietro da sola
+    if (!potabile(vista(stato), p)) setTimeout(() => { if (potando === p) potatura(null); }, 1600);
+  }
+
   // un tocco è breve e quasi fermo: così non si confonde con la rotazione della scena
   const dita = new Map();
   canvas.addEventListener('pointerdown', e => dita.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now(), multi: dita.size > 0 }));
@@ -477,37 +563,24 @@ function avvia() {
     const d = dita.get(e.pointerId); dita.delete(e.pointerId);
     if (!d || d.multi || dita.size || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || performance.now() - d.t > 450) return;
     const r = canvas.getBoundingClientRect();
-    puntatore.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
-    raycaster.setFromCamera(puntatore, camera);
-    const id = germogli.tocca(raycaster);
-    if (id === null) {
-      // fuori dalla potatura un tocco su una pianta apre la sua tendina
-      if (potando) return;
-      const quale = alberi.tocca(raycaster);
-      // dopo Acqua nella barra, il tocco sceglie la pianta da annaffiare
-      if (scegliAcqua) { if (quale) annaffiaPianta(quale); return; }
-      const m = menuPiante[quale];
-      const apri = m && m.hidden;
-      chiudiMenu();
-      if (apri) { m.hidden = false; suoni.fruscio(.1); }
+    punta(e);
+    if (potando) { potaQui(e, r); return; }
+    if (filando) return;
+    const quale = alberi.tocca(raycaster);
+    // dopo Acqua, Pota o Filo nella barra, il tocco sceglie la pianta
+    if (scelta) {
+      if (!quale) return;
+      const azione = scelta; annullaScelta();
+      if (azione === 'acqua') annaffiaPianta(quale);
+      else if (azione === 'pota') potatura(quale);
+      else filatura(quale);
       return;
     }
-    if (!potando) { ui.toast('Per tagliare un germoglio scegli prima Pota.'); return; }
-    if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
-    const esito = pota(stato, ora(), id);
-    if (esito.esito === 'piccolo') { ui.toast('È ancora troppo piccolo: lascialo crescere un po\'.'); return; }
-    if (esito.esito !== 'ok') return;
-    ui.forbici(e.clientX - r.left, e.clientY - r.top);
-    germogli.taglia(id);
-    suoni.forbici(); setTimeout(() => suoni.fruscio(), 350);
-    guida.evento('potato');
-    salva(stato);
-    disegna();
-    if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, 'acero'); suoni.semi(); }
-    ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
-      : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
-    // finiti i germogli da tagliare, la telecamera torna indietro da sola
-    if (!vista(stato).puoPotare) setTimeout(() => potatura(false), 1600);
+    // un tocco su una pianta apre la sua tendina
+    const m = menuPiante[quale];
+    const apri = m && m.hidden;
+    chiudiMenu();
+    if (apri) { m.hidden = false; suoni.fruscio(.1); }
   });
 
   let clock = 0, last = performance.now();
@@ -521,7 +594,8 @@ function avvia() {
     }
     controls.update();
     alberi.aggiorna(clock);
-    germogli.aggiorna(dt, clock);
+    for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
+    aghiVecchi.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
