@@ -91,8 +91,8 @@ Pino e ginepro si legano come l'acero: tutti i rami principali (5 sul pino, 4 su
 Ogni specie si pota con la sua tecnica e nel suo momento dell'anno:
 
 - **Acero:** germogli da cimare ogni giorno; sotto il taglio spuntano 2 gemme (sezione 6.1.2).
-- **Pino nero:** in primavera e nei primi 3 giorni d'estate spuntano le **candele**, getti chiari e dritti in punta ai rami (2 al giorno in primavera, 1 all'inizio dell'estate, al massimo 4): si cimano con le forbici, e gli aghi nuovi restano corti e la chioma compatta. In **autunno** compaiono ciuffi di **aghi vecchi** ingialliti (uno al giorno, al massimo 3), da togliere a mano: luce e aria arrivano dentro la chioma.
-- **Ginepro:** in primavera ed estate escono **punte nuove** (una al giorno, al massimo 4) che si **pizzicano con le dita**, senza forbici, così le squame non imbruniscono.
+- **Pino nero:** in primavera e nei primi 3 giorni d'estate spuntano le **candele**: colonne chiare e argentate, gonfie alla base e appuntite, coperte dalle scaglie delle gemme, con gli aghi nuovi ancora stretti attorno e la guaina bruna alla base (2 al giorno in primavera, 1 all'inizio dell'estate, al massimo 4): si cimano con le forbici, e gli aghi nuovi restano corti e la chioma compatta. In **autunno** compaiono ciuffi di **aghi vecchi** ingialliti (uno al giorno, al massimo 3), da togliere a mano: luce e aria arrivano dentro la chioma.
+- **Ginepro:** in primavera ed estate escono **punte nuove**, rametti morbidi di squame verde chiaro che escono dalla sagoma e si aprono a ventaglio (una al giorno, al massimo 4), che si **pizzicano con le dita**, senza forbici, così le squame non imbruniscono.
 - Le conifere non lasciano gemme dopo il taglio: restano compatte. D'inverno riposano, e sotto stress medio non crescono.
 - **Come si fa:** Pota dalla tendina della pianta (sul ginepro si chiama Pizzica), oppure dalla barra: se più piante hanno qualcosa da sistemare si tocca quella giusta. La telecamera si avvicina e i pezzi da togliere brillano.
 - **Sfida del giorno:** se l'acero non ha niente da potare, la sfida può essere "Cima le candele del pino", "Togli gli aghi vecchi del pino" o "Pizzica il ginepro".
@@ -170,7 +170,7 @@ Principio: cura **realistica**, con esigenze diverse per specie (e più avanti p
 - **Come si vede:** come l'acero, anello azzurro a terra e terriccio che schiarisce; gli aghi del pino e le squame del ginepro ingialliscono a chiazze. L'etichetta di ogni conifera mostra la fase ("Sta bene", "Ha sete"...) e la barra dell'acqua.
 - **Come si annaffia:** **Acqua** nella barra annaffia la pianta che ha il terriccio asciutto; se sono più d'una, le piante con l'anello azzurro aspettano un tocco per scegliere. Dalla tendina di una pianta (anche pino e ginepro ora hanno **Acqua**) si annaffia lei. Se il terriccio è ancora umido, un messaggio spiega che le conifere lo vogliono quasi asciutto.
 - **Sfida del giorno:** se l'acero non beve ma una conifera ha davvero sete, la sfida è "Annaffia il pino" (o il ginepro).
-- Per ora sulle conifere la sete lunga si vede (colori e fase) ma non dirada la chioma: la pianta non muore mai.
+- **Chioma delle conifere:** come l'acero, la sete lunga e gli afidi non trattati la diradano (prima i ciuffi esterni) e le cure la rifanno, ma alla metà del ritmo: aghi e squame durano anni. Gli afidi da soli non la portano sotto la metà; la pianta non muore mai. L'etichetta mostra la barra della chioma con la percentuale, come l'acero (al posto della percentuale di stile, che tornerà con gli stili).
 
 ### 6.2 Ritorno dopo una lunga assenza
 
@@ -212,7 +212,7 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 - **Parassiti (afidi):** al massimo un attacco alla volta per pianta, su uno dei 5 cuscinetti più visibili della chioma. Probabilità al giorno per l'acero: 12% in primavera ed estate, 6% in autunno, mai d'inverno; doppia se ha sete (stress lieve o più). Le conifere, robuste, ne prendono il 60%. Dimezzata con il concime, nulla con l'olio di neem attivo. Il caso è prevedibile: la stessa partita nello stesso giorno dà sempre lo stesso risultato.
 - **Come si vedono:** puntini neri e verde chiaro sulle foglie, che crescono di numero e grandezza. Nelle prime 12 ore sono minuscoli e si scoprono solo avvicinandosi; poi l'etichetta della pianta dice "Ha gli afidi", sul pulsante Cura compare il "!" e un messaggio gentile avvisa.
 - **Trattamento:** la telecamera si avvicina, lo spray fa una nuvola fine sul cuscinetto e gli afidi cadono e spariscono. Entro 24 ore: +20 Semi; scoperti prima dell'avviso: +10 in più. Il sapone molle senza afidi non si spreca (un messaggio invita a guardare da vicino ogni tanto); l'olio di neem invece si può dare anche prima, come protezione.
-- **Se restano sull'acero:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri. Sulle conifere per ora non fanno danni oltre ai Semi persi.
+- **Se restano:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno sull'acero, 3% sulle conifere), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri.
 - Concimi e trattamenti su qualunque pianta contano come cura del giorno per la serie.
 
 ## 7. Sfide, serie ed economia
@@ -297,6 +297,8 @@ Ogni livello di zoom rivela informazioni utili per giocare, non solo più dettag
 - Ogni specie è un kit grafico separato, aggiungibile senza toccare il motore.
 
 ## 10. Homepage (validata col prototipo)
+
+- **Tendine e banner della sfida:** quando si apre la tendina di una pianta, la sua etichetta passa sopra al banner della sfida del giorno, che si fa trasparente e lascia passare i tocchi: le azioni non restano mai coperte.
 
 Riferimento: `prototipo/giardino-bonsai.html`, pubblicato su https://claude.ai/artifact/L9hqj269PdqfjAopyCABdH
 
