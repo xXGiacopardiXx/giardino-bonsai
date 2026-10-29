@@ -198,13 +198,29 @@ export function creaAlberi(world) {
       const pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
       m4.decompose(pos, q, sc); return { pos, sc };
     });
-    return {
+    // con la chioma che si dirada spariscono prima i ciuffi esterni (come sull'acero)
+    const ordine = f.periferia.map((dn, i) => [dn + ((i * 0.618) % 1) * .35, i]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0), nascosto = new Set();
+    let salute = 1;
+    const cura = {
       ciuffiDi: (pad) => forme.filter((_, i) => f.pad[i] === pad), gruppoDi: (pad) => pieghe[pad] ?? tr, potTop: terra, raggioTerra,
       aggiornaPieghe() {
-        f.pad.forEach((pad, i) => { const g = pieghe[pad]; f.m.setMatrixAt(i, g ? m4.copy(g.matrix).multiply(base[i]) : base[i]); });
+        f.pad.forEach((pad, i) => {
+          if (nascosto.has(i)) { f.m.setMatrixAt(i, zero); return; }
+          const g = pieghe[pad]; f.m.setMatrixAt(i, g ? m4.copy(g.matrix).multiply(base[i]) : base[i]);
+        });
         f.m.instanceMatrix.needsUpdate = true;
       },
+      // 1 = chioma piena, 0,5 = metà dei ciuffi (le conifere non scendono di più)
+      setSalute(v) {
+        if (Math.abs(v - salute) < .005) return;
+        salute = v; nascosto.clear();
+        const n = Math.round((1 - v) / .8 * ordine.length * .85);
+        for (let k = 0; k < n; k++) nascosto.add(ordine[k]);
+        cura.aggiornaPieghe();
+      },
     };
+    return cura;
   }
 
   // Rami legabili col filo di una conifera: ogni ramo in un gruppo che ruota attorno all'attacco sul tronco
@@ -257,7 +273,7 @@ export function creaAlberi(world) {
     });
     // potatura (punte da pizzicare) e filo del ginepro
     Object.assign(cure.ginepro, {
-      g: tr, aghi: true, punte: punteDa(rametG, padsG, gG.gruppoPad), scalaGermogli: .85,
+      g: tr, aghi: true, specie: 'ginepro', punte: punteDa(rametG, padsG, gG.gruppoPad), scalaGermogli: 1,
       verde: new THREE.Color(0x64a57c), coloreGermoglio: new THREE.Color(0xa6dc72),
       fuoco: new THREE.Vector3(-2.3, 1.75, .6),
       filo: creaFilo(LEGABILI_G.map(([b, pad]) => { const [x, y, z, r] = padsG[pad]; return { gruppo: gG.gruppoRamo[b], punti: ramiG[b], r0: .07, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
@@ -320,8 +336,8 @@ export function creaAlberi(world) {
     });
     // potatura (candele da cimare) e filo del pino
     Object.assign(cure.pino, {
-      g: tr, aghi: true, punte: punteDa(rametP, pads, gP.gruppoPad), scalaGermogli: 1.1,
-      verde: new THREE.Color(0x587c3c), coloreGermoglio: new THREE.Color(0xc8d88a),
+      g: tr, aghi: true, specie: 'pino', punte: punteDa(rametP, pads, gP.gruppoPad), scalaGermogli: 1,
+      verde: new THREE.Color(0x587c3c), coloreGermoglio: new THREE.Color(0xa9cf6a),
       fuoco: new THREE.Vector3(2.45, 1.85, 2.0),
       filo: creaFilo(LEGABILI_P.map(([b, pad]) => { const [x, y, z, r] = pads[pad]; return { gruppo: gP.gruppoRamo[b], punti: ramiP[b], r0: .07, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
     });

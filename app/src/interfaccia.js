@@ -94,6 +94,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
         $(p + '-fase').dataset.livello = c.fase === 0 ? 'bene' : c.fase === 1 ? 'sete' : c.fase < 4 ? 'stress' : 'grave';
         $(p + '-acqua').style.width = Math.round(c.acqua * 100) + '%';
         $(p + '-acqua').parentElement.dataset.livello = c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
+        // chioma: come quella dell'acero, con la percentuale
+        $(p + '-barra').style.width = $(p + '-salute').textContent = Math.round(c.salute * 100) + '%';
       }
       if (!annaffiando) {
         $('alert').classList.toggle('hide', !v.haSete);

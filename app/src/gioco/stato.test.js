@@ -568,3 +568,22 @@ test('un salvataggio della versione 9 riceve potatura e rami delle conifere', ()
   assert.equal(vista(s).conifere.ginepro.rami.length, 4);
   assert.deepEqual(vista(s).conifere.pino.vecchi, []);
 });
+
+test('anche la chioma di pino e ginepro si dirada con la sete lunga, più piano, e si riprende', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(30));
+  const pino = vista(s).conifere.pino.salute, acero = vista(s).salute;
+  assert.ok(pino < 1, "un mese senz'acqua si vede");
+  assert.ok(pino > acero, "ma meno che sull'acero");
+  // acqua e, se ci sono, via gli afidi
+  for (let g = 30; g <= 50; g++) { annaffia(s, dopo(g), 'pino'); s.conifere.pino.parassiti = null; avanza(s, dopo(g + 0.5)); }
+  assert.ok(vista(s).conifere.pino.salute > pino);
+});
+
+test('un salvataggio della versione 10 riceve la chioma delle conifere', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 10; delete vecchio.conifere.pino.salute; delete vecchio.conifere.ginepro.salute;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).conifere.ginepro.salute, 1);
+});

@@ -4,7 +4,7 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 10;
+export const VERSIONE = 11;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
@@ -49,6 +49,8 @@ const SETE_MASSIMA = 60;               // oltre non cambia più niente
 const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma restano sempre
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
 const RIPRESA_AL_GIORNO = 0.15;        // da quasi spoglia a piena in 5-6 giorni di cure
+// le conifere perdono e rifanno la chioma alla metà del ritmo dell'acero: aghi e squame durano anni
+const RITMO_CHIOMA = { acero: 1, pino: 0.5, ginepro: 0.5 };
 
 // Potatura (sezione 14.1): germogli sulle punte della chioma; tagliandone uno, sotto il taglio
 // spuntano 2 gemme che crescono nei giorni successivi e rendono la chioma più fitta.
@@ -135,7 +137,7 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, ...potaturaConifera(p) });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p) });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
 function potaturaConifera(p) {
   return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
@@ -202,6 +204,11 @@ export function migra(stato) {
     for (const p of ['pino', 'ginepro']) if (!stato.conifere[p].germogli) Object.assign(stato.conifere[p], potaturaConifera(p));
     stato.versione = 10;
   }
+  // anche le conifere hanno la chioma che si dirada e si riprende
+  if (stato.versione === 10) {
+    for (const p of ['pino', 'ginepro']) stato.conifere[p].salute = 1;
+    stato.versione = 11;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -258,7 +265,12 @@ export function avanza(stato, ora) {
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni);
     for (const p of ['pino', 'ginepro']) {
-      const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t);
+      const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t), k = RITMO_CHIOMA[p];
+      // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
+      const maxC = saluteMassima(c.sete);
+      if (c.salute > maxC) c.salute = Math.max(maxC, c.salute - giorni * PERDITA_AL_GIORNO * k);
+      else if (c.sete < 2 && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t));
+      if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
       cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni);
     }
@@ -612,6 +624,7 @@ export function vista(stato) {
       const rami = vistaRami(c.rami, PRESA_AL_GIORNO * PRESA_SPECIE[p] * vigoreDi(c, cal.stagione, stato.aggiornato));
       return [p, {
         ...vistaAcqua(c.sete),
+        salute: c.salute,
         germogli: c.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
         vecchi: c.vecchi.map(x => ({ ...x })),
         puoPotare: c.germogli.some(g => g.lunghezza >= POTABILE_DA) || c.vecchi.length > 0,

@@ -129,7 +129,7 @@ function avvia() {
     for (const p of ['pino', 'ginepro']) {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
-      pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio);
+      pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio); pianta.setSalute(c.salute);
       pianta.ring.visible = c.haSete || (scelta === 'acqua' && c.puoAnnaffiare);
     }
     acero.filo.setRami(v.rami);
@@ -329,7 +329,12 @@ function avvia() {
   // pino e ginepro Acqua, Pota, Filo e Cura ---
   const menuAcero = document.getElementById('menu-acero');
   const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro') };
-  function chiudiMenu() { for (const m of Object.values(menuPiante)) m.hidden = true; }
+  function chiudiMenu() {
+    for (const m of Object.values(menuPiante)) { m.hidden = true; m.parentElement.classList.remove('aperta'); }
+    screenEl.classList.remove('menu-aperto');
+  }
+  // la tendina aperta passa sopra al banner della sfida, che si fa da parte
+  function apriMenu(m) { m.hidden = false; m.parentElement.classList.add('aperta'); screenEl.classList.add('menu-aperto'); }
   for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
@@ -580,7 +585,7 @@ function avvia() {
     const m = menuPiante[quale];
     const apri = m && m.hidden;
     chiudiMenu();
-    if (apri) { m.hidden = false; suoni.fruscio(.1); }
+    if (apri) { apriMenu(m); suoni.fruscio(.1); }
   });
 
   let clock = 0, last = performance.now();

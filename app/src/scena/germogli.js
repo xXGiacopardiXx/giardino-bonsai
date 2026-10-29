@@ -2,7 +2,7 @@
 // La scena segue la vista del motore: sincronizza() crea, allunga e toglie i pezzi;
 // taglia() stacca un germoglio, che cade a terra perdendo qualche foglia.
 import * as THREE from 'three';
-import { PI, toon, ciuffoAghi, ciuffoFoglie, fogliaAcero } from './strumenti.js';
+import { PI, toon, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero } from './strumenti.js';
 
 const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const backOut = t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
@@ -48,6 +48,38 @@ function geoStelo(L, bx, bz) {
   geo.computeVertexNormals();
   return { geo, curva };
 }
+// Candela del pino nero: una colonna chiara e argentata, gonfia alla base e appuntita, coperta dalle
+// scaglie delle gemme (anelli più scuri). Gli aghi nuovi sono ancora stretti attorno e si aprono crescendo;
+// alla base resta la guaina bruna della gemma dell'anno prima.
+function geoCandela() {
+  const prof = [];
+  for (let i = 0; i <= 14; i++) {
+    const t = i / 14, r = t < .12 ? .7 + t * 2.5 : 1 - Math.pow((t - .12) / .88, 1.7) * .94;
+    prof.push(new THREE.Vector2(Math.max(.03, r), t));
+  }
+  const geo = new THREE.LatheGeometry(prof, 12), pos = geo.attributes.position, col = [];
+  const chiaro = new THREE.Color(0xeee6cc), scaglia = new THREE.Color(0xbfa77c), k = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i), a = Math.atan2(pos.getZ(i), pos.getX(i));
+    // scaglie a spirale: anelli inclinati più scuri
+    const s = Math.pow(.5 + .5 * Math.sin(y * 46 + a * 2), 3);
+    k.copy(chiaro).lerp(scaglia, s * .75); col.push(k.r, k.g, k.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+const candelaGeo = geoCandela();
+const candelaMat = toon({ color: 0xffffff, vertexColors: true, emissive: 0xfff2a0, emissiveIntensity: 0 });
+const aghiNuoviGeo = ciuffoAghi({ n: 16, lunghezza: 1, larghezza: .05, seme: 41, nucleo: 0, apertura: .55 });
+const guainaGeo = new THREE.CylinderGeometry(.9, 1.15, 1, 8, 1, true).translate(0, .5, 0), guainaMat = toon({ color: 0x8a6440, side: THREE.DoubleSide });
+// Punta nuova del ginepro: rametti morbidi di squame verde chiaro, come il suo fogliame ma più teneri,
+// che escono dalla sagoma del cuscinetto e si aprono a ventaglio
+const squameNuoveGeo = ciuffoSquame({ n: 18, lunghezza: .9, larghezza: .34, nucleo: .22, seme: 47 });
+const steloGineproGeo = new THREE.CylinderGeometry(.5, 1, 1, 6).translate(0, .5, 0), steloGineproMat = toon({ color: 0x7fae52 });
+// rametti della punta del ginepro: altezza lungo lo stelo (0..1), apertura di lato, grandezza
+const RAMETTI_GINEPRO = [[.38, -1, .8], [.62, 1, .9], [.86, -.5, 1], [1, 0, 1.15]];
+
 // coppie di foglie lungo lo stelo dell'acero: altezza (0..1), grandezza; ogni coppia è girata di 90° (foglie opposte)
 const COPPIE = [[.42, 1], [.72, .82], [.96, .55]];
 
@@ -85,6 +117,37 @@ export function creaGermogli(scene, albero) {
       o.add(alone);
       (albero.punte[g.punta].gruppo ?? albero.g).add(o);
       return { o, fusto, ciuffi, punta, tocco, alone, mat, piega, L: -1, potabile: false, nato: performance.now() };
+    }
+    if (albero.specie === 'pino') {
+      const matCandela = candelaMat.clone();
+      const fusto = new THREE.Mesh(candelaGeo, matCandela); fusto.castShadow = true; o.add(fusto);
+      const guaina = new THREE.Mesh(guainaGeo, guainaMat); o.add(guaina);
+      // aghi nuovi stretti attorno alla candela, nella metà alta
+      for (let i = 0; i < 7; i++) {
+        const c = new THREE.Mesh(aghiNuoviGeo, mat); c.castShadow = true;
+        ciuffi.push({ m: c, k: .3 + i * .09, a: i * 2.4 + hash(g.id * 3 + i) });
+        o.add(c);
+      }
+      const tocco = new THREE.Mesh(toccoGeo, toccoMat); tocco.userData.id = g.id; o.add(tocco);
+      const alone = new THREE.Mesh(aloneGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+      o.add(alone);
+      (albero.punte[g.punta].gruppo ?? albero.g).add(o);
+      return { o, fusto, guaina, ciuffi, tocco, alone, mat, mat2: matCandela, potabile: false, nato: performance.now() };
+    }
+    if (albero.specie === 'ginepro') {
+      const fusto = new THREE.Mesh(steloGineproGeo, steloGineproMat); fusto.castShadow = true; o.add(fusto);
+      // ogni punta si apre da un lato suo
+      const giro = hash(g.id * 11) * PI * 2;
+      RAMETTI_GINEPRO.forEach(([k, lato, grande], i) => {
+        const perno = new THREE.Group(); perno.rotation.y = giro + i * 1.9; o.add(perno);
+        const c = new THREE.Mesh(squameNuoveGeo, mat); c.castShadow = true; perno.add(c);
+        ciuffi.push({ m: perno, c, k, lato, grande });
+      });
+      const tocco = new THREE.Mesh(toccoGeo, toccoMat); tocco.userData.id = g.id; o.add(tocco);
+      const alone = new THREE.Mesh(aloneGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+      o.add(alone);
+      (albero.punte[g.punta].gruppo ?? albero.g).add(o);
+      return { o, fusto, ciuffi, tocco, alone, mat, potabile: false, nato: performance.now() };
     }
     const fusto = new THREE.Mesh(fustoGeo, fustoMat); fusto.castShadow = true; o.add(fusto);
     for (let i = 0; i < 5; i++) {
@@ -124,6 +187,36 @@ export function creaGermogli(scene, albero) {
       x.alone.position.copy(x.tocco.position); x.alone.scale.setScalar(.12 + L * .32);
       return;
     }
+    if (albero.specie === 'pino') {
+      // la candela si allunga e si assottiglia; gli aghi si staccano un poco crescendo
+      const Lc = .12 + .42 * lunghezza, r = .028 + .008 * lunghezza;
+      x.fusto.scale.set(r, Lc, r);
+      x.guaina.scale.set(r * 1.1, .035, r * 1.1);
+      const apre = .08 + .3 * smooth(lunghezza);
+      x.ciuffi.forEach(({ m, k, a }) => {
+        const s = (.035 + .05 * lunghezza) * (1.1 - k * .6);
+        m.position.set(Math.cos(a) * r * .8, Lc * k, Math.sin(a) * r * .8);
+        m.rotation.set(Math.sin(a) * apre, a, -Math.cos(a) * apre);
+        m.scale.set(s * .6, s * 1.6, s * .6);
+      });
+      x.tocco.position.y = Lc * .6;
+      x.alone.position.y = Lc * .6; x.alone.scale.setScalar(.09 + Lc * .3);
+      return;
+    }
+    if (albero.specie === 'ginepro') {
+      // lo stelo esce dalla sagoma e i rametti di squame si aprono a ventaglio
+      const Lg = .1 + .3 * lunghezza;
+      x.fusto.scale.set(.008, Lg, .008);
+      x.ciuffi.forEach(({ m, c, k, lato, grande }) => {
+        m.position.y = Lg * k;
+        const s = (.035 + .055 * lunghezza) * grande;
+        c.position.x = lato * s * .5; c.rotation.z = -lato * .5;
+        c.scale.set(s, s * 1.3, s * .8);
+      });
+      x.tocco.position.y = Lg * .6;
+      x.alone.position.y = Lg * .7; x.alone.scale.setScalar(.09 + Lg * .35);
+      return;
+    }
     x.fusto.scale.set(.026, L, .026);
     x.ciuffi.forEach(({ m, k, a }) => {
       const s = (.08 + .05 * lunghezza) * (1.15 - k * .55);
@@ -155,7 +248,7 @@ export function creaGermogli(scene, albero) {
     x.m.material.color.copy(GEMMA).lerp(albero.verde, smooth(x.crescita * 1.2));
   }
 
-  const condivisi = new Set([fustoMat, toccoMat, budMat, steloMat, budAceroMat]);
+  const condivisi = new Set([fustoMat, toccoMat, budMat, steloMat, budAceroMat, guainaMat, steloGineproMat]);
   function togli(o) {
     o.parent?.remove(o);
     o.traverse(c => { if (c.material && !condivisi.has(c.material)) c.material.dispose(); if (c.material === steloMat) c.geometry.dispose(); });
@@ -217,6 +310,7 @@ export function creaGermogli(scene, albero) {
         if (albero.coloreGermoglio) x.mat.color.copy(albero.coloreGermoglio);
         const luce = potatura && x.potabile ? .5 + .5 * Math.sin(clock * 4 + x.o.id) : 0;
         x.mat.emissiveIntensity = luce * .55;
+        if (x.mat2) x.mat2.emissiveIntensity = luce * .35;
         x.alone.material.opacity = luce * .28;
         x.alone.visible = luce > 0;
       }
