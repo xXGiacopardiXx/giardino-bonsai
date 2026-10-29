@@ -314,7 +314,8 @@ export function creaAlberi(world) {
     const legnoP = corteccia(0x5e4434, { chiaro: .35, scuro: .45 });
     tube([[0, -.05, 0], [.14, .38, 0], [.34, .78, .05], [.44, 1.18, 0], [.4, 1.55, 0]], .18, .05, legnoP, tr, 24);
     for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2 + .7; tube([[0, .06, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .36, -.03, Math.sin(a) * .36]], .07, .02, legnoP, tr, 6); }
-    const ramiP = [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.65, .1]], [[.42, 1.45, 0], [.55, 1.65, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]];
+    // ogni ramo arriva fin dentro il suo cuscinetto, così la chioma poggia sul legno e non galleggia
+    const ramiP = [[[.2, .55, .02], [-.2, .66, .08], [-.6, .74, .1]], [[.4, 1.0, 0], [.75, 1.03, -.03], [1.05, 1.08, -.05]], [[.43, 1.32, 0], [.25, 1.5, .1], [.1, 1.71, .1]], [[.42, 1.45, 0], [.5, 1.6, -.05], [.55, 1.78, -.1]], [[.38, .9, .04], [.35, 1.1, .25], [.3, 1.22, .35]]];
     // i 5 rami del pino si legano tutti: il ramo i porta il cuscinetto i
     const LEGABILI_P = [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4]];
     const gP = gruppiRami(tr, LEGABILI_P);
@@ -322,7 +323,7 @@ export function creaAlberi(world) {
     const pads = [[-.62, .76, .1, .48], [1.05, 1.1, -.05, .45], [.1, 1.72, .1, .42], [.55, 1.8, -.1, .38], [.3, 1.25, .35, .3]];
     // i colori della sete (stress) si usano quando il pino ha sete
     const fp = foliage(tr, pads,
-      { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.05 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
+      { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.45 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     const rametP = rametti(pad => gP.gruppoPad[pad] ?? tr, pads, legnoP, 5);
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
     // con la sete gli aghi ingialliscono a chiazze: i colori "stressed" preparati nella chioma
