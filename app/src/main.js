@@ -17,6 +17,7 @@ import { creaGiardino } from './scena/giardino.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
 import { creaAghiVecchi } from './scena/aghi-vecchi.js';
+import { creaRinvaso } from './scena/rinvaso.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
@@ -26,7 +27,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -100,6 +101,8 @@ function avvia() {
   const aghiVecchi = creaAghiVecchi(alberi.cure.pino);
   // afidi, concime e spray su tutte e tre le piante
   const curaScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaCura(scene, alberi.cure[p], p)]));
+  // radici che escono dal vaso stretto e animazione del rinvaso
+  const rinvasoScena = creaRinvaso(scene, alberi.cure);
 
   // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
   let stato = carica(Date.now());
@@ -139,6 +142,7 @@ function avvia() {
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
     cure?.mostra(v);
+    rinvasoScena.setRinvaso(v.rinvaso);
     for (const p in curaScene) {
       const c = v.cura[p];
       curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime);
@@ -268,6 +272,8 @@ function avvia() {
   cure = creaCure({
     usa(pianta, id) {
       if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
+      // i terricci si usano rinvasando
+      if (vista(stato).prodotti.find(p => p.id === id)?.tipo === 'terriccio') { cure.chiudi(); rinvasaPianta(pianta, id); return; }
       const esito = usaProdotto(stato, ora(), pianta, id);
       const prodotto = vista(stato).prodotti.find(p => p.id === id), nome = nomiPiante[pianta].toLowerCase();
       if (esito.esito === 'attivo') { ui.toast(`Ha già il concime: fa effetto ancora ${giorniTesto(vista(stato).cura[pianta].concime.giorni)}.`); return; }
@@ -294,6 +300,32 @@ function avvia() {
   });
   // dalla barra: l'inventario dei prodotti di cura
   document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(null); filatura(null); cure.apri('inventario'); disegna(); });
+  // --- Rinvaso (sezione 4.4): dalla tendina della pianta (si usa il terriccio migliore che hai, prima lo
+  // specifico) o dal pannello Cura scegliendo il terriccio. Si fa tra fine inverno e inizio primavera. ---
+  const DEL = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro' };
+  const anniTesto = (n) => n === 1 ? 'un anno' : `${n} anni`;
+  function rinvasaPianta(p, id = null) {
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
+    if (rinvasoScena.attivo) return;
+    const v = vista(stato);
+    const terricci = v.prodotti.filter(x => x.tipo === 'terriccio' && x.piante.includes(p)).sort((a, b) => a.piante.length - b.piante.length);
+    const scelto = id ?? (terricci.find(x => x.dosi > 0) ?? terricci[0]).id;
+    const esito = rinvasa(stato, ora(), p, scelto);
+    const nome = v.prodotti.find(x => x.id === scelto).nome;
+    if (esito.esito === 'presto') { ui.toast(`Le radici ${DEL[p]} hanno ancora spazio: il prossimo rinvaso tra ${anniTesto(esito.anniMancanti)} di gioco, a fine inverno.`, 4500); return; }
+    if (esito.esito === 'stagione') { ui.toast(`Il vaso è stretto, ma il momento giusto è a fine inverno, quando le gemme si gonfiano: mancano ${giorniTesto(esito.giorniAllaFinestra)}.`, 4500); return; }
+    if (esito.esito === 'finito') { ui.toast('Ti serve del terriccio: Akadama' + (p === 'acero' ? '' : ' o Miscela per conifere') + ', nel negozio (scheda Cura).', 4500); return; }
+    if (esito.esito !== 'ok') return;
+    salva(stato); chiudiMenu(); potatura(null); filatura(null);
+    vola(fuocoPianta(p), baseDist * .4);
+    suoni.terra();
+    rinvasoScena.rinvasa(p, () => { disegna(); suoni.fruscio(.12); });
+    setTimeout(() => {
+      ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi();
+      ui.toast(`Rinvasato con ${nome}! Radici accorciate e terriccio nuovo: il prossimo rinvaso tra ${anniTesto(esito.anni)}. +${esito.semi} Semi`, 4500);
+    }, 2600);
+  }
+
   const curaPianta = (p) => { chiudiMenu(); potatura(null); filatura(null); cure.apri('pianta', p); disegna(); };
 
   // --- Negozio dei vasi: il vaso comprato va subito all'acero ---
@@ -341,6 +373,7 @@ function avvia() {
     if (a === 'acqua') annaffiaPianta(p);
     else if (a === 'pota') potatura(p);
     else if (a === 'filo') filatura(p);
+    else if (a === 'rinvasa') rinvasaPianta(p);
     else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
@@ -351,6 +384,7 @@ function avvia() {
     else if (a === 'filo') filatura('acero');
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
     else if (a === 'cura') curaPianta('acero');
+    else if (a === 'rinvasa') rinvasaPianta('acero');
   });
   const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
 
@@ -602,6 +636,7 @@ function avvia() {
     for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
     aghiVecchi.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
+    rinvasoScena.aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
     for (const p in annaffiature) annaffiature[p].aggiorna(dt);

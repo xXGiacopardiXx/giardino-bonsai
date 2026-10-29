@@ -140,6 +140,13 @@ export function spray() {
   [0, .22, .44].forEach(t => soffio({ t, durata: .18, tipo: 'highpass', freq: 3800, q: .6, volume: .16, attacco: .01 }));
 }
 
+// rinvaso: la zolla che esce dal vaso e il terriccio nuovo che scende, colpi morbidi e granulosi
+export function terra() {
+  if (!pronto()) return;
+  soffio({ durata: .5, tipo: 'lowpass', freq: 500, freqFine: 180, q: 1, volume: .18, attacco: .05 });
+  for (let i = 0; i < 18; i++) soffio({ t: 1.2 + i * .04 + Math.random() * .03, durata: .05, tipo: 'bandpass', freq: 900 + Math.random() * 700, q: 2.5, volume: .07, attacco: .003 });
+}
+
 // Semi guadagnati: due note che salgono
 export function semi() {
   if (!pronto()) return;

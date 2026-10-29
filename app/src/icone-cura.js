@@ -14,6 +14,10 @@ const DISEGNI = {
   'concime-universale': sacco('#c9a36a', `<path d="M32 34v-8M32 27c-4 0-6-3-6-6 4 0 6 3 6 6Zm0 0c4 0 6-3 6-6-4 0-6 3-6 6Z" fill="#6fae3e" stroke="#2e6a3a" stroke-width="1.4" stroke-linejoin="round"/>`),
   // flacone azzurro con bolle di sapone
   'sapone-molle': flacone('#7cc4e8', '#e2483a', `<circle cx="29" cy="30" r="3" fill="#fff" opacity=".9"/><circle cx="34" cy="37" r="2.2" fill="#fff" opacity=".8"/><circle cx="33" cy="26" r="1.5" fill="#fff" opacity=".8"/>`),
+  // granuli di akadama color ocra
+  'akadama': sacco('#b98a52', `<circle cx="29" cy="25" r="2.4" fill="#c8894a"/><circle cx="34" cy="24" r="2.2" fill="#d69a58"/><circle cx="31" cy="29" r="2.6" fill="#b87a40"/><circle cx="36" cy="30" r="2" fill="#c8894a"/><circle cx="27" cy="31" r="1.8" fill="#d69a58"/><circle cx="32" cy="34" r="2" fill="#b87a40"/>`),
+  // miscela: akadama ocra, pomice bianca, lapillo rosso scuro
+  'miscela-conifere': sacco('#8e9a7a', `<circle cx="29" cy="25" r="2.3" fill="#c8894a"/><circle cx="34" cy="24" r="2.1" fill="#eeeade"/><circle cx="31" cy="29" r="2.5" fill="#8a3c2c"/><circle cx="36" cy="30" r="2" fill="#eeeade"/><circle cx="27" cy="31" r="1.8" fill="#c8894a"/><circle cx="32" cy="34" r="2" fill="#8a3c2c"/>`),
   // flacone ambrato con foglia di neem
   'olio-neem': flacone('#e0a640', '#5a8a3a', `<path d="M31 38c-5-4-4-11 3-13 2 6 1 10-3 13Z" fill="#6fae3e" stroke="#2e6a3a" stroke-width="1.4"/>`),
 };

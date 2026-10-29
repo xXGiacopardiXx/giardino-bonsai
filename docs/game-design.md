@@ -97,6 +97,16 @@ Ogni specie si pota con la sua tecnica e nel suo momento dell'anno:
 - **Come si fa:** Pota dalla tendina della pianta (sul ginepro si chiama Pizzica), oppure dalla barra: se più piante hanno qualcosa da sistemare si tocca quella giusta. La telecamera si avvicina e i pezzi da togliere brillano.
 - **Sfida del giorno:** se l'acero non ha niente da potare, la sfida può essere "Cima le candele del pino", "Togli gli aghi vecchi del pino" o "Pizzica il ginepro".
 
+### 4.4 Rinvaso
+
+Il rinvaso rinnova il terriccio e accorcia le radici. Si fa nella **finestra giusta**, tra la fine dell'inverno (dal 4° giorno) e l'inizio della primavera (fino al 3° giorno), quando le gemme si gonfiano.
+
+- **Ogni quanto, per specie:** acero ogni anno di gioco (giovane e vigoroso); pino e ginepro ogni 2 anni, 3 con la miscela per conifere (crescono piano e stanno bene a lungo nello stesso terriccio). Una partita nuova parte con le piante appena rinvasate: l'acero chiede il primo rinvaso alla fine del primo inverno.
+- **Terricci** (negozio, scheda Cura, confezioni da 3 dosi): **Akadama** (25 Semi), argilla giapponese in granuli che va bene per tutte; **Miscela per conifere** (35 Semi), akadama, pomice e lapillo, solo per pino e ginepro, fa durare il rinvaso 3 anni. Si comincia con una dose di akadama.
+- **Come si vede:** quando il rinvaso è dovuto, le radici escono dal terriccio e scavalcano il bordo del vaso (fini e rossicce sull'acero, più grosse e chiare sulle conifere). Il pannello Cura della pianta dice come stanno le radici.
+- **Come si fa:** **Rinvasa** nella tendina della pianta (usa il terriccio migliore che hai, prima lo specifico) oppure, nel pannello Cura, **Usa** su un terriccio. La pianta si solleva con la sua zolla di radici, le radici vengono accorciate, il terriccio nuovo e bagnato prende il posto del vecchio e la pianta torna giù. +40 Semi; conta come cura del giorno. Nella finestra, la sfida del giorno può essere "Rinvasa l'acero" (o il pino, il ginepro).
+- **Se si salta la finestra:** il vaso resta stretto fino alla finestra dell'anno dopo: la pianta beve il 25% in più e cresce l'80%. Fuori stagione un messaggio dice quanti giorni mancano; la pianta non muore.
+
 ## 5. Piante e stili
 
 ### 5.1 Specie
@@ -381,7 +391,7 @@ Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a
 | Nell'MVP | Rimandato |
 |---|---|
 | **Una specie: l'acero giapponese.** Cambia aspetto in ogni stagione (verde, rosso, spoglio), e da spoglio in inverno mostra i rami da potare | Pino, ginepro, altre specie |
-| **Acqua, Pota, Filo e Cura** (filo, concime e parassiti sono arrivati dopo l'MVP, sezioni 4.2.1 e 6.5) | Rinvaso, troppa acqua |
+| **Acqua, Pota, Filo, Cura e Rinvaso** (arrivati dopo l'MVP, sezioni 4.2–4.4 e 6.5) | Troppa acqua |
 | Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
 | Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
 | Un solo albero da curare (l'acero); il giardino è un ecosistema di piante, ognuna nel suo spazio: pino e ginepro restano, per ora senza cure | Cure per più alberi, zoom a 4 livelli |

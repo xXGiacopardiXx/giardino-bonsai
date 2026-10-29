@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
 const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; return s; };
@@ -301,6 +301,8 @@ test('la sfida del giorno si può sempre fare, in ogni stagione', () => {
     const semi = s.semi;
     if (v.sfida.tipo === 'acqua') annaffia(s, ora, v.sfida.pianta ?? 'acero');
     else if (v.sfida.tipo === 'pota') pota(s, ora, v.germogli.find(x => x.potabile).id);
+    else if (v.sfida.tipo === 'rinvaso') { s.inventario.akadama = 9; assert.equal(rinvasa(s, ora, v.sfida.pianta, 'akadama').esito, 'ok'); }
+    else if (v.sfida.tipo === 'concime') concima(s, ora);
     else mettiFilo(s, ora, g % RAMI, 0.3);
     assert.ok(vista(s).sfida.fatta, `giorno ${g}: sfida non completata`);
     assert.ok(s.semi >= semi + SEMI.sfida);
@@ -586,4 +588,50 @@ test('un salvataggio della versione 10 riceve la chioma delle conifere', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).conifere.ginepro.salute, 1);
+});
+
+test("l'acero si rinvasa ogni anno a fine inverno; fuori dalla finestra si aspetta", () => {
+  const s = nuovoStato(T0);
+  assert.equal(vista(s).rinvaso.acero.dovuto, false);
+  assert.equal(rinvasa(s, T0, 'acero', 'akadama').esito, 'presto');
+  for (let g = 0; g <= 24; g++) { s.albero.sete = 0; avanza(s, dopo(g)); }  // 4° giorno d'inverno
+  let v = vista(s);
+  assert.equal(v.rinvaso.acero.dovuto, true);
+  assert.equal(v.rinvaso.acero.finestra, true);
+  assert.equal(v.rinvaso.pino.dovuto, false, 'le conifere ogni 2 anni');
+  const semi = s.semi, esito = rinvasa(s, dopo(24), 'acero', 'akadama');
+  assert.equal(esito.esito, 'ok');
+  assert.ok(s.semi >= semi + SEMI.rinvaso);
+  assert.equal(vista(s).rinvaso.acero.dovuto, false);
+  assert.equal(vista(s).prodotti.find(p => p.id === 'akadama').dosi, 0);
+});
+
+test('saltata la finestra il vaso resta stretto: la pianta beve di più finché non si rinvasa', () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g <= 32; g++) { s.albero.sete = 0; avanza(s, dopo(g)); }  // primavera dell'anno 2, finestra chiusa
+  const v = vista(s);
+  assert.equal(v.rinvaso.acero.stretto, true);
+  assert.equal(rinvasa(s, dopo(32), 'acero', 'akadama').esito, 'stagione');
+  assert.ok(v.rinvaso.acero.giorniAllaFinestra > 0);
+  s.albero.sete = 0; avanza(s, dopo(33));
+  assert.ok(s.albero.sete > 0.8 * 1.2, 'beve più del normale');
+});
+
+test('la miscela per conifere è solo per pino e ginepro e fa durare il rinvaso 3 anni', () => {
+  const s = nuovoStato(T0);
+  s.semi = 100; compraProdotto(s, 'miscela-conifere');
+  for (let g = 0; g <= 52; g++) { s.albero.sete = 0; s.conifere.pino.sete = 0; avanza(s, dopo(g)); }  // fine inverno dell'anno 2
+  assert.equal(vista(s).rinvaso.pino.dovuto, true);
+  assert.equal(rinvasa(s, dopo(52), 'acero', 'miscela-conifere').esito, 'non-adatto');
+  const esito = rinvasa(s, dopo(52), 'pino', 'miscela-conifere');
+  assert.equal(esito.esito, 'ok'); assert.equal(esito.anni, 3);
+});
+
+test("un salvataggio della versione 11 riceve il rinvaso e un po' di akadama", () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 11; delete vecchio.albero.rinvaso; delete vecchio.conifere.pino.rinvaso; delete vecchio.conifere.ginepro.rinvaso; delete vecchio.inventario.akadama;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).rinvaso.ginepro.dovuto, false);
+  assert.equal(s.inventario.akadama, 1);
 });

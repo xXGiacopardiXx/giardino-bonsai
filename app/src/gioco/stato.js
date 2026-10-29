@@ -4,10 +4,10 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 
-export const VERSIONE = 11;
+export const VERSIONE = 12;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10 };
+export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40 };
 
 // Sfida del giorno (sezione 7.1): sempre fattibile. Si sceglie la prima volta che si apre il gioco
 // in quel giorno, guardando la pianta in quel momento: annaffiare se il terriccio è asciutto,
@@ -117,9 +117,31 @@ export const PRODOTTI = [
     descrizione: 'Spray delicato: toglie gli afidi.' },
   { id: 'olio-neem', nome: 'Olio di neem', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro'], protezione: DURATA_PROTEZIONE, prezzo: 35,
     descrizione: 'Toglie gli afidi e li tiene lontani per una stagione. Si può usare anche prima.' },
+  // terricci per il rinvaso: durata = anni di gioco prima del rinvaso successivo, per specie
+  { id: 'akadama', nome: 'Akadama', tipo: 'terriccio', piante: ['acero', 'pino', 'ginepro'], durata: { acero: 1, pino: 2, ginepro: 2 }, prezzo: 25,
+    descrizione: 'Argilla giapponese in granuli: drena e trattiene il giusto. Va bene per tutti i bonsai.' },
+  { id: 'miscela-conifere', nome: 'Miscela per conifere', tipo: 'terriccio', piante: ['pino', 'ginepro'], durata: { pino: 3, ginepro: 3 }, prezzo: 35,
+    descrizione: 'Akadama, pomice e lapillo: molto drenante, le radici delle conifere ci stanno bene più a lungo.' },
 ];
 // il kit con cui si comincia
-const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2 };
+const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2, akadama: 1 };
+
+// Rinvaso (sezione 4.4): si fa tra la fine dell'inverno (dal 4° giorno) e l'inizio della primavera
+// (fino al 3° giorno), quando le gemme si gonfiano. L'acero giovane ogni anno, le conifere ogni 2
+// (3 con la miscela per conifere). "primavera" è l'anno della primavera che quella finestra apre.
+// Se si salta la finestra il vaso resta stretto fino alla successiva: la pianta beve di più e cresce meno.
+const SETE_VASO_STRETTO = 1.25, VIGORE_VASO_STRETTO = 0.8;
+const DURATA_RINVASO = { acero: 1, pino: 2, ginepro: 2 };
+// anno della primavera della finestra di rinvaso aperta adesso, oppure null
+function finestraRinvaso({ anno, stagione, giornoStagione }) {
+  if (stagione === 3 && giornoStagione >= 4) return anno + 1;
+  if (stagione === 0 && giornoStagione <= 3) return anno;
+  return null;
+}
+// anno dell'ultima primavera cominciata (o che sta per cominciare, a fine inverno)
+const primaveraDi = ({ anno, stagione, giornoStagione }) => stagione === 3 && giornoStagione >= 4 ? anno + 1 : anno;
+const rinvasoDovuto = (c, cal) => primaveraDi(cal) >= c.rinvaso.primavera + c.rinvaso.durata;
+const vasoStretto = (c, cal) => rinvasoDovuto(c, cal) && finestraRinvaso(cal) === null;
 const ORE_NASCOSTI = 12;               // prima dell'avviso: si scoprono solo guardando da vicino
 const ORE_IN_TEMPO = 24;               // trattati entro un giorno: nessun danno e Semi
 const DANNO_PARASSITI = 0.06;          // chioma persa al giorno, dopo il primo giorno
@@ -137,7 +159,7 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p) });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false } });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
 function potaturaConifera(p) {
   return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
@@ -153,7 +175,7 @@ export function nuovoStato(ora) {
     aggiornato: ora,
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
-    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane() },
+    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false } },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
@@ -209,6 +231,14 @@ export function migra(stato) {
     for (const p of ['pino', 'ginepro']) stato.conifere[p].salute = 1;
     stato.versione = 11;
   }
+  // rinvaso: si conta come appena rinvasate all'ultima primavera, e nel kit arriva un po' di akadama
+  if (stato.versione === 11) {
+    const primavera = primaveraDi(calendario(stato.inizio, stato.aggiornato));
+    stato.albero.rinvaso = { primavera, durata: DURATA_RINVASO.acero, stretto: false };
+    for (const p of ['pino', 'ginepro']) stato.conifere[p].rinvaso = { primavera, durata: DURATA_RINVASO[p], stretto: false };
+    stato.inventario.akadama = (stato.inventario.akadama ?? 0) + 1;
+    stato.versione = 12;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -229,7 +259,7 @@ function vigore(stagione, sete) {
 }
 // la crescita vera: il concime la spinge, i parassiti non curati la frenano
 function vigoreDi(a, stagione, t) {
-  return vigore(stagione, a.sete) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1);
+  return vigore(stagione, a.sete) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1) * (a.rinvaso?.stretto ? VIGORE_VASO_STRETTO : 1);
 }
 
 // Fin dove può arrivare la chioma con una certa sete: a lungo senz'acqua si perdono i rametti periferici
@@ -250,11 +280,13 @@ export function avanza(stato, ora) {
   while (t < ora) {
     const passo = Math.min(ORA, ora - t);
     const giorni = passo / GIORNO;
-    const { stagione } = calendario(stato.inizio, t + passo / 2);
-    a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione]);
+    const cal = calendario(stato.inizio, t + passo / 2), { stagione } = cal;
+    // vaso stretto: le radici riempiono il vaso, la terra trattiene meno acqua
+    for (const p in PIANTE) { const c = curaDi(stato, p); c.rinvaso.stretto = vasoStretto(c, cal); }
+    a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione] * (a.rinvaso.stretto ? SETE_VASO_STRETTO : 1));
     for (const p of ['pino', 'ginepro']) {
       const c = stato.conifere[p];
-      c.sete = Math.min(SETE_MASSIMA, c.sete + giorni * FATTORE_SETE[stagione] * SETE_SPECIE[p]);
+      c.sete = Math.min(SETE_MASSIMA, c.sete + giorni * FATTORE_SETE[stagione] * SETE_SPECIE[p] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1));
     }
     const max = saluteMassima(a.sete);
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
@@ -342,7 +374,10 @@ function nuovoGiorno(stato, ora) {
 
 function scegliSfida(stato, ora) {
   const a = stato.albero;
-  const { stagione, giornoStagione } = calendario(stato.inizio, ora);
+  const cal = calendario(stato.inizio, ora), { stagione, giornoStagione } = cal;
+  // nella finestra del rinvaso, la pianta che ne ha bisogno ha la precedenza (dopo l'acqua dell'acero)
+  const daRinvasare = finestraRinvaso(cal) !== null && Object.keys(PIANTE).find(p => rinvasoDovuto(curaDi(stato, p), cal));
+  if (daRinvasare && a.sete < SETE_PER_ANNAFFIARE && !stato.oggi.acqua) { stato.oggi.sfida = { tipo: 'rinvaso', pianta: daRinvasare, fatta: false }; return; }
   // se l'acero non beve, magari ha davvero sete una conifera (quella più asciutta): per lei la sfida
   // arriva solo quando ha sete, non appena il terriccio si asciuga, così restano anche le altre sfide
   const conifera = ['pino', 'ginepro'].filter(p => stato.conifere[p].sete >= FASI[1].da)
@@ -453,6 +488,33 @@ export function togliAghi(stato, ora, id) {
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
+// Rinvasa una pianta con un terriccio dell'inventario. Conta per la serie.
+// esito: 'ok'; 'stagione' (fuori dalla finestra: giorniAllaFinestra dice quanto manca); 'presto' (le radici
+// hanno ancora spazio: anniMancanti); 'finito', 'non-adatto' o 'nessuno' per il terriccio.
+// Fatto quando serve dà Semi; il terriccio scelto decide fra quanti anni servirà di nuovo.
+export function rinvasa(stato, ora, pianta, id) {
+  avanza(stato, ora);
+  const c = PIANTE[pianta] ? curaDi(stato, pianta) : null, p = PRODOTTI.find(x => x.id === id && x.tipo === 'terriccio');
+  const vuoto = { semi: 0, bonusSerie: 0, giorniAllaFinestra: 0, anniMancanti: 0, anni: 0 };
+  if (!c || !p) return { esito: 'nessuno', ...vuoto };
+  const cal = calendario(stato.inizio, ora), finestra = finestraRinvaso(cal);
+  if (!rinvasoDovuto(c, cal)) return { esito: 'presto', ...vuoto, anniMancanti: c.rinvaso.primavera + c.rinvaso.durata - primaveraDi(cal) };
+  if (finestra === null) return { esito: 'stagione', ...vuoto, giorniAllaFinestra: giorniAllaFinestra(cal) };
+  if (!p.piante.includes(pianta)) return { esito: 'non-adatto', ...vuoto };
+  if (!stato.inventario[id]) return { esito: 'finito', ...vuoto };
+  stato.inventario[id] -= 1;
+  c.rinvaso = { primavera: finestra, durata: p.durata[pianta], stretto: false };
+  // terriccio nuovo e ben bagnato
+  c.sete = 0;
+  const semi = SEMI.rinvaso + completaSfida(stato, 'rinvaso', pianta);
+  stato.semi += semi;
+  return { esito: 'ok', ...vuoto, semi, anni: p.durata[pianta], bonusSerie: registraCura(stato, ora) };
+}
+// giorni che mancano alla prossima finestra di rinvaso (4° giorno d'inverno)
+function giorniAllaFinestra({ stagione, giornoStagione }) {
+  return (3 - stagione) * 7 + (4 - giornoStagione);
+}
+
 // Compra una confezione di un prodotto di cura (DOSI_PER_CONFEZIONE dosi nell'inventario).
 // esito: 'ok', 'pochi' (Semi insufficienti) o 'nessuno'
 export function compraProdotto(stato, id) {
@@ -474,6 +536,8 @@ export function usaProdotto(stato, ora, pianta, id) {
   const p = PRODOTTI.find(x => x.id === id), c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
   const vuoto = { semi: 0, bonusSerie: 0, inTempo: false, presto: false, tolti: false };
   if (!p || !c) return { esito: 'nessuno', ...vuoto };
+  // i terricci si usano rinvasando
+  if (p.tipo === 'terriccio') return { ...vuoto, ...rinvasa(stato, ora, pianta, id) };
   if (!p.piante.includes(pianta)) return { esito: 'non-adatto', ...vuoto };
   if (!stato.inventario[id]) return { esito: 'finito', ...vuoto };
   let semi = 0, inTempo = false, presto = false, tolti = false;
@@ -518,7 +582,9 @@ export function scegliVaso(stato, id) {
 
 
 const DOVE = { pino: 'il pino', ginepro: 'il ginepro' };
-const testoSfida = (s) => s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta]
+const RINVASA = { acero: 'Rinvasa l\'acero', pino: 'Rinvasa il pino', ginepro: 'Rinvasa il ginepro' };
+const testoSfida = (s) => s.tipo === 'rinvaso' ? RINVASA[s.pianta]
+  : s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta]
   : s.tipo === 'pota' && s.tecnica ? SFIDE_POTA[s.tecnica] : SFIDE[s.tipo];
 // i rami da legare di una pianta: piega attuale (col filo, quella voluta), stato del filo e segni sulla corteccia
 function vistaRami(rami, ritmo) {
@@ -606,6 +672,15 @@ export function vista(stato) {
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
     // cura di ogni pianta: concime, parassiti e protezione (l'acero anche qui sotto, per comodità)
     cura: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
+    // rinvaso di ogni pianta: se serve, se la finestra è aperta, se il vaso è già stretto, quanto manca
+    rinvaso: Object.fromEntries(Object.keys(PIANTE).map(p => {
+      const c = curaDi(stato, p), dovuto = rinvasoDovuto(c, cal), finestra = finestraRinvaso(cal) !== null;
+      return [p, {
+        dovuto, finestra, stretto: vasoStretto(c, cal),
+        anniMancanti: dovuto ? 0 : c.rinvaso.primavera + c.rinvaso.durata - primaveraDi(cal),
+        giorniAllaFinestra: finestra ? 0 : giorniAllaFinestra(cal),
+      }];
+    })),
     concime: vistaCura(a, stato.aggiornato, cal.stagione).concime,
     parassiti: vistaCura(a, stato.aggiornato, cal.stagione).parassiti,
     // inventario: tutti i prodotti del catalogo con le dosi che hai
