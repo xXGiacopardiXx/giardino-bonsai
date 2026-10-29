@@ -3,8 +3,9 @@
 // e con il cursore dei giorni senza aspettare davvero.
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
+import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 12;
+export const VERSIONE = 13;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40 };
@@ -131,6 +132,11 @@ const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2, akadam
 // (3 con la miscela per conifere). "primavera" è l'anno della primavera che quella finestra apre.
 // Se si salta la finestra il vaso resta stretto fino alla successiva: la pianta beve di più e cresce meno.
 const SETE_VASO_STRETTO = 1.25, VIGORE_VASO_STRETTO = 0.8;
+
+// Stile (sezione 5.2): i ciuffi della chioma tagliati con la forbice ricrescono piano nella stagione di
+// crescita (circa 3 settimane d'estate sull'acero, il doppio sulle conifere): la forma va mantenuta.
+const RICRESCITA_CIUFFO = 0.05;        // al giorno, con il vigore della pianta
+const stileNuovo = (p) => ({ stile: { id: STILE_INIZIALE[p], sigilli: [] }, tagli: {} });
 const DURATA_RINVASO = { acero: 1, pino: 2, ginepro: 2 };
 // anno della primavera della finestra di rinvaso aperta adesso, oppure null
 function finestraRinvaso({ anno, stagione, giornoStagione }) {
@@ -159,7 +165,7 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false } });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
 function potaturaConifera(p) {
   return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
@@ -175,7 +181,7 @@ export function nuovoStato(ora) {
     aggiornato: ora,
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
-    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false } },
+    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
@@ -239,6 +245,12 @@ export function migra(stato) {
     stato.inventario.akadama = (stato.inventario.akadama ?? 0) + 1;
     stato.versione = 12;
   }
+  // stili: lo stile adatto alla pianta, nessun ciuffo tagliato
+  if (stato.versione === 12) {
+    Object.assign(stato.albero, stileNuovo('acero'));
+    for (const p of ['pino', 'ginepro']) Object.assign(stato.conifere[p], stileNuovo(p));
+    stato.versione = 13;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -296,6 +308,7 @@ export function avanza(stato, ora) {
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni);
+    ricresce(a.tagli, v * RICRESCITA_CIUFFO);
     for (const p of ['pino', 'ginepro']) {
       const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t), k = RITMO_CHIOMA[p];
       // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
@@ -305,6 +318,7 @@ export function avanza(stato, ora) {
       if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
       cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni);
+      ricresce(c.tagli, vc * RICRESCITA_CIUFFO * k);
     }
     t += passo;
     // ogni giorno nuovo, anche quando si salta avanti di molti giorni in una volta
@@ -324,6 +338,12 @@ export function avanza(stato, ora) {
     s.interrotta = true;
   }
   return stato;
+}
+
+// i ciuffi tagliati ricrescono; a crescita piena tornano parte della chioma
+function ricresce(tagli, quanto) {
+  if (quanto <= 0) return;
+  for (const i in tagli) { tagli[i] += quanto; if (tagli[i] >= 1) delete tagli[i]; }
 }
 
 // il ramo col filo prende la forma crescendo (presa: quanto ne prende in questo passo): come i germogli,
@@ -515,6 +535,36 @@ function giorniAllaFinestra({ stagione, giornoStagione }) {
   return (3 - stagione) * 7 + (4 - giornoStagione);
 }
 
+// Taglia con la forbice alcuni ciuffi della chioma (indici dei ciuffi della scena), per dare forma allo stile.
+// Conta per la serie. esito: 'ok' o 'nessuno' (pianta sconosciuta o niente da tagliare)
+export function tagliaCiuffi(stato, ora, pianta, indici) {
+  avanza(stato, ora);
+  const c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
+  const nuovi = c ? indici.filter(i => Number.isInteger(i) && i >= 0 && c.tagli[i] === undefined) : [];
+  if (!nuovi.length) return { esito: 'nessuno', tagliati: 0, bonusSerie: 0 };
+  for (const i of nuovi) c.tagli[i] = 0;
+  return { esito: 'ok', tagliati: nuovi.length, bonusSerie: registraCura(stato, ora) };
+}
+
+// Sceglie lo stile da seguire tra quelli adatti alla pianta. Restituisce false se non è adatto.
+export function scegliStile(stato, pianta, id) {
+  const c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
+  if (!c || !stileDi(pianta, id)) return false;
+  c.stile.id = id;
+  return true;
+}
+
+// Registra la percentuale raggiunta (la calcola valutaStile, con i ciuffi della scena): la prima volta
+// che lo stile arriva a COMPLETATO_DA dà il sigillo e il premio in Semi.
+export function sigillaStile(stato, pianta, percentuale) {
+  const c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
+  const stile = c && stileDi(pianta, c.stile.id);
+  if (!stile || percentuale < COMPLETATO_DA || c.stile.sigilli.includes(stile.id)) return { nuovo: false, premio: 0 };
+  c.stile.sigilli.push(stile.id);
+  stato.semi += stile.premio;
+  return { nuovo: true, premio: stile.premio, nome: stile.nome };
+}
+
 // Compra una confezione di un prodotto di cura (DOSI_PER_CONFEZIONE dosi nell'inventario).
 // esito: 'ok', 'pochi' (Semi insufficienti) o 'nessuno'
 export function compraProdotto(stato, id) {
@@ -672,6 +722,11 @@ export function vista(stato) {
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
     // cura di ogni pianta: concime, parassiti e protezione (l'acero anche qui sotto, per comodità)
     cura: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
+    // stile di ogni pianta: quello scelto, i compatibili, i sigilli già presi, i ciuffi tagliati che ricrescono
+    stile: Object.fromEntries(Object.keys(PIANTE).map(p => {
+      const c = curaDi(stato, p);
+      return [p, { id: c.stile.id, sigilli: [...c.stile.sigilli], tagli: { ...c.tagli }, compatibili: STILI[p].map(s => s.id) }];
+    })),
     // rinvaso di ogni pianta: se serve, se la finestra è aperta, se il vaso è già stretto, quanto manca
     rinvaso: Object.fromEntries(Object.keys(PIANTE).map(p => {
       const c = curaDi(stato, p), dovuto = rinvasoDovuto(c, cal), finestra = finestraRinvaso(cal) !== null;

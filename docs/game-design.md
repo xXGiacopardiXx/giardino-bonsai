@@ -129,6 +129,14 @@ L'obiettivo di lungo periodo di ogni albero è uno stile classico. La potatura e
 - *Hokidachi*: a scopa
 - *Yose-ue*: boschetto
 
+### 5.3 Stili nell'app
+
+- **Stili per pianta**, adatti al tronco e alla specie: acero **Moyogi** (eretto informale, cuscinetti piatti a triangolo) o **Hokidachi** (a scopa, una cupola tonda); pino **Shakan** (inclinato, cuscinetti a mensola e contrappeso) o **Moyogi** (cuscinetti tondi); ginepro **Moyogi** (cuscinetti a nuvola) o **Fukinagashi** (battuto dal vento, tutta la chioma a destra). Si parte con il primo; si cambia quando si vuole, dalla modalità Stile.
+- **Sagoma:** ogni stile è una sagoma fatta di ellissoidi attorno alla chioma, nelle coordinate del tronco. In modalità Stile (dalla tendina della pianta) la sagoma si vede come una nuvola chiara e i ciuffi che ne escono brillano.
+- **Forbice:** un tocco su un ciuffo lo taglia insieme ai vicinissimi (una sforbiciata), con le foglie o gli aghi che cadono. I ciuffi tagliati ricrescono piano con il vigore della pianta (circa 3 settimane d'estate sull'acero, il doppio sulle conifere): la forma va mantenuta, come nei bonsai veri. Tagliare conta come cura del giorno.
+- **Percentuale** (sull'etichetta di ogni pianta e nella scheda dello stile): 35% riempimento (i ciuffi dentro la sagoma ci sono ancora: non tagliati troppo, chioma sana) + 45% pulizia (ogni ciuffo fuori dalla sagoma pesa il doppio, così senza forbice non si arriva al sigillo) + 20% regole dello stile (per esempio "rami bassi abbassati col filo", "ramo basso di contrappeso abbassato", "chioma sana"). La scheda elenca le regole fatte (✓) e da fare (○).
+- **Sigillo:** al 90% lo stile è compiuto: un sigillo sulla pianta (la percentuale sull'etichetta diventa rossa con ✓) e 300–500 Semi a seconda dello stile, una volta sola per stile e pianta.
+
 ## 6. Salute della pianta e trascuratezza
 
 **Principio:** il deterioramento è graduale e visibile, la morte non esiste. Si perdono progressi, mai la pianta.

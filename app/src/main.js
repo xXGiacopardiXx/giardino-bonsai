@@ -18,6 +18,9 @@ import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
 import { creaAghiVecchi } from './scena/aghi-vecchi.js';
 import { creaRinvaso } from './scena/rinvaso.js';
+import { creaStile } from './scena/stile.js';
+import { creaPannelloStile } from './pannello-stile.js';
+import { STILI, stileDi, valutaStile } from './gioco/stili.js';
 import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
@@ -27,7 +30,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
@@ -103,6 +106,11 @@ function avvia() {
   const curaScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaCura(scene, alberi.cure[p], p)]));
   // radici che escono dal vaso stretto e animazione del rinvaso
   const rinvasoScena = creaRinvaso(scene, alberi.cure);
+  // sagoma fantasma dello stile e ciuffi da tagliare
+  const stileScena = creaStile(scene, alberi.cure);
+  // stilando: la pianta in modalità Stile (oppure null); valutazioni: l'ultima valutazione di ogni pianta
+  let stilando = null, pannelloStile;
+  const valutazioni = {};
 
   // --- Stato della partita: caricato, portato all'ora attuale, salvato ---
   let stato = carica(Date.now());
@@ -162,6 +170,29 @@ function avvia() {
     for (const p of ['pino', 'ginepro']) germogliScene[p].sincronizza(v.conifere[p].germogli, []);
     aghiVecchi.sincronizza(v.conifere.pino.vecchi);
     pannello?.mostra(v, base.aggiornato);
+    // stile: i ciuffi tagliati (che ricrescono), la valutazione di ogni pianta e la percentuale sull'etichetta
+    for (const p of ['acero', 'pino', 'ginepro']) {
+      alberi.cure[p].setTagli(v.stile[p].tagli);
+      const stile = stileDi(p, v.stile[p].id), ciuffi = alberi.cure[p].ciuffiStile();
+      const val = valutaStile(stile, ciuffi, { rami: p === 'acero' ? v.rami : v.conifere[p].rami, salute: p === 'acero' ? v.salute : v.conifere[p].salute });
+      valutazioni[p] = { stile, ciuffi, val };
+      document.getElementById(p + '-stile').textContent = stile.nome;
+      document.getElementById(p + '-stile-p').textContent = val.percentuale + '%';
+      document.getElementById(p + '-stile-p').classList.toggle('sigillo', v.stile[p].sigilli.includes(stile.id));
+      // stile compiuto per la prima volta: sigillo e Semi
+      if (giorniAnteprima === 0) {
+        const s = sigillaStile(stato, p, val.percentuale);
+        if (s.nuovo) {
+          salva(stato);
+          setTimeout(() => { ui.guadagnaSemi(s.premio, stato.semi, p); suoni.magia(); ui.toast(`Stile ${s.nome} compiuto! Un sigillo per questa pianta e +${s.premio} Semi.`, 5000); }, 400);
+        }
+      }
+    }
+    if (stilando) {
+      const { stile, ciuffi, val } = valutazioni[stilando];
+      stileScena.mostra(stilando, stile, ciuffi, val.fuori);
+      pannelloStile?.mostra({ stile, valutazione: val, sigilli: v.stile[stilando].sigilli, stili: STILI[stilando], aChi: AL[stilando] });
+    }
   }
   function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
 
@@ -379,6 +410,7 @@ function avvia() {
     else if (a === 'pota') potatura(p);
     else if (a === 'filo') filatura(p);
     else if (a === 'rinvasa') rinvasaPianta(p);
+    else if (a === 'stile') stilatura(p);
     else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
@@ -390,6 +422,7 @@ function avvia() {
     else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
     else if (a === 'cura') curaPianta('acero');
     else if (a === 'rinvasa') rinvasaPianta('acero');
+    else if (a === 'stile') stilatura('acero');
   });
   const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
 
@@ -413,7 +446,7 @@ function avvia() {
   const potabile = (v, p) => p === 'acero' ? v.puoPotare : v.conifere[p].puoPotare;
   const daSlegare = (v, p) => p === 'acero' ? v.filoDaTogliere : v.conifere[p].filoDaTogliere;
   function avvicina(p, dist) {
-    if (!potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
+    if (!potando && !filando && !stilando) distanzaPrima = camera.position.distanceTo(controls.target);
     controls.minDistance = baseDist * .2;
     vola(fuocoPianta(p), baseDist * dist);
   }
@@ -435,7 +468,7 @@ function avvia() {
   // p: pianta da potare, oppure null per finire
   function potatura(p) {
     if (p === potando) return;
-    if (p) filatura(null);
+    if (p) { filatura(null); stilatura(null); }
     if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
     potando = p;
     for (const q in germogliScene) germogliScene[q].potatura = q === p;
@@ -445,11 +478,48 @@ function avvia() {
     if (p) { avvicina(p, p === 'acero' ? .27 : .3); ui.toast(consiglioPota(p), 4000); } else allontana();
   }
 
+  // --- Stile (sezione 5.2): la sagoma fantasma dello stile attorno alla chioma; i ciuffi che ne escono
+  // brillano e si tagliano con un tocco (insieme ai vicinissimi). La percentuale e le regole stanno nella
+  // scheda in basso; da lì si cambia stile tra quelli adatti alla pianta. ---
+  const AL = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro' };
+  pannelloStile = creaPannelloStile({
+    cambia(id) { if (stilando && scegliStile(stato, stilando, id)) { salva(stato); disegna(); suoni.magia(); } },
+    fine() { stilatura(null); },
+  });
+  function stilatura(p) {
+    if (p === stilando) return;
+    if (p) { potatura(null); filatura(null); }
+    if (p && !potando && !filando && !stilando) distanzaPrima = camera.position.distanceTo(controls.target);
+    stilando = p;
+    if (p) {
+      // la telecamera guarda un po' sotto la chioma, così l'albero resta sopra la scheda in basso
+      chiudiMenu(); pannelloStile.apri(); avvicina(p, .5); vola(fuocoPianta(p).clone().add(new THREE.Vector3(0, -.75, 0)), baseDist * .5); disegna();
+      ui.toast('Ecco la sagoma dello stile. Tocca i ciuffi che brillano: sono fuori forma.', 4000);
+    } else { stileScena.nascondi(); pannelloStile.chiudi(); allontana(); }
+  }
+  function tagliaQui(e, r) {
+    const p = stilando;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    const hit = raycaster.intersectObject(alberi.cure[p].chiomaMesh, false)[0];
+    if (!hit || hit.instanceId === undefined) return;
+    // la forbice prende il ciuffo toccato e quelli vicinissimi, come una sforbiciata vera
+    const ciuffi = alberi.cure[p].ciuffiStile(), c = ciuffi[hit.instanceId];
+    const indici = [];
+    ciuffi.forEach((q, i) => { if (q.visibile && Math.hypot(q.x - c.x, q.y - c.y, q.z - c.z) < .11) indici.push(i); });
+    if (!indici.includes(hit.instanceId)) indici.push(hit.instanceId);
+    const esito = tagliaCiuffi(stato, ora(), p, indici);
+    if (esito.esito !== 'ok') return;
+    ui.forbici(e.clientX - r.left, e.clientY - r.top); suoni.forbici(); setTimeout(() => suoni.fruscio(.1), 200);
+    stileScena.taglia(p, indici.map(i => ciuffi[i]));
+    salva(stato); disegna();
+    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, p); suoni.semi(); ui.toast(`${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`); }
+  }
+
   // --- Filo: un pallino di rame sulla punta di ogni ramo; trascinandolo su o giù il ramo si piega e il filo
   // si avvolge; quando il ramo ha preso la forma il pallino diventa verde: toccandolo si toglie il filo ---
   function filatura(p) {
     if (p === filando) return;
-    if (p) potatura(null);
+    if (p) { potatura(null); stilatura(null); }
     if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
     for (const q of ['acero', 'pino', 'ginepro']) filoDi(q).maniglie = q === p;
     filando = p;
@@ -608,6 +678,7 @@ function avvia() {
     if (!d || d.multi || dita.size || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || performance.now() - d.t > 450) return;
     const r = canvas.getBoundingClientRect();
     punta(e);
+    if (stilando) { tagliaQui(e, r); return; }
     if (potando) { potaQui(e, r); return; }
     if (filando) return;
     const quale = alberi.tocca(raycaster);
@@ -642,6 +713,7 @@ function avvia() {
     aghiVecchi.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     rinvasoScena.aggiorna(dt);
+    stileScena.aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);
     for (const p in annaffiature) annaffiature[p].aggiorna(dt);

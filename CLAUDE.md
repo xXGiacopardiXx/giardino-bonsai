@@ -6,11 +6,12 @@ Gioco mobile rilassante sulla cura di bonsai digitali in un giardino giapponese.
 
 - `docs/game-design.md`: tutte le decisioni di design (tempo, cure, trascuratezza, economia, stile, architettura, roadmap). **È la fonte di riferimento**: leggerlo prima di proporre o modificare qualcosa.
 - `prototipo/giardino-bonsai.html`: prototipo di stile della homepage, scena 3D in Three.js in un'unica pagina HTML.
-- `app/`: l'app vera (PWA), Three.js + Vite in JavaScript semplice. Codice della scena in `app/src/scena/` (germogli, candele e punte della potatura in `germogli.js`, aghi vecchi del pino in `aghi-vecchi.js`, rami piegati col filo in `filo.js`, radici e animazione del rinvaso in `rinvaso.js`, per tutte e tre le piante), interfaccia in `app/src/interfaccia.js`, avvio in `app/src/main.js`.
+- `app/`: l'app vera (PWA), Three.js + Vite in JavaScript semplice. Codice della scena in `app/src/scena/` (germogli, candele e punte della potatura in `germogli.js`, aghi vecchi del pino in `aghi-vecchi.js`, rami piegati col filo in `filo.js`, radici e animazione del rinvaso in `rinvaso.js`, sagoma dello stile in `stile.js`, per tutte e tre le piante), interfaccia in `app/src/interfaccia.js`, avvio in `app/src/main.js`.
 - `app/src/gioco/`: il motore senza grafica (tempo compresso, stato della partita, salvataggio in `localStorage`) con i test in `stato.test.js`. Le funzioni ricevono l'ora come parametro; la scena si disegna solo da `vista(stato)`.
 - `app/src/pannello-prova.js`: pannello per far passare il tempo, si apre con 3 tocchi sulla stagione.
 - `app/src/guida.js`: guida dei primi passi (una volta sola, flag `guida` nel salvataggio). `app/src/suoni.js`: suoni generati con la Web Audio API, niente file audio. `app/src/musica.js`: musica di sottofondo composta dal codice, con lo stesso contesto audio.
 - `app/src/cure.js`: inventario (Cura nella barra) e cura di una pianta (dalla sua tendina); catalogo `PRODOTTI` nel motore, icone in `icone-cura.js`, acquisto nel negozio (scheda Cura); afidi, granuli e spray nella scena in `app/src/scena/cura.js`, per tutte e tre le piante.
+- `app/src/gioco/stili.js`: catalogo degli stili (sagome e regole) e valutazione pura della percentuale; scheda e scelta dello stile in `app/src/pannello-stile.js`.
 - `app/src/negozio.js`: negozio dei vasi (catalogo `VASI` e acquisti nel motore, forme dei vasi in `scena/alberi.js`).
 - `docs/guida-iphone.md`: come provare e installare l'app sull'iPhone, gratis.
 - `.github/workflows/pubblica.yml`: pubblica `app/` su GitHub Pages a ogni push su `main`.

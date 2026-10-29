@@ -2,7 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
 const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; return s; };
@@ -634,4 +635,67 @@ test("un salvataggio della versione 11 riceve il rinvaso e un po' di akadama", (
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).rinvaso.ginepro.dovuto, false);
   assert.equal(s.inventario.akadama, 1);
+});
+
+test('ogni pianta ha gli stili adatti al suo tronco, e si parte con il primo', () => {
+  const v = vista(nuovoStato(T0));
+  assert.deepEqual(v.stile.acero.compatibili, ['moyogi', 'hokidachi']);
+  assert.deepEqual(v.stile.pino.compatibili, ['shakan', 'moyogi']);
+  assert.deepEqual(v.stile.ginepro.compatibili, ['moyogi', 'fukinagashi']);
+  assert.equal(v.stile.pino.id, 'shakan');
+  const s = nuovoStato(T0);
+  assert.equal(scegliStile(s, 'ginepro', 'fukinagashi'), true);
+  assert.equal(scegliStile(s, 'acero', 'shakan'), false, 'lo Shakan non è per il tronco dell\'acero');
+  assert.equal(vista(s).stile.ginepro.id, 'fukinagashi');
+});
+
+test('la valutazione unisce riempimento della sagoma, pulizia fuori e regole', () => {
+  const stile = stileDi('acero', 'hokidachi');
+  // 10 ciuffi dentro la cupola, 5 fuori
+  const dentro = Array.from({ length: 10 }, (_, i) => ({ x: -.5 + i * .1, y: 1.75, z: 0, visibile: true }));
+  const fuori = Array.from({ length: 5 }, (_, i) => ({ x: 1.6 + i * .05, y: 1.1, z: 0, visibile: true }));
+  const v = { rami: [{ piega: 0 }, { piega: 0 }], salute: 1 };
+  const prima = valutaStile(stile, [...dentro, ...fuori], v);
+  assert.equal(prima.fuori.length, 5);
+  assert.ok(prima.percentuale < 90);
+  // tagliati i ciuffi fuori e alzati i rami bassi: stile completo
+  const dopo = valutaStile(stile, [...dentro, ...fuori.map(q => ({ ...q, visibile: false }))], { ...v, rami: [{ piega: .3 }, { piega: .3 }] });
+  assert.equal(dopo.fuori.length, 0);
+  assert.equal(dopo.percentuale, 100);
+  // tagliare anche dentro la sagoma fa scendere il riempimento
+  const troppo = valutaStile(stile, [...dentro.map((q, i) => ({ ...q, visibile: i < 5 })), ...fuori.map(q => ({ ...q, visibile: false }))], { ...v, rami: [{ piega: .3 }, { piega: .3 }] });
+  assert.ok(troppo.percentuale < dopo.percentuale);
+});
+
+test('i ciuffi tagliati ricrescono piano, più lenti sulle conifere', () => {
+  const s = nuovoStato(T0);
+  assert.equal(tagliaCiuffi(s, T0, 'acero', [3, 4, 5]).tagliati, 3);
+  assert.equal(tagliaCiuffi(s, T0, 'acero', [3]).esito, 'nessuno', 'già tagliato');
+  tagliaCiuffi(s, T0, 'pino', [7]);
+  assert.equal(s.serie.giorni, 1, 'conta per la serie');
+  for (let g = 0; g <= 12; g++) { s.albero.sete = 0; s.conifere.pino.sete = 0; s.albero.parassiti = null; s.conifere.pino.parassiti = null; avanza(s, dopo(g)); }
+  const v = vista(s);
+  assert.ok(v.stile.acero.tagli[3] > 0.5 && v.stile.acero.tagli[3] < 1);
+  assert.ok(v.stile.pino.tagli[7] < v.stile.acero.tagli[3]);
+  for (let g = 13; g <= 40; g++) { s.albero.sete = 0; s.albero.parassiti = null; avanza(s, dopo(g)); }
+  assert.equal(vista(s).stile.acero.tagli[3], undefined, 'ricresciuto del tutto');
+});
+
+test('al 90% lo stile dà il sigillo e i Semi, una volta sola', () => {
+  const s = nuovoStato(T0), semi = s.semi;
+  assert.equal(sigillaStile(s, 'acero', 85).nuovo, false);
+  const esito = sigillaStile(s, 'acero', 92);
+  assert.equal(esito.nuovo, true);
+  assert.equal(s.semi, semi + stileDi('acero', 'moyogi').premio);
+  assert.equal(sigillaStile(s, 'acero', 95).nuovo, false);
+  assert.deepEqual(vista(s).stile.acero.sigilli, ['moyogi']);
+});
+
+test('un salvataggio della versione 12 riceve gli stili', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 12; delete vecchio.albero.stile; delete vecchio.albero.tagli;
+  for (const p of ['pino', 'ginepro']) { delete vecchio.conifere[p].stile; delete vecchio.conifere[p].tagli; }
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).stile.acero.id, 'moyogi');
 });

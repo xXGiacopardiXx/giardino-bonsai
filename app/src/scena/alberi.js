@@ -200,16 +200,31 @@ export function creaAlberi(world) {
     });
     // con la chioma che si dirada spariscono prima i ciuffi esterni (come sull'acero)
     const ordine = f.periferia.map((dn, i) => [dn + ((i * 0.618) % 1) * .35, i]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
-    const zero = new THREE.Matrix4().makeScale(0, 0, 0), nascosto = new Set();
-    let salute = 1;
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0), nascosto = new Set(), ms = new THREE.Matrix4(), vp = new THREE.Vector3();
+    let salute = 1, tagli = {};
     const cura = {
       ciuffiDi: (pad) => forme.filter((_, i) => f.pad[i] === pad), gruppoDi: (pad) => pieghe[pad] ?? tr, potTop: terra, raggioTerra,
+      // la chioma per la forbice dello stile: l'InstancedMesh (il tocco dà l'indice del ciuffo)
+      chiomaMesh: f.m,
       aggiornaPieghe() {
         f.pad.forEach((pad, i) => {
-          if (nascosto.has(i)) { f.m.setMatrixAt(i, zero); return; }
-          const g = pieghe[pad]; f.m.setMatrixAt(i, g ? m4.copy(g.matrix).multiply(base[i]) : base[i]);
+          if (nascosto.has(i) || tagli[i] < .02) { f.m.setMatrixAt(i, zero); return; }
+          const g = pieghe[pad];
+          m4.copy(g ? g.matrix : ms.identity()).multiply(base[i]);
+          // un ciuffo tagliato ricresce piano, dal piccolo al pieno
+          if (tagli[i] !== undefined) m4.multiply(ms.makeScale(tagli[i], tagli[i], tagli[i]));
+          f.m.setMatrixAt(i, m4);
         });
         f.m.instanceMatrix.needsUpdate = true;
+      },
+      // ciuffi tagliati con la forbice dello stile: indice → crescita (0 appena tagliato, 1 ricresciuto)
+      setTagli(t) { const k = JSON.stringify(t); if (k === cura._tagli) return; cura._tagli = k; tagli = t; cura.aggiornaPieghe(); },
+      // posizione attuale (rami piegati compresi) di ogni ciuffo, e se c'è: per valutare lo stile
+      ciuffiStile() {
+        return forme.map((fm, i) => {
+          const g = pieghe[f.pad[i]]; vp.copy(fm.pos); if (g) vp.applyMatrix4(g.matrix);
+          return { x: vp.x, y: vp.y, z: vp.z, visibile: !nascosto.has(i) && !(tagli[i] < .5) };
+        });
       },
       // 1 = chioma piena, 0,5 = metà dei ciuffi (le conifere non scendono di più)
       setSalute(v) {
@@ -430,21 +445,28 @@ function pianta(f, soil, ring, dati) {
     m4.decompose(pos, q, sc); forme.push({ pos, q, sc });
   }
   const zero = new THREE.Matrix4().makeScale(0, 0, 0), vp = new THREE.Vector3(), vs = new THREE.Vector3();
-  let salute = 1, foglie = 1, appassimento = 0, anno = aspettoAnno(2.5), chiavePrima = '';
-  const visibili = [];
+  let salute = 1, foglie = 1, appassimento = 0, anno = aspettoAnno(2.5), chiavePrima = '', tagli = {}, chiaveTagli = '';
+  const visibili = [], nascostiSet = new Set();
+  let nascostiSalute = 0;
+  const rango = []; ordine.forEach((idx, k) => { rango[idx] = k; });
 
   function chioma() {
     const nascosti = Math.max(Math.round((1 - salute) / .8 * ordine.length * .85), Math.round((1 - foglie) * ordine.length));
-    const chiave = nascosti + ':' + appassimento.toFixed(2);
+    // per lo stile conta la chioma persa per la sete, non le foglie cadute d'inverno
+    nascostiSalute = Math.round((1 - salute) / .8 * ordine.length * .85);
+    const chiave = nascosti + ':' + appassimento.toFixed(2) + ':' + chiaveTagli;
     if (chiave === chiavePrima) return;
     chiavePrima = chiave;
-    visibili.length = 0;
+    visibili.length = 0; nascostiSet.clear();
     ordine.forEach((idx, k) => {
-      if (k < nascosti) { f.m.setMatrixAt(idx, zero); return; }
+      if (k < nascosti) nascostiSet.add(idx);
+      // nascosti dalla chioma rada, o tagliati con la forbice dello stile e non ancora ricresciuti
+      if (k < nascosti || tagli[idx] < .02) { f.m.setMatrixAt(idx, zero); return; }
       // quando soffre i ciuffi scendono un po' e si appiattiscono: la chioma si affloscia
       const { pos, q, sc } = forme[idx];
       vp.copy(pos); vp.y -= appassimento * (.06 + .1 * f.periferia[idx]);
       vs.copy(sc); vs.y *= 1 - .4 * appassimento; vs.x *= 1 - .08 * appassimento; vs.z *= 1 - .08 * appassimento;
+      if (tagli[idx] !== undefined) vs.multiplyScalar(tagli[idx]);
       m4.compose(vp, q, vs);
       const piega = dati.pieghe?.[dati.padDi[idx]];
       if (piega) m4.premultiply(piega.matrix);
@@ -488,6 +510,17 @@ function pianta(f, soil, ring, dati) {
     gruppoDi(pad) { return dati.pieghe?.[pad] ?? dati.g; },
     // un ramo col filo si è mosso: i suoi ciuffi lo seguono
     aggiornaPieghe() { chiavePrima = ''; chioma(); },
+    // la chioma per la forbice dello stile: l'InstancedMesh (il tocco dà l'indice del ciuffo)
+    chiomaMesh: f.m,
+    // ciuffi tagliati con la forbice dello stile: indice → crescita (0 appena tagliato, 1 ricresciuto)
+    setTagli(t) { const k = JSON.stringify(t); if (k === chiaveTagli) return; chiaveTagli = k; tagli = t; chioma(); },
+    // posizione attuale (rami piegati compresi) di ogni ciuffo, e se c'è: per valutare lo stile
+    ciuffiStile() {
+      return forme.map(({ pos }, i) => {
+        const piega = dati.pieghe?.[dati.padDi[i]]; vp.copy(pos); if (piega) vp.applyMatrix4(piega.matrix);
+        return { x: vp.x, y: vp.y, z: vp.z, visibile: rango[i] >= nascostiSalute && !(tagli[i] < .5) };
+      });
+    },
     // 0 = idratata, 1 = assetata: sfuma il colore di ogni ciuffo verso le foglie secche
     setThirst(v) { this.thirst = v; colora(); },
     // 0 = sta bene, 1 = soffre molto: chioma afflosciata, foglie spente, anello arancione
