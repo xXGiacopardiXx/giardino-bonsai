@@ -591,7 +591,7 @@ test('anche la chioma di pino e ginepro si dirada con la sete lunga, più piano,
   assert.ok(pino < 1, "un mese senz'acqua si vede");
   assert.ok(pino > acero, "ma meno che sull'acero");
   // acqua e, se ci sono, via gli afidi
-  for (let g = 30; g <= 50; g++) { annaffia(s, dopo(g), 'pino'); s.conifere.pino.parassiti = null; avanza(s, dopo(g + 0.5)); }
+  for (let g = 30; g <= 50; g++) { if (vista(s).conifere.pino.puoAnnaffiare) annaffia(s, dopo(g), 'pino'); s.conifere.pino.parassiti = null; avanza(s, dopo(g + 0.5)); }
   assert.ok(vista(s).conifere.pino.salute > pino);
 });
 
@@ -713,6 +713,29 @@ test('un salvataggio della versione 12 riceve gli stili', () => {
 });
 
 // --- Troppa acqua (sezione 6.3) ---
+test("ogni acqua inutile toglie un po' di chioma, sempre di più, ma la pianta non muore", () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  const perdite = [];
+  for (let i = 1; i <= 12; i++) perdite.push(annaffia(s, T0 + i * 60000, 'acero', true).perdita);
+  assert.ok(Math.abs(perdite[0] - 0.04) < 1e-9);
+  assert.ok(perdite[1] > perdite[0] && perdite[2] > perdite[1]);
+  assert.ok(perdite.every(p => p <= 0.15 + 1e-9));
+  assert.ok(Math.abs(s.albero.salute - 0.2) < 1e-9, 'salute ' + s.albero.salute);
+  assert.equal(perdite.at(-1), 0);
+});
+
+test("un'annaffiatura al momento giusto fa ripartire il conto degli sbagli", () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  annaffia(s, T0 + ORA, 'acero', true); annaffia(s, T0 + 2 * ORA, 'acero', true);
+  assert.equal(s.albero.eccessi, 2);
+  avanza(s, dopo(3));
+  assert.equal(annaffia(s, dopo(3)).esito, 'ok');
+  assert.equal(s.albero.eccessi, 0);
+  assert.ok(Math.abs(annaffia(s, dopo(3) + ORA, 'acero', true).perdita - 0.04) < 1e-9);
+});
+
 test('con il terriccio umido si può insistere: l\'acqua ristagna, senza Semi né serie', () => {
   const s = nuovoStato(T0);
   annaffia(s, T0);

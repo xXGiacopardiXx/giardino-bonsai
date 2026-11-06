@@ -215,10 +215,11 @@ function avvia() {
     completata: () => {
       if (esiti[p].esito === 'troppa') {
         const c = p === 'acero' ? vista(stato) : vista(stato).conifere[p];
-        // una scritta breve: il terriccio era ancora umido
-        ui.toast(c.marciume ? `Troppa acqua: le radici marciscono. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
-          : c.troppaAcqua ? `Troppa acqua: le foglie si afflosciano. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
-          : "Il terriccio era ancora umido: l'acqua ristagna nel vaso.", 4000);
+        // una scritta breve: il terriccio era ancora umido, e quanta chioma si è persa
+        const persa = Math.round(esiti[p].perdita * 100), meno = persa ? ` (-${persa}% chioma)` : '';
+        ui.toast(c.marciume ? `Troppa acqua: le radici marciscono${meno}. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
+          : c.troppaAcqua ? `Troppa acqua: le foglie si afflosciano${meno}. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
+          : `Il terriccio era ancora umido: l'acqua ristagna nel vaso${meno}.`, 4000);
         disegna(); return;
       }
       if (p === 'acero') ui.mostraIdratato();

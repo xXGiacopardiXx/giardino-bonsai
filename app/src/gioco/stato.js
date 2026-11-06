@@ -62,6 +62,10 @@ const RISTAGNO_MASSIMO = 3;
 const SCOLO_MINIMO = 0.6;
 export const FLOSCE_DA = 1, MARCIUME_DA = 2;
 const RISTAGNO_SALUTE = 0.6;           // le radici fradice non diradano la chioma oltre questo punto
+// ogni annaffiatura inutile costa subito un po' di chioma, sempre di più se si continua a sbagliare
+// (4%, 8%, 12%, poi 15% ogni volta); il conto riparte con un'annaffiatura fatta al momento giusto.
+// La chioma non scende mai sotto SALUTE_MINIMA: la pianta non muore.
+const PERDITA_PER_ECCESSO = 0.04, PERDITA_ECCESSO_MASSIMA = 0.15;
 const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma restano sempre
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
 const RIPRESA_AL_GIORNO = 0.15;        // da quasi spoglia a piena in 5-6 giorni di cure
@@ -486,9 +490,12 @@ export function annaffia(stato, ora, pianta = 'acero', forza = false) {
     // più il terriccio era bagnato, più acqua resta nel vaso
     a.ristagno = Math.min(RISTAGNO_MASSIMO, a.ristagno + RISTAGNO_PER_ANNAFFIATURA * (1 - a.sete / SETE_PER_ANNAFFIARE));
     a.sete = 0; a.ultimaAcqua = ora;
-    return { esito: 'troppa', semi: 0, bonusSerie: 0 };
+    a.eccessi = (a.eccessi ?? 0) + 1;
+    const prima = a.salute;
+    a.salute = Math.max(SALUTE_MINIMA, a.salute - Math.min(PERDITA_ECCESSO_MASSIMA, PERDITA_PER_ECCESSO * a.eccessi));
+    return { esito: 'troppa', semi: 0, bonusSerie: 0, perdita: prima - a.salute, eccessi: a.eccessi };
   }
-  a.sete = 0; a.ultimaAcqua = ora;
+  a.sete = 0; a.ultimaAcqua = ora; a.eccessi = 0;
   if (pianta === 'acero') stato.oggi.acqua = true;
   const semi = completaSfida(stato, 'acqua', pianta);
   const bonusSerie = registraCura(stato, ora);
