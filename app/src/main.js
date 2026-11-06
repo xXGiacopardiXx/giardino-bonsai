@@ -30,8 +30,9 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
+import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
 // Colori come nel prototipo (Three.js r128): niente conversioni di spazio colore
 THREE.ColorManagement.enabled = false;
@@ -76,7 +77,7 @@ function avvia() {
   Object.assign(controls, { enablePan: false, enableDamping: true, dampingFactor: .08, rotateSpeed: .55, zoomSpeed: .8, minPolarAngle: .55, maxPolarAngle: 1.2 });
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
   // potando, filando: la pianta su cui si sta lavorando ('acero', 'pino', 'ginepro'), oppure null
-  let baseDist = 30, potando = null, filando = null;
+  let baseDist = 30, potando = null, filando = null, fotografando = null;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
     const w = screenEl.clientWidth, h = screenEl.clientHeight; if (!w || !h) return;
@@ -85,7 +86,7 @@ function avvia() {
     baseDist = Math.min(44, Math.max(16, hw / (Math.tan(camera.fov / 2 * Math.PI / 180) * Math.min(a, 1))));
     camera.updateProjectionMatrix();
     // durante la potatura ci si può avvicinare di più, per toccare i germogli
-    controls.minDistance = baseDist * (potando || filando ? .2 : .45); controls.maxDistance = baseDist * 1.15;
+    controls.minDistance = baseDist * (potando || filando || fotografando ? .2 : .45); controls.maxDistance = baseDist * 1.15;
     scene.fog.near = baseDist + 8; scene.fog.far = baseDist + 62;
   }
   fit();
@@ -269,7 +270,7 @@ function avvia() {
   pannello = creaPannelloProva({
     anteprima: () => disegna(),
     applica: (giorni) => { stato.debug.spostamento += giorni * GIORNO; aggiornaStato(); },
-    azzera: () => { cancella(); stato = nuovoStato(Date.now()); aggiornaStato(); guida.avvia(); },
+    azzera: () => { cancella(); svuotaDiario(); mostraUltima(null); stato = nuovoStato(Date.now()); aggiornaStato(); guida.avvia(); },
     guida: () => guida.avvia(),
   });
 
@@ -427,6 +428,7 @@ function avvia() {
     else if (a === 'filo') filatura(p);
     else if (a === 'rinvasa') rinvasaPianta(p);
     else if (a === 'stile') stilatura(p);
+    else if (a === 'foto') fotoPianta(p);
     else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
@@ -439,6 +441,7 @@ function avvia() {
     else if (a === 'cura') curaPianta('acero');
     else if (a === 'rinvasa') rinvasaPianta('acero');
     else if (a === 'stile') stilatura('acero');
+    else if (a === 'foto') fotoPianta('acero');
   });
   const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
 
@@ -513,6 +516,66 @@ function avvia() {
       ui.toast('Ecco la sagoma dello stile. Tocca i ciuffi che brillano: sono fuori forma.', 4000);
     } else { stileScena.nascondi(); pannelloStile.chiudi(); allontana(); }
   }
+  // --- Diario fotografico (sezione 8.1): Foto dalla tendina avvicina la telecamera alla pianta e mostra
+  // il mirino; si può ancora girare e zoomare. La foto è il riquadro 3:4 al centro dello schermo, solo
+  // la scena: niente etichette, pulsanti né anelli della sete. ---
+  const mirino = document.getElementById('mirino'), ultimaEl = document.getElementById('mirino-ultima');
+  const diario = creaDiario({ chiedi: ui.chiedi, tocco: suoni.tocco });
+  let ultimaUrl = null;
+  // l'ultima foto scattata, in piccolo sul pulsante Diario
+  function mostraUltima(blob) {
+    if (ultimaUrl) URL.revokeObjectURL(ultimaUrl);
+    ultimaUrl = blob ? URL.createObjectURL(blob) : null;
+    ultimaEl.style.backgroundImage = ultimaUrl ? `url(${ultimaUrl})` : '';
+  }
+  // p: pianta da fotografare, oppure null per finire
+  function fotoPianta(p) {
+    if (p === fotografando) return;
+    if (p) { potatura(null); filatura(null); stilatura(null); annullaScelta(); chiudiMenu(); }
+    if (p && !fotografando) distanzaPrima = camera.position.distanceTo(controls.target);
+    fotografando = p;
+    screenEl.classList.toggle('fotografando', !!p);
+    mirino.hidden = !p;
+    if (p) {
+      document.getElementById('mirino-titolo').textContent = nomiPiante[p];
+      controls.minDistance = baseDist * .2;
+      // la pianta un po' sopra il centro, col vaso dentro il riquadro
+      vola(fuocoPianta(p).clone().add(new THREE.Vector3(0, -.45, 0)), baseDist * .4);
+    } else { diario.chiudi(); allontana(); }
+  }
+  const lampo = document.getElementById('lampo');
+  async function scatta() {
+    const p = fotografando; if (!p) return;
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    // si disegna la scena senza anelli e la si copia subito, prima che il browser la cancelli
+    const anelli = Object.values(alberi.cure).map(c => [c.ring, c.ring.visible]);
+    for (const [r] of anelli) r.visible = false;
+    renderer.render(scene, camera);
+    const w = canvas.width, h = canvas.height;
+    let cw = w * .92, ch = cw * 4 / 3; if (ch > h) { ch = h; cw = ch * 3 / 4; }
+    const foto = document.createElement('canvas'); foto.width = 600; foto.height = 800;
+    foto.getContext('2d').drawImage(canvas, (w - cw) / 2, (h - ch) / 2, cw, ch, 0, 0, 600, 800);
+    for (const [r, v] of anelli) r.visible = v;
+    lampo.classList.remove('via'); void lampo.offsetWidth; lampo.classList.add('via');
+    suoni.scatto();
+    const immagine = await new Promise(r => foto.toBlob(r, 'image/jpeg', .85));
+    if (!immagine) { ui.toast('Non sono riuscito a fare la foto. Riprova.'); return; }
+    const f = fotografa(stato, ora(), p); salva(stato);
+    const conservata = await aggiungiFoto({ pianta: p, ora: ora(), anno: f.anno, stagione: f.stagione, giornoStagione: f.giornoStagione, immagine });
+    mostraUltima(immagine);
+    if (f.ricordo) { ui.guadagnaSemi(f.semi, stato.semi, p); suoni.semi(); }
+    ui.toast(!conservata ? 'Foto nel diario. Questo telefono però non riesce a conservarla: sparirà chiudendo l\'app.'
+      : f.ricordo ? `Il primo ricordo ${DI_STAGIONE[f.stagione]} nel diario: +${f.semi} Semi.`
+      : 'Foto salvata nel diario.', 3500);
+  }
+  const DI_STAGIONE = ['di questa primavera', 'di questa estate', 'di questo autunno', 'di questo inverno'];
+  mirino.addEventListener('click', (e) => {
+    const a = e.target.closest('button')?.dataset.a; if (!a) return;
+    if (a === 'scatta') scatta();
+    else if (a === 'diario') { suoni.tocco(); diario.apri(fotografando); }
+    else if (a === 'fine') { suoni.tocco(); fotoPianta(null); }
+  });
+
   function tagliaQui(e, r) {
     const p = stilando;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
@@ -696,7 +759,7 @@ function avvia() {
     punta(e);
     if (stilando) { tagliaQui(e, r); return; }
     if (potando) { potaQui(e, r); return; }
-    if (filando) return;
+    if (filando || fotografando) return;
     const quale = alberi.tocca(raycaster);
     // dopo Acqua, Pota o Filo nella barra, il tocco sceglie la pianta
     if (scelta) {

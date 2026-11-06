@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -818,4 +818,31 @@ test('un salvataggio della versione 13 riceve il ristagno a zero', () => {
   assert.equal(s.versione, VERSIONE);
   assert.equal(s.albero.ristagno, 0);
   assert.equal(vista(s).conifere.ginepro.ristagno, 0);
+});
+
+test('la prima foto di ogni pianta in ogni stagione dà qualche Semi, le altre no', () => {
+  const s = nuovoStato(T0), semi = s.semi;
+  const f = fotografa(s, T0, 'acero');
+  assert.equal(f.esito, 'ok');
+  assert.equal(f.ricordo, true);
+  assert.deepEqual([f.anno, f.stagione, f.giornoStagione, f.nomeStagione], [1, 0, 1, 'Primavera']);
+  assert.equal(s.semi, semi + SEMI.foto);
+  // un'altra foto all'acero nella stessa stagione: niente premio; il pino ha il suo ricordo
+  assert.equal(fotografa(s, dopo(3), 'acero').semi, 0);
+  assert.equal(fotografa(s, dopo(3), 'pino').semi, SEMI.foto);
+  // la stagione dopo, di nuovo
+  const estate = fotografa(s, dopo(7.5), 'acero');
+  assert.equal(estate.ricordo, true);
+  assert.equal(estate.nomeStagione, 'Estate');
+  assert.equal(s.semi, semi + 3 * SEMI.foto);
+  assert.equal(fotografa(s, T0, 'quercia').esito, 'nessuno');
+});
+
+test('un salvataggio della versione 14 riceve il diario vuoto', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 14; delete vecchio.diario;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.diario, {});
+  assert.equal(fotografa(s, T0, 'ginepro').ricordo, true);
 });

@@ -267,6 +267,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
 | Rinvaso nella stagione giusta | 40 |
+| Prima foto di una pianta in una stagione (diario) | 5 |
 | Fioritura o primi colori autunnali | 30 |
 | Stile completato | 300–500 |
 
@@ -285,6 +286,16 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 - Il giardino è un'**isola fluttuante** in stile diorama, con ghiaia rastrellata, prato, laghetto, lanterna, staccionata di bambù.
 - Contiene più bonsai su supporti (tavolo in legno, lastra di pietra, base in legno) e decorazioni.
 - Le decorazioni si comprano con i Semi; lo spazio si amplia a pagamento in Semi.
+
+### 8.1 Diario fotografico
+
+Un album dei ricordi di ogni pianta, per vedere quanto è cambiata con le stagioni e con le cure.
+
+- **Foto** è nella tendina di ogni pianta: la telecamera si avvicina alla pianta e compare il mirino (riquadro 3:4 con gli angoli, nome della pianta in alto). Etichette, barra e pulsanti spariscono; si può ancora girare e zoomare per scegliere l'inquadratura. In basso: Diario (con l'ultima foto in piccolo), il pulsante di scatto, Fine.
+- Lo scatto ha un lampo bianco e il clic della macchina. La foto è solo la scena dentro il riquadro, senza anelli della sete né scritte.
+- Ogni foto ricorda la data di gioco (stagione, anno, giorno). **La prima foto di ogni pianta in ogni stagione vale 5 Semi**: un invito a tornare a guardarla, non un obbligo. Le altre foto non danno niente.
+- **Diario:** una scheda per pianta (Acero, Ginepro, Pino), le foto in griglia dalla più vecchia, con la stagione sotto. Toccandone una si vede grande con la data, le frecce per scorrere, Elimina (con una domanda di conferma) e Torna al diario. **Rivedi la crescita** fa scorrere tutte le foto una dopo l'altra, dalla prima: il time-lapse della pianta.
+- Le foto stanno sul telefono (IndexedDB, 600×800 in JPEG), separate dal salvataggio della partita. Al massimo 120 per pianta: oltre, si toglie la più vecchia tranne la prima. Ricominciando la partita il diario si svuota.
 
 ## 9. Stile grafico
 
@@ -392,7 +403,6 @@ Rimandata. Promessa corretta: *"ricrea il tuo bonsai nel giardino"*, non *"copia
 ### 13.2 Altro
 
 - Social: visite ai giardini degli amici, mostre stagionali con voti, scambio di talee.
-- Diario fotografico con time-lapse dell'albero.
 - Realtà aumentata: il bonsai virtuale sulla propria scrivania.
 - Gemello digitale: promemoria di cura per la pianta vera collegata alla scansione.
 - Modalità didattica sulla tecnica reale del bonsai.
@@ -425,7 +435,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Cura fatta: concime e afidi con trattamento (sezione 6.5).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Cura fatta: concime e afidi con trattamento (sezione 6.5).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

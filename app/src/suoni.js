@@ -168,6 +168,14 @@ export function magia() {
   soffio({ t: .05, durata: .9, tipo: 'highpass', freq: 6000, q: .5, volume: .04, attacco: .2 });
 }
 
+// scatto della macchina fotografica: un clic secco e la tendina che si richiude
+export function scatto() {
+  if (!pronto()) return;
+  soffio({ durata: .035, tipo: 'highpass', freq: 3200, q: .8, volume: .3, attacco: .002 });
+  nota({ freq: 1900, durata: .035, volume: .05, tipo: 'square' });
+  soffio({ t: .1, durata: .05, tipo: 'bandpass', freq: 2300, q: 1.2, volume: .22, attacco: .002 });
+}
+
 // tocco su un pulsante: un piccolo "pop" di legno
 export function tocco() {
   if (!pronto()) return;

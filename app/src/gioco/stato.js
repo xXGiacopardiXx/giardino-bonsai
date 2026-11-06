@@ -5,10 +5,10 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 14;
+export const VERSIONE = 15;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40 };
+export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
 
 // Sfida del giorno (sezione 7.1): sempre fattibile. Si sceglie la prima volta che si apre il gioco
 // in quel giorno, guardando la pianta in quel momento: annaffiare se il terriccio è asciutto,
@@ -208,6 +208,8 @@ export function nuovoStato(ora) {
     inventario: { ...INVENTARIO_INIZIALE },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
+    // diario fotografico: per ogni pianta la stagione dell'ultima foto premiata ("anno-stagione")
+    diario: {},
     // si comincia annaffiando, perché la pianta ha già sete
     oggi: { giorno: giornoLocale(ora), acqua: false, sfida: { tipo: 'acqua', fatta: false } },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
@@ -276,6 +278,8 @@ export function migra(stato) {
     for (const p of ['pino', 'ginepro']) stato.conifere[p].ristagno = 0;
     stato.versione = 14;
   }
+  // diario fotografico: nessuna foto ancora
+  if (stato.versione === 14) { stato.diario = {}; stato.versione = 15; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -614,6 +618,19 @@ export function sigillaStile(stato, pianta, percentuale) {
   c.stile.sigilli.push(stile.id);
   stato.semi += stile.premio;
   return { nuovo: true, premio: stile.premio, nome: stile.nome };
+}
+
+// Diario fotografico (sezione 8.1): una foto di una pianta. Le immagini si salvano a parte (sono grandi);
+// il motore dice solo quando è stata scattata, in tempo di gioco, e premia la prima foto di ogni pianta
+// in ogni stagione con qualche Semi: un ricordo della stagione, non un obbligo.
+// esito: 'ok' o 'nessuno' (pianta sconosciuta)
+export function fotografa(stato, ora, pianta) {
+  avanza(stato, ora);
+  if (!PIANTE[pianta]) return { esito: 'nessuno', semi: 0, ricordo: false };
+  const cal = calendario(stato.inizio, ora), chiave = cal.anno + '-' + cal.stagione;
+  const ricordo = stato.diario[pianta] !== chiave;
+  if (ricordo) { stato.diario[pianta] = chiave; stato.semi += SEMI.foto; }
+  return { esito: 'ok', ...cal, nomeStagione: STAGIONI[cal.stagione], ricordo, semi: ricordo ? SEMI.foto : 0 };
 }
 
 // Compra una confezione di un prodotto di cura (DOSI_PER_CONFEZIONE dosi nell'inventario).
