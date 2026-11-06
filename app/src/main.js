@@ -215,9 +215,10 @@ function avvia() {
     completata: () => {
       if (esiti[p].esito === 'troppa') {
         const c = p === 'acero' ? vista(stato) : vista(stato).conifere[p];
-        ui.toast(c.marciume ? `Il vaso è pieno d'acqua e le radici non respirano: cominciano a marcire. Lascialo asciugare ${giorniTesto(c.giorniAsciutto)} senza annaffiare: si riprenderà.`
-          : c.troppaAcqua ? `Troppa acqua: le foglie si afflosciano. Salta l'acqua per ${giorniTesto(c.giorniAsciutto)} e tornerà come prima.`
-          : `L'acqua in più ristagna nel vaso. Per stavolta niente di grave: lascia asciugare il terriccio prima della prossima volta.`, 5500);
+        // una scritta breve: il terriccio era ancora umido
+        ui.toast(c.marciume ? `Troppa acqua: le radici marciscono. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
+          : c.troppaAcqua ? `Troppa acqua: le foglie si afflosciano. Lascia asciugare ${giorniTesto(c.giorniAsciutto)}.`
+          : "Il terriccio era ancora umido: l'acqua ristagna nel vaso.", 4000);
         disegna(); return;
       }
       if (p === 'acero') ui.mostraIdratato();
@@ -236,11 +237,10 @@ function avvia() {
     if (annaffiature[p].attiva) return;
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
     const esito = annaffia(stato, ora(), p, forza);
+    // solo la prima volta per ogni pianta: poi i suoi tempi li ricorda il giocatore
     if (esito.esito === 'umido') {
       disegna();
-      const c = p === 'acero' ? vista(stato) : vista(stato).conifere[p];
-      const testo = c.ristagno > 0 ? `Il vaso ${DEL[p]} è già fradicio: le radici hanno bisogno d'aria. Lascialo asciugare ancora ${giorniTesto(c.giorniAsciutto)}.`
-        : p === 'acero' ? 'Il terriccio dell\'acero è ancora umido: per ora non ha sete. Se annaffi adesso, l\'acqua in più ristagna nel vaso.'
+      const testo = p === 'acero' ? 'Il terriccio dell\'acero è ancora umido: per ora non ha sete. Se annaffi adesso, l\'acqua in più ristagna nel vaso.'
         : `Il terriccio ${DEL[p]} è ancora umido. Le conifere vogliono che si asciughi quasi del tutto: troppa acqua fa marcire le radici.`;
       if (await ui.chiedi(testo, 'Annaffia lo stesso', 'Aspetto')) annaffiaPianta(p, true);
       return;

@@ -42,6 +42,18 @@ test('con il terriccio ancora umido l\'acqua non viene assorbita', () => {
   assert.equal(s.semi, SEMI.iniziali + SEMI.sfida);
 });
 
+test("l'avviso del terriccio umido arriva solo la prima volta per ogni pianta, poi l'acqua ristagna", () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  assert.equal(annaffia(s, T0 + ORA).esito, 'umido');
+  assert.equal(s.albero.ristagno, 0);
+  assert.equal(annaffia(s, T0 + 2 * ORA).esito, 'troppa');
+  assert.ok(s.albero.ristagno > 0);
+  // il pino non è ancora stato avvisato
+  assert.equal(annaffia(s, T0 + 2 * ORA, 'pino').esito, 'umido');
+  assert.equal(annaffia(s, T0 + 3 * ORA, 'pino').esito, 'troppa');
+});
+
 test('in primavera la sete torna dopo poco più di un giorno, in inverno dopo due', () => {
   const s = nuovoStato(T0);
   annaffia(s, T0);

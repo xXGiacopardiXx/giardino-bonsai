@@ -180,7 +180,7 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ristagno: 0, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ristagno: 0, avvisatoUmido: false, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
 function potaturaConifera(p) {
   return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
@@ -196,7 +196,7 @@ export function nuovoStato(ora) {
     aggiornato: ora,
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
-    albero: { sete: 1, ristagno: 0, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
+    albero: { sete: 1, ristagno: 0, avvisatoUmido: false, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
@@ -470,14 +470,18 @@ function registraCura(stato, ora) {
   return 0;
 }
 
-// esito: 'ok'; 'umido' (terriccio ancora bagnato: non si annaffia, a meno di insistere con forza);
-// 'troppa' (annaffiata lo stesso: l'acqua in più ristagna nel vaso, niente Semi né serie)
+// esito: 'ok'; 'umido' (terriccio ancora bagnato: la prima volta per ogni pianta non si annaffia e si avvisa,
+// a meno di insistere con forza); 'troppa' (annaffiata col terriccio umido: l'acqua in più ristagna nel vaso,
+// niente Semi né serie). Dopo il primo avviso i tempi di ogni pianta li ricorda il giocatore.
 // pianta: 'acero' (predefinita), 'pino' o 'ginepro'
 export function annaffia(stato, ora, pianta = 'acero', forza = false) {
   avanza(stato, ora);
   const a = pianta === 'acero' ? stato.albero : stato.conifere[pianta];
   if (!a) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
-  if (a.sete < SETE_PER_ANNAFFIARE && !forza) return { esito: 'umido', semi: 0, bonusSerie: 0 };
+  if (a.sete < SETE_PER_ANNAFFIARE && !forza && !a.avvisatoUmido) {
+    a.avvisatoUmido = true;
+    return { esito: 'umido', semi: 0, bonusSerie: 0 };
+  }
   if (a.sete < SETE_PER_ANNAFFIARE) {
     // più il terriccio era bagnato, più acqua resta nel vaso
     a.ristagno = Math.min(RISTAGNO_MASSIMO, a.ristagno + RISTAGNO_PER_ANNAFFIATURA * (1 - a.sete / SETE_PER_ANNAFFIARE));
