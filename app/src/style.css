@@ -91,6 +91,13 @@ button{touch-action:manipulation}
 
 .toast{position:absolute;left:50%;bottom:calc(var(--bottom) * .45 + 29cqw);transform:translate(-50%,2cqw);width:max-content;max-width:84cqw;padding:2.4cqw 3.6cqw;border-radius:3.4cqw;background:rgba(43,30,19,.9);color:#fff7e8;font:500 3.3cqw/1.35 var(--display);text-align:center;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+/* domanda gentile prima di un'azione sconsigliata (annaffiare col terriccio umido): la scelta giusta è il pulsante verde */
+.domanda{position:absolute;left:50%;bottom:calc(var(--bottom) * .45 + 29cqw);transform:translateX(-50%);width:84cqw;padding:3.2cqw 3.6cqw 3.4cqw;border-radius:3.6cqw;background:#fff7e4;border:.55cqw solid var(--ink);box-shadow:0 1cqw 0 var(--ink);text-align:center;z-index:30;animation:domanda-su .22s ease-out}
+.domanda[hidden]{display:none}
+.domanda p{margin:0 0 2.8cqw;font:500 3.4cqw/1.38 var(--display);color:var(--ink)}
+.domanda-pulsanti{display:flex;gap:2.4cqw;justify-content:center;flex-wrap:wrap}
+.domanda-b{all:unset;cursor:pointer;padding:1.8cqw 3.4cqw;border-radius:2.8cqw;border:.5cqw solid #b8a586;font:700 3.2cqw/1 var(--display);color:#8a6a48;background:#f3e8d2}
+@keyframes domanda-su{from{opacity:0;transform:translate(-50%,2cqw)}to{opacity:1;transform:translate(-50%,0)}}
 .hint{position:absolute;left:50%;top:58%;transform:translateX(-50%);padding:1.8cqw 3.4cqw;border-radius:99px;background:rgba(30,40,45,.55);color:#fff;font:500 3.1cqw/1 var(--display);white-space:nowrap;pointer-events:none;transition:opacity .6s}
 .hint.gone{opacity:0}
 .float{position:absolute;font:700 5.4cqw/1 var(--display);color:#ffd75a;text-shadow:0 .5cqw 0 var(--ink),.35cqw .35cqw 0 var(--ink),-.35cqw .35cqw 0 var(--ink),.35cqw -.35cqw 0 var(--ink),-.35cqw -.35cqw 0 var(--ink);pointer-events:none;animation:rise 1.4s ease-out forwards}
@@ -153,6 +160,7 @@ button{touch-action:manipulation}
 .plate .fase[data-livello="sete"]{color:#1d6fb0}
 .plate .fase[data-livello="stress"]{color:#d06a12}
 .plate .fase[data-livello="grave"]{color:#c4291c}
+.plate .fase[data-livello="troppa"]{color:#2f5fae}
 .plate .misura{display:flex;align-items:center;gap:1cqw}
 .plate .misura svg{width:3cqw;height:3cqw;flex:none}
 .plate .misura .bar{flex:1}
@@ -160,6 +168,8 @@ button{touch-action:manipulation}
 .bar.acqua i{background:linear-gradient(#9bd8ff,#3f92d6);transition:width .6s ease}
 .bar.acqua[data-livello="poca"] i{background:linear-gradient(#ffd38a,#e99a2c)}
 .bar.acqua[data-livello="pochissima"] i{background:linear-gradient(#ff9a8a,#d8402f)}
+/* troppa acqua: la barra è piena e di un blu cupo */
+.bar.acqua[data-livello="troppa"] i{background:linear-gradient(#6f9fd8,#2a4f94)}
 .vaso-stato.tuo{color:#8a6a48}
 .negozio-vai{all:unset;cursor:pointer;display:block;margin:3cqw auto 0;padding:2cqw 4cqw;border-radius:3cqw;background:linear-gradient(#ffe08a,#f2b93e);border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);font:700 3.5cqw/1 var(--display);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
 .negozio-vai[hidden]{display:none}

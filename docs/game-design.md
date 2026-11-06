@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 28/10/2026
+Ultimo aggiornamento: 06/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -201,7 +201,13 @@ Principio: cura **realistica**, con esigenze diverse per specie (e più avanti p
 
 Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e marciume, che si curano saltando l'acqua per un giorno. Serve a evitare che la strategia migliore sia premere il pulsante dell'acqua a ogni apertura.
 
-**Nell'MVP:** niente marciume. Se il terriccio è ancora umido l'acqua non viene assorbita e compare un messaggio gentile.
+**Nell'app (fatto, per tutte e tre le piante):** come nella realtà, l'errore si può fare, ma il gioco avvisa prima e non rimprovera dopo.
+
+- **Prima di annaffiare:** se il terriccio è ancora umido compare una domanda gentile, con il motivo vero ("le conifere vogliono che si asciughi quasi del tutto: troppa acqua fa marcire le radici"). Il pulsante verde è **Aspetto**; accanto, più discreto, **Annaffia lo stesso**. Il pulsante Acqua della barra annaffia solo le piante col terriccio asciutto: per insistere si passa dalla tendina della pianta.
+- **Ristagno:** l'acqua in più resta nel vaso. Si misura come la sete, in giorni di asciugatura, ed è tanto più alta quanto più il terriccio era bagnato (0,8 annaffiando subito dopo l'ultima volta, al massimo 3). Finché c'è, il terriccio non si asciuga: prima deve scolare l'acqua in più. Scola con il ritmo della sete della specie, ma mai sotto 0,6 al giorno (dai fori del vaso), pesato per la stagione: nelle conifere resta molto più a lungo che nell'acero, ma sempre meno di una settimana.
+- **Fasi:** una volta di troppo lascia il **terriccio fradicio** (solo un avviso); due (ristagno da 1) danno **troppa acqua**: foglie flosce e crescita dimezzata, la chioma smette di riprendersi; tre (ristagno da 2) le **radici fradice**: niente crescita né germogli nuovi e la chioma si dirada piano, mai sotto il 60%. La pianta non muore.
+- **Come si vede:** terriccio quasi nero con un velo d'acqua che luccica in superficie; l'acero afflosciato con foglie di un verde-giallo pallido a chiazze (diverso dal bruno secco della sete); pino e ginepro con gli aghi e le squame più interne che ingialliscono per prime. Sull'etichetta la fase è in blu ("Terriccio fradicio", "Troppa acqua") o in rosso ("Radici fradice") e la barra dell'acqua diventa blu cupo.
+- **Come si guarisce:** saltando l'acqua. Il messaggio dice per quanti giorni ("Salta l'acqua per 3 giorni e tornerà come prima"). Annaffiare di troppo non dà Semi né conta per la serie.
 
 ### 6.4 Parassiti
 
@@ -399,7 +405,7 @@ Obiettivo primario: l'app con le funzioni base funzionante sul proprio iPhone, a
 | Nell'MVP | Rimandato |
 |---|---|
 | **Una specie: l'acero giapponese.** Cambia aspetto in ogni stagione (verde, rosso, spoglio), e da spoglio in inverno mostra i rami da potare | Pino, ginepro, altre specie |
-| **Acqua, Pota, Filo, Cura e Rinvaso** (arrivati dopo l'MVP, sezioni 4.2–4.4 e 6.5) | Troppa acqua |
+| **Acqua, Pota, Filo, Cura e Rinvaso** (arrivati dopo l'MVP, sezioni 4.2–4.4 e 6.5), poi **troppa acqua** (sezione 6.3) | |
 | Stagioni compresse (4 settimane = 1 anno), fasi di sete visibili, la pianta non muore | Stili classici con percentuale |
 | Serie di giorni (acqua o potatura), Semi, mini-negozio con 4–5 vasi | Decorazioni, ampliamenti, pass, moneta a pagamento |
 | Un solo albero da curare (l'acero); il giardino è un ecosistema di piante, ognuna nel suo spazio: pino e ginepro restano, per ora senza cure | Cure per più alberi, zoom a 4 livelli |

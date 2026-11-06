@@ -699,3 +699,88 @@ test('un salvataggio della versione 12 riceve gli stili', () => {
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).stile.acero.id, 'moyogi');
 });
+
+// --- Troppa acqua (sezione 6.3) ---
+test('con il terriccio umido si può insistere: l\'acqua ristagna, senza Semi né serie', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  const semi = s.semi, serie = s.serie.giorni;
+  const r = annaffia(s, T0 + ORA, 'acero', true);
+  assert.equal(r.esito, 'troppa');
+  assert.equal(s.semi, semi);
+  assert.equal(s.serie.giorni, serie);
+  const v = vista(s);
+  assert.ok(v.ristagno > 0.7);
+  assert.equal(v.nomeFase, 'Terriccio fradicio');
+  assert.equal(v.troppaAcqua, false);
+  assert.equal(v.puoAnnaffiare, false);
+});
+
+test('finché c\'è acqua in più il terriccio non si asciuga: prima se ne va il ristagno', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  annaffia(s, T0, 'acero', true);
+  avanza(s, dopo(0.5));
+  assert.equal(s.albero.sete, 0);
+  assert.ok(s.albero.ristagno > 0);
+  avanza(s, dopo(2));
+  assert.equal(s.albero.ristagno, 0);
+  assert.ok(s.albero.sete > 0);
+});
+
+test('annaffiare più volte al giorno: foglie flosce, poi radici fradice; saltando l\'acqua guarisce', () => {
+  const s = nuovoStato(T0);
+  s.albero.protezione = { fino: dopo(30) }; // niente afidi: qui conta solo l'acqua
+  annaffia(s, T0);
+  for (let i = 1; i <= 4; i++) annaffia(s, T0 + i * 2 * ORA, 'acero', true);
+  let v = vista(s);
+  assert.equal(v.troppaAcqua, true);
+  assert.equal(v.marciume, true);
+  assert.equal(v.nomeFase, 'Radici fradice');
+  assert.ok(v.flosce > 0.9);
+  assert.ok(v.giorniAsciutto >= 3);
+  // le radici che marciscono diradano un po' la chioma, mai troppo
+  avanza(s, dopo(1.5));
+  assert.ok(s.albero.salute < 1 && s.albero.salute >= 0.6);
+  // saltando l'acqua il vaso si asciuga e la chioma torna
+  avanza(s, dopo(5));
+  v = vista(s);
+  assert.equal(v.troppaAcqua, false);
+  // poi si torna ad annaffiare quando il terriccio è asciutto
+  for (let g = 5; g <= 9; g++) annaffia(s, dopo(g));
+  assert.ok(s.albero.salute > 0.95, 'salute ' + s.albero.salute);
+});
+
+test('con le radici fradice la pianta non mette germogli nuovi', () => {
+  const s = nuovoStato(T0);
+  s.albero.germogli = [];
+  annaffia(s, T0);
+  for (let i = 1; i <= 4; i++) annaffia(s, T0 + i * ORA, 'acero', true);
+  assert.equal(vista(s).marciume, true);
+  avanza(s, dopo(1));
+  assert.equal(s.albero.germogli.length, 0);
+});
+
+test('le conifere asciugano piano: l\'acqua in più resta nel vaso per giorni', () => {
+  const s = nuovoStato(T0);
+  for (let i = 0; i < 3; i++) annaffia(s, T0 + i * ORA, 'pino', true);
+  const v = vista(s).conifere.pino;
+  assert.equal(v.troppaAcqua, true);
+  assert.ok(v.giorniAsciutto >= 3 && v.giorniAsciutto <= 7, `giorni: ${v.giorniAsciutto}`);
+  avanza(s, dopo(1));
+  assert.equal(vista(s).conifere.pino.troppaAcqua, true);
+  // l'acero, annaffiato una volta sola di troppo, è già asciutto
+  annaffia(s, dopo(3)); annaffia(s, dopo(3), 'acero', true);
+  avanza(s, dopo(4.5));
+  assert.equal(vista(s).ristagno, 0);
+});
+
+test('un salvataggio della versione 13 riceve il ristagno a zero', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 13; delete vecchio.albero.ristagno;
+  for (const p of ['pino', 'ginepro']) delete vecchio.conifere[p].ristagno;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(s.albero.ristagno, 0);
+  assert.equal(vista(s).conifere.ginepro.ristagno, 0);
+});

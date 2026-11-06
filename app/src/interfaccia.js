@@ -4,6 +4,11 @@ import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
+// colore della fase sull'etichetta: sete (azzurro), stress (arancio), grave (rosso), troppa acqua (blu)
+const livello = (c) => c.marciume ? 'grave' : c.ristagno > 0 ? 'troppa'
+  : c.fase === 0 ? 'bene' : c.fase === 1 ? 'sete' : c.fase < 4 ? 'stress' : 'grave';
+const livelloAcqua = (c) => c.ristagno > 0 ? 'troppa' : c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
+
 export function creaInterfaccia(screenEl, camera, trees) {
   const tagEls = { acero: $('tag-acero'), ginepro: $('tag-ginepro'), pino: $('tag-pino') };
   const pv = new THREE.Vector3();
@@ -20,6 +25,24 @@ export function creaInterfaccia(screenEl, camera, trees) {
     toastEl.textContent = msg; toastEl.classList.add('show');
     clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), durata);
   }
+
+  // domanda con due risposte: risolve true per "si", false per "no" (o se non si risponde)
+  const domandaEl = $('domanda');
+  let rispondi = null;
+  domandaEl.addEventListener('click', (e) => {
+    const a = e.target.closest('button')?.dataset.a; if (!a) return;
+    domandaEl.hidden = true; const r = rispondi; rispondi = null; r?.(a === 'si');
+  });
+  function chiedi(testo, si, no) {
+    rispondi?.(false);
+    toastEl.classList.remove('show');
+    $('domanda-testo').textContent = testo;
+    domandaEl.querySelector('[data-a="si"]').textContent = si;
+    domandaEl.querySelector('[data-a="no"]').textContent = no;
+    domandaEl.hidden = false;
+    return new Promise(r => { rispondi = r; });
+  }
+  function chiudiDomanda() { if (domandaEl.hidden) return; domandaEl.hidden = true; const r = rispondi; rispondi = null; r?.(false); }
 
   function floatText(txt, x, y) {
     const f = document.createElement('div'); f.className = 'float'; f.textContent = txt;
@@ -48,6 +71,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
   questEl.addEventListener('animationend', () => { if (questEl.classList.contains('via')) questEl.style.display = 'none'; });
   return {
     toast,
+    chiedi,
+    chiudiDomanda,
     guadagnaSemi,
     // ridisegna l'interfaccia a partire dalla vista calcolata dal motore (gioco/stato.js)
     aggiorna(v, { annaffiando = false } = {}) {
@@ -80,20 +105,20 @@ export function creaInterfaccia(screenEl, camera, trees) {
       const salute = Math.round(v.salute * 100) + '%';
       // fase scritta col colore della gravità; acqua e chioma su due barre separate
       $('acero-fase').textContent = v.nomeFase;
-      $('acero-fase').dataset.livello = v.fase === 0 ? 'bene' : v.fase === 1 ? 'sete' : v.fase < 4 ? 'stress' : 'grave';
+      $('acero-fase').dataset.livello = livello(v);
       // gli afidi evidenti si segnalano sull'etichetta (quelli appena arrivati si scoprono solo da vicino)
       if (v.parassiti?.visibili && v.fase < 4) { $('acero-fase').textContent = 'Ha gli afidi'; $('acero-fase').dataset.livello = 'stress'; }
       $('acero-salute').textContent = salute;
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
-      $('acero-acqua').parentElement.dataset.livello = v.acqua > .6 ? 'bene' : v.acqua > .3 ? 'poca' : 'pochissima';
+      $('acero-acqua').parentElement.dataset.livello = livelloAcqua(v);
       // pino e ginepro: fase della sete e acqua nel terriccio, come l'acero
       for (const p of ['pino', 'ginepro']) {
         const c = v.conifere[p];
         $(p + '-fase').textContent = c.nomeFase;
-        $(p + '-fase').dataset.livello = c.fase === 0 ? 'bene' : c.fase === 1 ? 'sete' : c.fase < 4 ? 'stress' : 'grave';
+        $(p + '-fase').dataset.livello = livello(c);
         $(p + '-acqua').style.width = Math.round(c.acqua * 100) + '%';
-        $(p + '-acqua').parentElement.dataset.livello = c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
+        $(p + '-acqua').parentElement.dataset.livello = livelloAcqua(c);
         // chioma: come quella dell'acero, con la percentuale
         $(p + '-barra').style.width = $(p + '-salute').textContent = Math.round(c.salute * 100) + '%';
       }

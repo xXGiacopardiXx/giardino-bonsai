@@ -8,6 +8,18 @@ import { creaFilo } from './filo.js';
 import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
+// Troppa acqua (game-design.md, sezione 6.3): terriccio fradicio, quasi nero, con un velo d'acqua che luccica
+// in superficie. Restituisce la funzione che lo mostra (0 = niente, 1 = vaso pieno d'acqua).
+const FRADICIO = new THREE.Color(0x261c17);
+function pozzaSu(soil) {
+  const m = new THREE.Mesh(soil.geometry, new THREE.MeshBasicMaterial({ color: 0xa6cfe0, transparent: true, opacity: 0, depthWrite: false }));
+  m.position.y = .021; m.scale.set(.86, .05, .86); m.visible = false; m.renderOrder = 2; soil.add(m);
+  return (v) => {
+    m.geometry = soil.geometry; // il terriccio dell'acero cambia forma con il vaso
+    m.visible = v > .01; m.material.opacity = .18 + .37 * v;
+    soil.material.color.lerp(FRADICIO, v * .7);
+  };
+}
 
 // Colori dell'acero giapponese nell'anno, ben diversi tra loro: in primavera verde tenero con le punte
 // arrossate dalle foglie nuove, in estate verde intenso, in autunno rosso fuoco e arancio
@@ -184,10 +196,17 @@ export function creaAlberi(world) {
   function assetabile(cura, { t, soil, raggioAnello, annaffiatoio, colora }) {
     const ring = new THREE.Mesh(new THREE.RingGeometry(raggioAnello, raggioAnello + .1, 64), new THREE.MeshBasicMaterial({ color: 0x6ac8ff, transparent: true, opacity: .7, depthWrite: false }));
     ring.rotation.x = -PI / 2; ring.position.y = .025; ring.visible = false; t.add(ring);
+    const pozza = pozzaSu(soil);
     return Object.assign(cura, {
-      ring, thirst: 0, soilDry: 0, annaffiatoio,
-      setThirst(v) { this.thirst = v; colora(v); },
+      ring, thirst: 0, soilDry: 0, flosce: 0, annaffiatoio,
+      setThirst(v) { this.thirst = v; colora(v, this.flosce); },
       setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
+      // troppa acqua: flosce 0..1 (aghi e squame che ingialliscono dall'interno), fradicio 0..1 (il vaso)
+      // da chiamare dopo setSoil
+      setRistagno(flosce, fradicio) {
+        if (Math.abs(flosce - this.flosce) > .005) { this.flosce = flosce; colora(this.thirst, flosce); }
+        pozza(fradicio);
+      },
     });
   }
   // pieghe: cuscinetto → gruppo del ramo legabile; aggiornaPieghe() sposta i ciuffi con il ramo piegato
@@ -284,7 +303,7 @@ export function creaAlberi(world) {
     trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
     cure.ginepro = assetabile(curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6, gG.gruppoPad), {
       t, soil: soilG, raggioAnello: 1.08, annaffiatoio: new THREE.Vector3(.95, 1.1, .75),
-      colora(v) { seteG = v; coloraG(); },
+      colora(v, fl = 0) { seteG = v; floscioG = fl; coloraG(); },
     });
     // potatura (punte da pizzicare) e filo del ginepro
     Object.assign(cure.ginepro, {
@@ -299,11 +318,14 @@ export function creaAlberi(world) {
     const c = new THREE.Color();
     // con la sete le squame si spengono verso un giallo-bruno, a chiazze (non tutte insieme)
     const rs = sequenza(53), seccoG = fg.toni.map(() => rs() < .5 ? new THREE.Color(['#8f8a4a', '#a08a4c', '#7d7444'][Math.floor(rs() * 3)]) : null);
-    let inverno = 0, seteG = 0;
+    // con troppa acqua le squame più interne, all'ombra, ingialliscono per prime: un giallo pallido, non il bruno della sete
+    const pallidoG = fg.toni.map((_, i) => fg.periferia[i] < .55 ? new THREE.Color(['#a8a95c', '#b3b066', '#9c9a52'][i % 3]) : null);
+    let inverno = 0, seteG = 0, floscioG = 0;
     function coloraG() {
       for (let i = 0; i < fg.healthy.length; i++) {
         c.copy(fg.healthy[i]).lerp(bronzo[i], inverno * .75);
         if (seccoG[i]) c.lerp(seccoG[i], seteG * .85);
+        if (pallidoG[i]) c.lerp(pallidoG[i], floscioG * .7);
         fg.m.setColorAt(i, c);
       }
       fg.m.instanceColor.needsUpdate = true;
@@ -343,10 +365,16 @@ export function creaAlberi(world) {
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
     // con la sete gli aghi ingialliscono a chiazze: i colori "stressed" preparati nella chioma
     const cp = new THREE.Color();
+    const pallidoP = fp.healthy.map((_, i) => fp.periferia[i] < .55 ? new THREE.Color(['#c2bd5e', '#b8b45a', '#cfc66e'][i % 3]) : null);
     cure.pino = assetabile(curabile(fp, tr, new THREE.Vector3(2.1, .64, 2.0), .8, gP.gruppoPad), {
       t, soil: soilP, raggioAnello: 1.12, annaffiatoio: new THREE.Vector3(-1.0, 1.1, .8),
-      colora(v) {
-        for (let i = 0; i < fp.healthy.length; i++) fp.m.setColorAt(i, cp.copy(fp.healthy[i]).lerp(fp.stressed[i], v));
+      colora(v, fl = 0) {
+        for (let i = 0; i < fp.healthy.length; i++) {
+          cp.copy(fp.healthy[i]).lerp(fp.stressed[i], v);
+          // troppa acqua: gli aghi più vecchi, verso l'interno dei cuscinetti, ingialliscono per primi
+          if (pallidoP[i]) cp.lerp(pallidoP[i], fl * .75);
+          fp.m.setColorAt(i, cp);
+        }
         fp.m.instanceColor.needsUpdate = true;
       },
     });
@@ -429,7 +457,7 @@ function creaScintille(parent, vaso) {
 // Pianta da curare: chioma che si dirada, ingiallisce con la sete, si affloscia e perde foglie secche
 // quando soffre, e cambia con le stagioni.
 // f: chioma (foliage), soil: terriccio, ring: anello della sete; dati: punte, fuoco, potTop, colore()...
-const ANELLO = new THREE.Color(0x6ac8ff), ANELLO_GRAVE = new THREE.Color(0xff7a4a), SECCO = new THREE.Color(0x7d6a3e);
+const ANELLO = new THREE.Color(0x6ac8ff), ANELLO_GRAVE = new THREE.Color(0xff7a4a), SECCO = new THREE.Color(0x7d6a3e), PALLIDO = new THREE.Color(0xc8c45e);
 const fogliaSeccaGeo = fogliaAcero().scale(.075, .075, .075);
 const FOGLIE_SECCHE = ['#9a7434', '#8a5f2e', '#b08a48', '#7a5228'];
 
@@ -445,7 +473,7 @@ function pianta(f, soil, ring, dati) {
     m4.decompose(pos, q, sc); forme.push({ pos, q, sc });
   }
   const zero = new THREE.Matrix4().makeScale(0, 0, 0), vp = new THREE.Vector3(), vs = new THREE.Vector3();
-  let salute = 1, foglie = 1, appassimento = 0, anno = aspettoAnno(2.5), chiavePrima = '', tagli = {}, chiaveTagli = '';
+  let salute = 1, foglie = 1, appassimento = 0, flosce = 0, anno = aspettoAnno(2.5), chiavePrima = '', tagli = {}, chiaveTagli = '';
   const visibili = [], nascostiSet = new Set();
   let nascostiSalute = 0;
   const rango = []; ordine.forEach((idx, k) => { rango[idx] = k; });
@@ -454,7 +482,9 @@ function pianta(f, soil, ring, dati) {
     const nascosti = Math.max(Math.round((1 - salute) / .8 * ordine.length * .85), Math.round((1 - foglie) * ordine.length));
     // per lo stile conta la chioma persa per la sete, non le foglie cadute d'inverno
     nascostiSalute = Math.round((1 - salute) / .8 * ordine.length * .85);
-    const chiave = nascosti + ':' + appassimento.toFixed(2) + ':' + chiaveTagli;
+    // le foglie si afflosciano sia per la sete grave sia per troppa acqua
+    const giu = Math.max(appassimento, flosce * .8);
+    const chiave = nascosti + ':' + giu.toFixed(2) + ':' + chiaveTagli;
     if (chiave === chiavePrima) return;
     chiavePrima = chiave;
     visibili.length = 0; nascostiSet.clear();
@@ -464,8 +494,8 @@ function pianta(f, soil, ring, dati) {
       if (k < nascosti || tagli[idx] < .02) { f.m.setMatrixAt(idx, zero); return; }
       // quando soffre i ciuffi scendono un po' e si appiattiscono: la chioma si affloscia
       const { pos, q, sc } = forme[idx];
-      vp.copy(pos); vp.y -= appassimento * (.06 + .1 * f.periferia[idx]);
-      vs.copy(sc); vs.y *= 1 - .4 * appassimento; vs.x *= 1 - .08 * appassimento; vs.z *= 1 - .08 * appassimento;
+      vp.copy(pos); vp.y -= giu * (.06 + .1 * f.periferia[idx]);
+      vs.copy(sc); vs.y *= 1 - .4 * giu; vs.x *= 1 - .08 * giu; vs.z *= 1 - .08 * giu;
       if (tagli[idx] !== undefined) vs.multiplyScalar(tagli[idx]);
       m4.compose(vp, q, vs);
       const piega = dati.pieghe?.[dati.padDi[idx]];
@@ -479,6 +509,8 @@ function pianta(f, soil, ring, dati) {
     for (let i = 0; i < f.healthy.length; i++) {
       dati.colore(i, anno, p.thirst, tmpC);
       if (appassimento > 0) tmpC.lerp(SECCO, appassimento * .55);
+      // troppa acqua: foglie di un verde-giallo pallido, a chiazze (non il bruno secco della sete)
+      if (flosce > 0 && i % 5 < 3) tmpC.lerp(PALLIDO, flosce * .55);
       f.m.setColorAt(i, tmpC);
     }
     f.m.instanceColor.needsUpdate = true;
@@ -491,6 +523,7 @@ function pianta(f, soil, ring, dati) {
     m.visible = false; dati.g.add(m); cadute.push({ m, v: 0, ph: i * 1.7, terra: -1, attiva: false });
   }
   let accumulo = 0, orologio = null;
+  const pozza = pozzaSu(soil);
 
   const p = {
     ...dati,
@@ -532,6 +565,12 @@ function pianta(f, soil, ring, dati) {
     },
     // 0 = terriccio umido (scuro), 1 = secco (chiaro)
     setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
+    // troppa acqua: flosce 0..1 (foglie che si afflosciano e impallidiscono), fradicio 0..1 (il vaso); dopo setSoil
+    setRistagno(v, fradicio) {
+      pozza(fradicio);
+      if (Math.abs(v - flosce) < .005) return;
+      flosce = v; colora(); chioma();
+    },
     // punto dell'anno: 0 = inizio primavera, 1 estate, 2 autunno, 3 inverno, fino a 4
     setStagione(pAnno) {
       const a = aspettoAnno(pAnno);

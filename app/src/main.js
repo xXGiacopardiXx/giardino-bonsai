@@ -133,6 +133,7 @@ function avvia() {
     if (!annaffiando) {
       acero.setThirst(v.ingiallimento);
       acero.setSoil(v.terriccio);
+      acero.setRistagno(v.flosce, Math.min(1, v.ristagno / 1.5));
       acero.ring.visible = v.haSete || (scelta === 'acqua' && v.puoAnnaffiare);
       acero.setAppassimento(v.appassimento);
     }
@@ -141,6 +142,7 @@ function avvia() {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
       pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio); pianta.setSalute(c.salute);
+      pianta.setRistagno(c.flosce, Math.min(1, c.ristagno / 1.5));
       pianta.ring.visible = c.haSete || (scelta === 'acqua' && c.puoAnnaffiare);
     }
     acero.filo.setRami(v.rami);
@@ -211,6 +213,13 @@ function avvia() {
   const annaffiature = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaAnnaffiatura(scene, alberi.cure[p], {
     assorbita: () => { if (p === 'acero') ui.nascondiAvvisoSete(); suoni.assorbe(); },
     completata: () => {
+      if (esiti[p].esito === 'troppa') {
+        const c = p === 'acero' ? vista(stato) : vista(stato).conifere[p];
+        ui.toast(c.marciume ? `Il vaso è pieno d'acqua e le radici non respirano: cominciano a marcire. Lascialo asciugare ${giorniTesto(c.giorniAsciutto)} senza annaffiare: si riprenderà.`
+          : c.troppaAcqua ? `Troppa acqua: le foglie si afflosciano. Salta l'acqua per ${giorniTesto(c.giorniAsciutto)} e tornerà come prima.`
+          : `L'acqua in più ristagna nel vaso. Per stavolta niente di grave: lascia asciugare il terriccio prima della prossima volta.`, 5500);
+        disegna(); return;
+      }
       if (p === 'acero') ui.mostraIdratato();
       const { semi, bonusSerie } = esiti[p];
       if (semi) { ui.guadagnaSemi(semi, stato.semi - bonusSerie, p); suoni.semi(); }
@@ -220,17 +229,23 @@ function avvia() {
       if (p === 'acero') guida.evento('annaffiato');
     },
   })]));
-  function annaffiaPianta(p) {
+  // Troppa acqua (sezione 6.3): col terriccio umido si chiede prima, con gentilezza; si può insistere,
+  // ma l'acqua in più ristagna nel vaso
+  async function annaffiaPianta(p, forza = false) {
     if (scelta === 'acqua') annullaScelta();
     if (annaffiature[p].attiva) return;
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
-    const esito = annaffia(stato, ora(), p);
+    const esito = annaffia(stato, ora(), p, forza);
     if (esito.esito === 'umido') {
-      ui.toast(p === 'acero' ? 'Il terriccio è ancora umido: l\'acqua non viene assorbita. Riprova più tardi.'
-        : `${IL[p]} ha ancora il terriccio umido: le conifere vogliono che si asciughi quasi del tutto. Riprova tra qualche giorno.`, 4000);
-      disegna(); return;
+      disegna();
+      const c = p === 'acero' ? vista(stato) : vista(stato).conifere[p];
+      const testo = c.ristagno > 0 ? `Il vaso ${DEL[p]} è già fradicio: le radici hanno bisogno d'aria. Lascialo asciugare ancora ${giorniTesto(c.giorniAsciutto)}.`
+        : p === 'acero' ? 'Il terriccio dell\'acero è ancora umido: per ora non ha sete. Se annaffi adesso, l\'acqua in più ristagna nel vaso.'
+        : `Il terriccio ${DEL[p]} è ancora umido. Le conifere vogliono che si asciughi quasi del tutto: troppa acqua fa marcire le radici.`;
+      if (await ui.chiedi(testo, 'Annaffia lo stesso', 'Aspetto')) annaffiaPianta(p, true);
+      return;
     }
-    if (esito.esito !== 'ok') return;
+    if (esito.esito !== 'ok' && esito.esito !== 'troppa') return;
     esiti[p] = esito;
     salva(stato);
     annaffiature[p].avvia();

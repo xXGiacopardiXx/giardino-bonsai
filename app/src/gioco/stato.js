@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 13;
+export const VERSIONE = 14;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40 };
@@ -47,6 +47,21 @@ export const SETE_PER_ANNAFFIARE = 0.5; // sotto questa soglia il terriccio è a
 // Le fasi della sete (FASI) sono le stesse: per le conifere arrivano solo più tardi.
 export const SETE_SPECIE = { acero: 1, pino: 0.28, ginepro: 0.33 };
 const SETE_MASSIMA = 60;               // oltre non cambia più niente
+
+// Troppa acqua (sezione 6.3): con il terriccio ancora umido si può annaffiare lo stesso, ma l'acqua in più
+// ristagna nel vaso. Il ristagno si misura come la sete, in giorni di asciugatura della specie: finché c'è,
+// il terriccio non si asciuga (prima deve andarsene l'acqua in più). Così le conifere, che asciugano piano,
+// restano fradice molto più a lungo dell'acero. Da 1 le foglie si afflosciano e la crescita rallenta;
+// da 2 le radici cominciano a marcire: niente crescita e la chioma si dirada un po' (mai sotto RISTAGNO_SALUTE).
+// Si guarisce saltando l'acqua finché il vaso si asciuga.
+// annaffiando subito dopo l'ultima volta (meno se il terriccio era quasi asciutto): una volta di troppo lascia il
+// terriccio fradicio, due afflosciano le foglie, tre fanno marcire le radici
+const RISTAGNO_PER_ANNAFFIATURA = 0.8;
+const RISTAGNO_MASSIMO = 3;
+// l'acqua in più scola dai fori del vaso: anche nelle conifere se ne va in meno di una settimana
+const SCOLO_MINIMO = 0.6;
+export const FLOSCE_DA = 1, MARCIUME_DA = 2;
+const RISTAGNO_SALUTE = 0.6;           // le radici fradice non diradano la chioma oltre questo punto
 const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma restano sempre
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
 const RIPRESA_AL_GIORNO = 0.15;        // da quasi spoglia a piena in 5-6 giorni di cure
@@ -165,7 +180,7 @@ const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
-const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
+const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ristagno: 0, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
 function potaturaConifera(p) {
   return { germogli: [], contatore: 0, vecchi: [], rami: Array.from({ length: RAMI_SPECIE[p] }, () => ({ piega: 0, filo: null, segno: 0 })) };
@@ -181,7 +196,7 @@ export function nuovoStato(ora) {
     aggiornato: ora,
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
-    albero: { sete: 1, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
+    albero: { sete: 1, ristagno: 0, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
@@ -251,6 +266,12 @@ export function migra(stato) {
     for (const p of ['pino', 'ginepro']) Object.assign(stato.conifere[p], stileNuovo(p));
     stato.versione = 13;
   }
+  // troppa acqua: nessun vaso fradicio
+  if (stato.versione === 13) {
+    stato.albero.ristagno = 0;
+    for (const p of ['pino', 'ginepro']) stato.conifere[p].ristagno = 0;
+    stato.versione = 14;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -271,8 +292,20 @@ function vigore(stagione, sete) {
 }
 // la crescita vera: il concime la spinge, i parassiti non curati la frenano
 function vigoreDi(a, stagione, t) {
-  return vigore(stagione, a.sete) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1) * (a.rinvaso?.stretto ? VIGORE_VASO_STRETTO : 1);
+  return vigore(stagione, a.sete) * fradicio(a) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1) * (a.rinvaso?.stretto ? VIGORE_VASO_STRETTO : 1);
 }
+
+// con le radici fradice la pianta cresce meno (foglie flosce) o niente (radici che marciscono)
+const fradicio = (a) => (a.ristagno ?? 0) < FLOSCE_DA ? 1 : a.ristagno < MARCIUME_DA ? 0.5 : 0;
+// fin dove può arrivare la chioma con le radici fradice: scende piano oltre il marciume
+const saluteRistagno = (r) => r <= MARCIUME_DA ? 1 : Math.max(RISTAGNO_SALUTE, 1 - (r - MARCIUME_DA) * 0.4);
+// la terra si asciuga: prima scola l'acqua in più (scolo: quanta in questo passo), poi torna la sete
+function asciuga(c, quanto, scolo) {
+  const via = Math.min(c.ristagno, scolo);
+  c.ristagno -= via;
+  c.sete = Math.min(SETE_MASSIMA, c.sete + quanto * (1 - via / scolo));
+}
+const scoloSpecie = (p) => Math.max(SETE_SPECIE[p], SCOLO_MINIMO);
 
 // Fin dove può arrivare la chioma con una certa sete: a lungo senz'acqua si perdono i rametti periferici
 function saluteMassima(sete) {
@@ -295,14 +328,14 @@ export function avanza(stato, ora) {
     const cal = calendario(stato.inizio, t + passo / 2), { stagione } = cal;
     // vaso stretto: le radici riempiono il vaso, la terra trattiene meno acqua
     for (const p in PIANTE) { const c = curaDi(stato, p); c.rinvaso.stretto = vasoStretto(c, cal); }
-    a.sete = Math.min(SETE_MASSIMA, a.sete + giorni * FATTORE_SETE[stagione] * (a.rinvaso.stretto ? SETE_VASO_STRETTO : 1));
-    for (const p of ['pino', 'ginepro']) {
-      const c = stato.conifere[p];
-      c.sete = Math.min(SETE_MASSIMA, c.sete + giorni * FATTORE_SETE[stagione] * SETE_SPECIE[p] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1));
+    for (const p in PIANTE) {
+      const c = curaDi(stato, p);
+      const k = giorni * FATTORE_SETE[stagione] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
+      asciuga(c, k * SETE_SPECIE[p], k * scoloSpecie(p));
     }
-    const max = saluteMassima(a.sete);
+    const max = Math.min(saluteMassima(a.sete), saluteRistagno(a.ristagno));
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
-    else if (a.sete < 2 && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t));
+    else if (a.sete < 2 && a.ristagno < FLOSCE_DA && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t));
     if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
@@ -312,9 +345,9 @@ export function avanza(stato, ora) {
     for (const p of ['pino', 'ginepro']) {
       const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t), k = RITMO_CHIOMA[p];
       // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
-      const maxC = saluteMassima(c.sete);
+      const maxC = Math.min(saluteMassima(c.sete), saluteRistagno(c.ristagno));
       if (c.salute > maxC) c.salute = Math.max(maxC, c.salute - giorni * PERDITA_AL_GIORNO * k);
-      else if (c.sete < 2 && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t));
+      else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t));
       if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
       cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni);
@@ -364,11 +397,11 @@ function cresceFilo(rami, presa, giorni) {
 function nuovoGiorno(stato, ora) {
   const a = stato.albero;
   const { stagione, giornoStagione } = calendario(stato.inizio, ora);
-  if (vigore(stagione, a.sete) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
+  if (vigore(stagione, a.sete) * fradicio(a) > 0) for (let i = stagione === 0 ? 2 : 1; i > 0; i--) spuntaGermoglio(a);
   // conifere: candele del pino in primavera e nei primi giorni d'estate, punte del ginepro in primavera
   // ed estate, aghi vecchi del pino in autunno
   const pino = stato.conifere.pino, ginepro = stato.conifere.ginepro;
-  if (vigore(stagione, pino.sete) > 0) {
+  if (vigore(stagione, pino.sete) * fradicio(pino) > 0) {
     if (stagione === 0) { spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE); spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE); }
     if (stagione === 1 && giornoStagione <= 3) spuntaGermoglio(pino, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
   }
@@ -377,7 +410,7 @@ function nuovoGiorno(stato, ora) {
     const id = ++pino.contatore;
     pino.vecchi.push({ id, posto: liberi[(id * 3 + 1) % liberi.length] });
   }
-  if (vigore(stagione, ginepro.sete) > 0 && stagione <= 1) spuntaGermoglio(ginepro, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
+  if (vigore(stagione, ginepro.sete) * fradicio(ginepro) > 0 && stagione <= 1) spuntaGermoglio(ginepro, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
   // parassiti: al massimo un attacco alla volta per pianta; mai con l'olio di neem che fa effetto
   for (const pianta in PIANTE) {
     const c = curaDi(stato, pianta);
@@ -437,13 +470,20 @@ function registraCura(stato, ora) {
   return 0;
 }
 
-// esito: 'ok' oppure 'umido' (terriccio ancora bagnato, l'acqua non viene assorbita)
+// esito: 'ok'; 'umido' (terriccio ancora bagnato: non si annaffia, a meno di insistere con forza);
+// 'troppa' (annaffiata lo stesso: l'acqua in più ristagna nel vaso, niente Semi né serie)
 // pianta: 'acero' (predefinita), 'pino' o 'ginepro'
-export function annaffia(stato, ora, pianta = 'acero') {
+export function annaffia(stato, ora, pianta = 'acero', forza = false) {
   avanza(stato, ora);
   const a = pianta === 'acero' ? stato.albero : stato.conifere[pianta];
   if (!a) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
-  if (a.sete < SETE_PER_ANNAFFIARE) return { esito: 'umido', semi: 0, bonusSerie: 0 };
+  if (a.sete < SETE_PER_ANNAFFIARE && !forza) return { esito: 'umido', semi: 0, bonusSerie: 0 };
+  if (a.sete < SETE_PER_ANNAFFIARE) {
+    // più il terriccio era bagnato, più acqua resta nel vaso
+    a.ristagno = Math.min(RISTAGNO_MASSIMO, a.ristagno + RISTAGNO_PER_ANNAFFIATURA * (1 - a.sete / SETE_PER_ANNAFFIARE));
+    a.sete = 0; a.ultimaAcqua = ora;
+    return { esito: 'troppa', semi: 0, bonusSerie: 0 };
+  }
   a.sete = 0; a.ultimaAcqua = ora;
   if (pianta === 'acero') stato.oggi.acqua = true;
   const semi = completaSfida(stato, 'acqua', pianta);
@@ -648,12 +688,13 @@ function vistaRami(rami, ritmo) {
     segno: r.segno,
   }));
 }
-// come sta una pianta con l'acqua, dalla sua sete
-function vistaAcqua(sete) {
+// come sta una pianta con l'acqua, dalla sua sete (e dall'acqua in più che ristagna nel vaso)
+function vistaAcqua(sete, ristagno = 0, asciugaAlGiorno = 1) {
   let fase = 0;
   FASI.forEach((f, i) => { if (sete >= f.da) fase = i; });
   return {
-    sete, fase, nomeFase: FASI[fase].nome,
+    sete, fase, nomeFase: ristagno >= MARCIUME_DA ? 'Radici fradice' : ristagno >= FLOSCE_DA ? 'Troppa acqua' : ristagno > 0 ? 'Terriccio fradicio' : FASI[fase].nome,
+    ...vistaRistagno(ristagno, asciugaAlGiorno),
     haSete: sete >= FASI[1].da,
     puoAnnaffiare: sete >= SETE_PER_ANNAFFIARE,
     acqua: limita(1 - sete / FASI[4].da),
@@ -661,6 +702,19 @@ function vistaAcqua(sete) {
     terriccio: limita(sete / 1.5),
   };
 }
+// troppa acqua: quanto (0 = niente), foglie flosce (0..1, per la scena), radici che marciscono,
+// e fra quanti giorni il vaso torna asciutto se si salta l'acqua
+function vistaRistagno(r, asciugaAlGiorno) {
+  return {
+    ristagno: r,
+    troppaAcqua: r >= FLOSCE_DA,
+    marciume: r >= MARCIUME_DA,
+    flosce: limita((r - 0.5) / 1.5),
+    giorniAsciutto: r > 0 ? Math.max(1, Math.ceil(r / asciugaAlGiorno - 1e-9)) : 0,
+  };
+}
+// quanta acqua in più scola dal vaso di una pianta in un giorno, adesso
+const asciugaAlGiorno = (c, p, stagione) => FATTORE_SETE[stagione] * scoloSpecie(p) * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
 const giorniFino = (fino, t) => Math.ceil((fino - t) / GIORNO - 1e-9);
 function vistaCura(c, t, stagione) {
   const ore = oreParassiti(c, t);
@@ -707,7 +761,7 @@ export function vista(stato) {
     // 0..1: quanto la pianta sta soffrendo oltre la semplice sete (stress medio e oltre), per la scena
     appassimento: limita((a.sete - FASI[3].da) / (FASI[5].da - FASI[3].da)),
     fase,
-    nomeFase: FASI[fase].nome,
+    ...vistaAcqua(a.sete, a.ristagno, asciugaAlGiorno(a, 'acero', cal.stagione)),
     haSete,
     puoAnnaffiare: a.sete >= SETE_PER_ANNAFFIARE,
     // 0 = foglie sane, 1 = ingiallite: si vede dal primo giorno, è piena dal quarto
@@ -753,7 +807,7 @@ export function vista(stato) {
       const c = stato.conifere[p];
       const rami = vistaRami(c.rami, PRESA_AL_GIORNO * PRESA_SPECIE[p] * vigoreDi(c, cal.stagione, stato.aggiornato));
       return [p, {
-        ...vistaAcqua(c.sete),
+        ...vistaAcqua(c.sete, c.ristagno, asciugaAlGiorno(c, p, cal.stagione)),
         salute: c.salute,
         germogli: c.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
         vecchi: c.vecchi.map(x => ({ ...x })),
