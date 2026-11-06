@@ -126,7 +126,15 @@ button{touch-action:manipulation}
 .negozio-semi svg{width:4.6cqw;height:4.6cqw}
 .negozio-x{all:unset;cursor:pointer;width:8.6cqw;height:8.6cqw;display:grid;place-items:center;border-radius:50%;background:linear-gradient(#ff8a7a,#e0382a);border:.5cqw solid var(--ink);box-shadow:0 .6cqw 0 var(--ink);color:#fff;font:700 5.6cqw/1 var(--display);text-shadow:0 .3cqw 0 var(--ink)}
 .negozio-sotto{margin:2.2cqw 0 2cqw;font:600 3.4cqw/1 var(--display);color:#8a6a48}
-.negozio-lista{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2cqw}
+/* l'elenco scorre se gli articoli non stanno tutti */
+.negozio-lista{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2cqw;max-height:56vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:.6cqw .6cqw 1.6cqw;margin:0 -.6cqw}
+/* categorie della scheda Cura */
+.negozio-categorie{display:flex;gap:1.6cqw;margin-top:2cqw;overflow-x:auto}
+.negozio-categorie[hidden]{display:none}
+.categoria{all:unset;cursor:pointer;flex:none;padding:1.4cqw 2.8cqw;border-radius:99px;border:.45cqw solid var(--ink);background:#fffaf0;font:700 3cqw/1 var(--display);color:#8a6a48}
+.categoria.on{background:linear-gradient(#a5e36a,#58a32b);color:#fff;text-shadow:0 .3cqw 0 var(--ink)}
+.vaso-img{position:relative}
+.prodotto-badge{position:absolute;top:.8cqw;right:.8cqw;padding:.5cqw 1.4cqw;border-radius:99px;background:var(--ink);color:#fff7e4;font:700 2.6cqw/1 var(--display)}
 .vaso{display:flex;flex-direction:column;align-items:center;gap:1.2cqw;padding:2cqw 1.4cqw 2.2cqw;border-radius:3.6cqw;background:#fffaf0;border:.5cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);text-align:center}
 .vaso.in-uso{background:linear-gradient(#f3ffe6,#d6f3b8);border-color:#2f6a1a;box-shadow:0 .7cqw 0 #2f6a1a}
 .vaso-img{width:100%;aspect-ratio:64/50;border-radius:2.4cqw;background:radial-gradient(circle at 50% 70%,#e7f3f6,#bfe0ea)}

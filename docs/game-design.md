@@ -213,7 +213,7 @@ Innaffiare più di 2 volte al giorno per più giorni porta a foglie flosce e mar
 
 Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anche acqua, potatura e filo valgono per tutte, ognuna con le sue regole (sezioni 6.1.4, 4.3 e 4.2.2).
 
-- **Prodotti:** si comprano nel **negozio, scheda Cura**, a confezioni da 3 dosi; ogni uso consuma una dose. Alcuni sono **specifici** per una pianta (più efficaci), altri **generali** per tutte:
+- **Prodotti:** si comprano nel **negozio, scheda Cura**, a confezioni da 3 dosi; ogni uso consuma una dose. La scheda è divisa in categorie (Concimi, Contro gli afidi, Terricci) con schede compatte come i vasi, tre per riga, le dosi che hai nell'angolo del disegno; se gli articoli non stanno nello schermo l'elenco scorre. Alcuni sono **specifici** per una pianta (più efficaci), altri **generali** per tutte:
 
 | Prodotto | Per | Effetto | Prezzo (3 dosi) |
 |---|---|---|---|

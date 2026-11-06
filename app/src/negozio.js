@@ -5,6 +5,9 @@
 // I cataloghi arrivano dalla vista del motore; comprare e scegliere li decide main.js.
 import { iconaProdotto, perChi } from './icone-cura.js';
 
+// categorie della scheda Cura: tipo del prodotto (PRODOTTI nel motore), nome del pulsante, riga sotto
+const CATEGORIE = [['concime', 'Concimi', 'Concimi: la pianta cresce di più per una stagione'], ['trattamento', 'Contro gli afidi', 'Trattamenti contro gli afidi'], ['terriccio', 'Terricci', 'Terricci per il rinvaso']];
+
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
 // disegnino di ogni vaso, con i colori della scena (scena/alberi.js, VASI_FORME)
@@ -33,6 +36,7 @@ export function creaNegozio(azioni) {
         <button class="negozio-x" data-a="chiudi" aria-label="Chiudi il negozio">×</button>
       </div>
       <div class="negozio-schede" data-v="schede"><button class="scheda" data-scheda="vasi">Vasi</button><button class="scheda" data-scheda="cura">Cura</button></div>
+      <div class="negozio-categorie" data-v="categorie" hidden>${CATEGORIE.map(([id, nome]) => `<button class="categoria" data-cat="${id}">${nome}</button>`).join('')}</div>
       <p class="negozio-sotto" data-v="sotto">Vasi per l'acero</p>
       <div class="negozio-lista" data-v="lista"></div>
       <button class="negozio-vai" data-a="negozio" hidden>Altri vasi nel negozio</button>
@@ -40,7 +44,7 @@ export function creaNegozio(azioni) {
   document.getElementById('screen').appendChild(el);
   const v = (nome) => el.querySelector(`[data-v="${nome}"]`);
   const lista = v('lista'), semiEl = v('semi'), vai = el.querySelector('.negozio-vai');
-  let ultimaVista = null, modo = 'negozio', scheda = 'vasi';
+  let ultimaVista = null, modo = 'negozio', scheda = 'vasi', categoria = 'concime';
 
   function chiudi() { el.hidden = true; }
   el.addEventListener('click', (e) => {
@@ -53,6 +57,7 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'negozio') api.apri('negozio');
     else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
     else if (b.dataset.scheda) api.apri('negozio', b.dataset.scheda);
+    else if (b.dataset.cat) { categoria = b.dataset.cat; api.apri('negozio', 'cura'); }
   });
 
   const api = {
@@ -66,8 +71,11 @@ export function creaNegozio(azioni) {
       v('titolo').textContent = modo === 'aspetto' ? 'Aspetto' : 'Negozio';
       v('schede').hidden = modo === 'aspetto';
       el.querySelectorAll('.scheda').forEach(b => b.classList.toggle('on', b.dataset.scheda === scheda));
+      v('categorie').hidden = modo !== 'negozio' || scheda !== 'cura';
+      el.querySelectorAll('.categoria').forEach(b => b.classList.toggle('on', b.dataset.cat === categoria));
+      lista.scrollTop = 0;
       v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
-        : scheda === 'cura' ? 'Concimi e trattamenti: ogni confezione ha 3 dosi' : 'Vasi per l\'acero';
+        : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + ' (3 dosi a confezione)' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -78,7 +86,8 @@ export function creaNegozio(azioni) {
       semiEl.textContent = vista.semi;
       if (modo === 'negozio' && scheda === 'cura') {
         vai.hidden = true;
-        lista.innerHTML = vista.prodotti.map(p => `<div class="vaso prodotto"><div class="vaso-img">${iconaProdotto(p.id)}</div><span class="vaso-nome">${p.nome}</span><span class="prodotto-per">${perChi(p.piante)}</span><span class="prodotto-dosi">${p.dosi ? `Ne hai ${p.dosi}` : 'Non ne hai'}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="prodotto" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('');
+        // schede compatte come quelle dei vasi: le dosi che hai stanno nell'angolo del disegno
+        lista.innerHTML = vista.prodotti.filter(p => p.tipo === categoria).map(p => `<div class="vaso prodotto"><div class="vaso-img">${iconaProdotto(p.id)}${p.dosi ? `<span class="prodotto-badge">×${p.dosi}</span>` : ''}</div><span class="vaso-nome">${p.nome}</span><span class="prodotto-per">${perChi(p.piante)}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="prodotto" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('');
         return;
       }
       const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi;
