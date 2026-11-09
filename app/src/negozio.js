@@ -66,7 +66,8 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'negozio') api.apri('negozio');
     else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
     else if (b.dataset.a === 'deco') azioni.compraDecorazione(b.dataset.id);
-    else if (b.dataset.a === 'metti' || b.dataset.a === 'togli') azioni.mettiDecorazione(b.dataset.id, b.dataset.a === 'metti');
+    else if (b.dataset.a === 'metti') azioni.mettiDecorazione(b.dataset.id, true);
+    else if (b.dataset.a === 'sposta') azioni.sposta(b.dataset.id);
     else if (b.dataset.scheda) api.apri('negozio', b.dataset.scheda);
     else if (b.dataset.cat) { categoria = b.dataset.cat; api.apri('negozio', 'cura'); }
   });
@@ -87,7 +88,7 @@ export function creaNegozio(azioni) {
       lista.scrollTop = 0;
       v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
         : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + ' (3 dosi a confezione)'
-        : scheda === 'giardino' ? 'Decorazioni: ognuna ha il suo posto nel giardino' : 'Vasi per l\'acero';
+        : scheda === 'giardino' ? 'Decorazioni: mettile dove vuoi nel giardino' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -104,9 +105,9 @@ export function creaNegozio(azioni) {
       }
       if (modo === 'negozio' && scheda === 'giardino') {
         vai.hidden = true;
-        // comprate: si tolgono e si rimettono quando si vuole
+        // comprate: si spostano dove si vuole; quelle messe da parte si rimettono
         lista.innerHTML = vista.decorazioni.map(d => {
-          const pulsante = d.tua ? `<button class="vaso-b ${d.messa ? 'togli' : 'usa'}" data-a="${d.messa ? 'togli' : 'metti'}" data-id="${d.id}">${d.messa ? 'Togli' : 'Metti'}</button>`
+          const pulsante = d.tua ? `<button class="vaso-b usa" data-a="${d.messa ? 'sposta' : 'metti'}" data-id="${d.id}">${d.messa ? 'Sposta' : 'Metti'}</button>`
             : `<button class="vaso-b compra${vista.semi < d.prezzo ? ' caro' : ''}" data-a="deco" data-id="${d.id}" aria-label="Compra per ${d.prezzo} Semi">${d.prezzo}${SEME}</button>`;
           return `<div class="vaso${d.messa ? ' in-uso' : ''}" title="${d.descrizione}"><div class="vaso-img">${disegnoDeco(d.id)}</div><span class="vaso-nome">${d.nome}</span>${pulsante}</div>`;
         }).join('');

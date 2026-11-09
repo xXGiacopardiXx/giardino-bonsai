@@ -299,9 +299,9 @@ Un album dei ricordi di ogni pianta, per vedere quanto è cambiata con le stagio
 
 ### 8.2 Decorazioni
 
-Prima versione, semplice: ogni decorazione ha **un posto fisso** sull'isola, scelto perché stia bene (lo spostamento libero, alla Tiny Glade, è rimandato).
+Ogni decorazione si mette **dove si vuole** sul prato e si gira, così ogni giardino è unico.
 
-| Decorazione | Semi | Dove |
+| Decorazione | Semi | Dove compare appena comprata |
 |---|---|---|
 | Pietre impilate | 50 | sul prato, accanto al sentiero |
 | Panchina di legno | 90 | dietro al ginepro, rivolta verso la ghiaia |
@@ -309,10 +309,15 @@ Prima versione, semplice: ogni decorazione ha **un posto fisso** sull'isola, sce
 | Gatto che dorme | 150 | al sole accanto al pino, respira piano |
 | Ponticello rosso | 200 | ad arco sopra il laghetto delle carpe |
 
-- Si comprano dal **Negozio, scheda Giardino**. La decorazione comprata compare subito al suo posto con un saltello e le stelline, e il negozio si chiude per mostrarla.
-- Quelle già comprate hanno **Togli / Metti** nella stessa scheda: si possono togliere e rimettere gratis quando si vuole.
-- Dove c'è una decorazione l'erba e i fiorellini non crescono, così niente passa attraverso i modelli.
+- Si comprano dal **Negozio, scheda Giardino**. La decorazione comprata spunta con un saltello e le stelline nel suo posto iniziale (o lì vicino, se è occupato) e si passa subito a **Sposta**, per metterla dove si vuole.
+- **Sposta:** si entra toccando una decorazione nel giardino, oppure con Sposta nella scheda Giardino. Spariscono etichette e barra; in alto il nome, in basso **Togli**, **Ruota** e **Fatto**.
+  - Col dito si trascina la decorazione sul prato (si solleva un poco, come presa in mano); un tocco sul prato la porta lì.
+  - Sotto c'è un anello che pulsa: **verde** dove si può posare, **rosso** dove no. Lasciata in un posto sbagliato torna dov'era, con una scritta breve: "Lì è fuori dal prato", "Nel laghetto ci va solo il ponticello", "Lì c'è già qualcosa".
+  - Non si può posare sulle piante (con il loro tavolo o la loro lastra), sulla lanterna, sulla pietra col muschio, sopra un'altra decorazione, oltre il bordo del prato né dietro la staccionata. Nel laghetto va solo il ponticello. Sulla ghiaia invece sì.
+  - **Ruota** la gira di un ottavo di giro. **Togli** la mette da parte: si rimette con Metti nella scheda Giardino e torna dov'era (o lì vicino, se intanto quel posto si è occupato).
+- La posizione e la rotazione di ogni decorazione si salvano nella partita. Dove c'è una decorazione l'erba e i fiorellini non crescono, e la seguono quando si sposta.
 - Nessun effetto sulle piante: le decorazioni sono solo per il piacere del giardino.
+- Più avanti: altre decorazioni, e forse spostare anche le cose fisse (lanterna, pietre del sentiero).
 
 ## 9. Stile grafico
 
@@ -452,7 +457,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, a posto fisso (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

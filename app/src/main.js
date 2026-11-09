@@ -31,7 +31,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -157,7 +157,7 @@ function avvia() {
     negozio?.mostra(v);
     cure?.mostra(v);
     rinvasoScena.setRinvaso(v.rinvaso);
-    decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa).map(d => d.id));
+    decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa && d.dove).map(d => ({ id: d.id, ...d.dove })));
     giardino.liberaErba(decorazioni.zone());
     for (const p in curaScene) {
       const c = v.cura[p];
@@ -405,19 +405,20 @@ function avvia() {
       const p = vista(stato).prodotti.find(x => x.id === id);
       ui.toast(`${p.nome}: ${p.dosi} dosi nell\'inventario. Per usarlo tocca una pianta e scegli Cura.`, 3500);
     },
-    // decorazioni (sezione 8.2): la comprata spunta subito nel giardino; si chiude il negozio per vederla
+    // decorazioni (sezione 8.2): la comprata spunta nel giardino e si può subito spostare dove si vuole
     compraDecorazione(id) {
       const esito = compraDecorazione(stato, id);
       if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
       if (esito.esito !== 'ok') return;
       salva(stato); negozio.chiudi(); disegna(); suoni.magia();
-      const d = vista(stato).decorazioni.find(x => x.id === id);
-      ui.toast(`${d.nome}: ora è nel giardino! Si toglie e si rimette da Negozio, scheda Giardino.`, 4000);
+      sposta(id);
     },
     mettiDecorazione(id, si) {
       if (!mettiDecorazione(stato, id, si)) return;
-      salva(stato); disegna(); suoni.tocco();
+      salva(stato); disegna(); suoni.magia();
+      if (si) sposta(id);
     },
+    sposta(id) { sposta(id); },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
       salva(stato); disegna(); suoni.magia();
@@ -549,7 +550,7 @@ function avvia() {
   // p: pianta da fotografare, oppure null per finire
   function fotoPianta(p) {
     if (p === fotografando) return;
-    if (p) { potatura(null); filatura(null); stilatura(null); annullaScelta(); chiudiMenu(); }
+    if (p) { potatura(null); filatura(null); stilatura(null); sposta(null); annullaScelta(); chiudiMenu(); }
     if (p && !fotografando) distanzaPrima = camera.position.distanceTo(controls.target);
     fotografando = p;
     screenEl.classList.toggle('fotografando', !!p);
@@ -593,6 +594,81 @@ function avvia() {
     else if (a === 'diario') { suoni.tocco(); diario.apri(fotografando); }
     else if (a === 'fine') { suoni.tocco(); fotoPianta(null); }
   });
+
+  // --- Decorazioni dove si vuole (sezione 8.2): toccandone una (o da Sposta nel negozio) si sceglie;
+  // col dito la si trascina sul prato, un tocco sul prato la porta lì, Ruota la gira di un ottavo di giro.
+  // L'anello sotto è verde dove si può posare e rosso dove no (piante, lanterna, laghetto, fuori dal prato,
+  // altre decorazioni). Lasciata in un posto sbagliato, torna dov'era. ---
+  let spostando = null;
+  const barraSposta = document.getElementById('sposta');
+  const MOTIVO = { fuori: 'Lì è fuori dal prato.', acqua: 'Nel laghetto ci va solo il ponticello.', occupato: 'Lì c\'è già qualcosa: scegli un posto libero.' };
+  const nomeDeco = (id) => vista(stato).decorazioni.find(d => d.id === id).nome;
+  // id: decorazione da spostare, oppure null per finire
+  function sposta(id) {
+    if (id === spostando) return;
+    if (id) { potatura(null); filatura(null); stilatura(null); fotoPianta(null); annullaScelta(); chiudiMenu(); negozio.chiudi(); }
+    const prima = spostando;
+    spostando = id;
+    screenEl.classList.toggle('spostando', !!id);
+    barraSposta.hidden = !id;
+    decorazioni.seleziona(id);
+    if (id) {
+      document.getElementById('sposta-titolo').textContent = nomeDeco(id);
+      suoni.tocco();
+      if (!prima) ui.toast('Trascina col dito per spostarla, o tocca il prato dove la vuoi. Ruota per girarla.', 4500);
+    }
+  }
+  const suolo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), puntoSuolo = new THREE.Vector3();
+  // il punto del prato sotto il dito (dopo punta), oppure null
+  const sulPrato = () => raycaster.ray.intersectPlane(suolo, puntoSuolo);
+  // prova a posare la decorazione scelta: se il posto non va, resta dov'era e si dice perché
+  function posaQui(x, z, r) {
+    if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
+    const esito = posaDecorazione(stato, spostando, x, z, r);
+    decorazioni.prova(null);
+    if (esito === 'ok') { salva(stato); suoni.fruscio(.08); } else ui.toast(MOTIVO[esito] ?? 'Lì non ci sta.', 2500);
+    disegna();
+  }
+  barraSposta.addEventListener('click', (e) => {
+    const a = e.target.closest('button')?.dataset.a; if (!a || !spostando) return;
+    if (a === 'ruota') { const p = decorazioni.posizione; posaQui(p.x, p.z, p.r + Math.PI / 4); }
+    else if (a === 'togli') {
+      const id = spostando; sposta(null);
+      mettiDecorazione(stato, id, false); salva(stato); disegna(); suoni.tocco();
+      ui.toast(`${nomeDeco(id)}: messa da parte. La rimetti da Negozio, scheda Giardino.`, 3500);
+    } else { suoni.tocco(); sposta(null); }
+  });
+  // trascinare: si ascolta prima della telecamera, così il dito porta la decorazione invece di girare la scena
+  let presa = null;
+  screenEl.addEventListener('pointerdown', (e) => {
+    if (!spostando || e.target !== canvas || presa || tiro) return;
+    punta(e);
+    const id = decorazioni.tocca(raycaster);
+    if (!id || !sulPrato()) return;
+    e.stopPropagation();
+    controls.enabled = false;
+    if (id !== spostando) sposta(id);
+    const p = decorazioni.posizione;
+    presa = { id: e.pointerId, dx: p.x - puntoSuolo.x, dz: p.z - puntoSuolo.z, r: p.r, x0: e.clientX, y0: e.clientY, mosso: false };
+  }, true);
+  window.addEventListener('pointermove', (e) => {
+    if (!presa || e.pointerId !== presa.id) return;
+    if (Math.hypot(e.clientX - presa.x0, e.clientY - presa.y0) > 6) presa.mosso = true;
+    if (!presa.mosso) return;
+    punta(e); if (!sulPrato()) return;
+    const x = puntoSuolo.x + presa.dx, z = puntoSuolo.z + presa.dz;
+    decorazioni.prova({ x, z, r: presa.r, valido: postoLibero(stato, spostando, x, z) === 'ok', inMano: true });
+  });
+  const lascia = (e) => {
+    if (!presa || e.pointerId !== presa.id) return;
+    const { mosso, r } = presa; presa = null;
+    controls.enabled = true;
+    if (!mosso || e.type === 'pointercancel') { decorazioni.prova(null); return; }
+    const p = decorazioni.posizione;
+    posaQui(p.x, p.z, r);
+  };
+  window.addEventListener('pointerup', lascia);
+  window.addEventListener('pointercancel', lascia);
 
   function tagliaQui(e, r) {
     const p = stilando;
@@ -778,6 +854,11 @@ function avvia() {
     if (stilando) { tagliaQui(e, r); return; }
     if (potando) { potaQui(e, r); return; }
     if (filando || fotografando) return;
+    // spostando una decorazione, un tocco sul prato la porta lì
+    if (spostando) { if (sulPrato()) { const p = decorazioni.posizione; posaQui(puntoSuolo.x, puntoSuolo.z, p.r); } return; }
+    // un tocco su una decorazione la sceglie per spostarla
+    const deco = scelta ? null : decorazioni.tocca(raycaster);
+    if (deco) { chiudiMenu(); sposta(deco); return; }
     const quale = alberi.tocca(raycaster);
     // dopo Acqua, Pota o Filo nella barra, il tocco sceglie la pianta
     if (scelta) {

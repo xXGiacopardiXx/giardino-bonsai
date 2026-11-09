@@ -13,7 +13,7 @@ Gioco mobile rilassante sulla cura di bonsai digitali in un giardino giapponese.
 - `app/src/cure.js`: inventario (Cura nella barra) e cura di una pianta (dalla sua tendina); catalogo `PRODOTTI` nel motore, icone in `icone-cura.js`, acquisto nel negozio (scheda Cura); afidi, granuli e spray nella scena in `app/src/scena/cura.js`, per tutte e tre le piante.
 - `app/src/gioco/stili.js`: catalogo degli stili (sagome e regole) e valutazione pura della percentuale; scheda e scelta dello stile in `app/src/pannello-stile.js`.
 - `app/src/diario.js`: diario fotografico (foto salvate in IndexedDB, galleria e time-lapse); mirino e scatto in `main.js`, premio della prima foto di stagione nel motore (`fotografa`).
-- `app/src/scena/decorazioni.js`: decorazioni del giardino a posto fisso (catalogo `DECORAZIONI` e acquisti nel motore, scheda Giardino nel negozio); toglie l'erba sotto di loro con `liberaErba` di `giardino.js`.
+- `app/src/scena/decorazioni.js`: decorazioni del giardino da mettere dove si vuole (catalogo `DECORAZIONI`, acquisti e controllo del posto con `postoLibero`/`posaDecorazione` nel motore; modalità Sposta in `main.js`; scheda Giardino nel negozio); toglie l'erba sotto di loro con `liberaErba` di `giardino.js`.
 - `app/src/negozio.js`: negozio dei vasi (catalogo `VASI` e acquisti nel motore, forme dei vasi in `scena/alberi.js`).
 - `docs/guida-iphone.md`: come provare e installare l'app sull'iPhone, gratis.
 - `.github/workflows/pubblica.yml`: pubblica `app/` su GitHub Pages a ogni push su `main`.

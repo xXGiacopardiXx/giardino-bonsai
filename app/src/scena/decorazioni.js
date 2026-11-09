@@ -1,10 +1,11 @@
 // Decorazioni del giardino (game-design.md, sezione 8.2): pietre impilate, panchina, fontana di bambù,
-// gatto che dorme, ponticello rosso. Ognuna ha il suo posto sull'isola; si mostrano quelle messe nel
-// giardino (vista del motore). Una decorazione appena comprata spunta con un saltello e le stelline.
+// gatto che dorme, ponticello rosso. Ognuna sta dove l'ha messa il giocatore (vista del motore) e si
+// sposta trascinandola col dito; una decorazione appena messa spunta con un saltello e le stelline.
 // Niente numeri casuali: la sequenza con seme fisso della scena resta la stessa.
 import * as THREE from 'three';
 import { PI, M, flatGeo, mesh, tube } from './strumenti.js';
 import { creaScintille } from './alberi.js';
+import { DECORAZIONI } from '../gioco/stato.js';
 
 const BAMBU = 0xcdb46c, BAMBU_SCURO = 0x9c8448, PIETRA = 0x9d998c, PIETRA_SCURA = 0x8e8a7e;
 
@@ -88,47 +89,80 @@ const COSTRUISCI = {
   },
 };
 
-// posto sull'isola di ogni decorazione: [x, z, rotazione]
-const POSTI = {
-  pietre: [2.4, 4.45, .4],
-  panchina: [-3.3, -2.85, Math.atan2(3.5, 2.3)],
-  fontana: [-3.55, 1.75, .25],
-  gatto: [3.3, 3.05, -.6],
-  ponte: [-2.3, 3.45, 0],
-};
+// dove non deve crescere l'erba, per ogni decorazione: [dx, dz, raggio] attorno al suo posto
+const ZONE = { pietre: [[0, 0, .5]], panchina: [[0, 0, .75]], fontana: [[.1, 0, .85]], gatto: [[0, .05, .55]], ponte: [[-1.4, 0, .45], [1.4, 0, .45]] };
+const RAGGIO = Object.fromEntries(DECORAZIONI.map(d => [d.id, d.raggio]));
+const VERDE = new THREE.Color(0x8fe06a), ROSSO = new THREE.Color(0xff6a4a);
 
 // azioni: toc() (il bambù che batte, solo se i suoni sono accesi)
 export function creaDecorazioni(world, { toc }) {
   const dec = {};
   for (const id in COSTRUISCI) {
-    const [x, z, r] = POSTI[id];
-    const posto = new THREE.Group(); posto.position.set(x, 0, z); posto.rotation.y = r; posto.visible = false; world.add(posto);
+    const posto = new THREE.Group(); posto.visible = false; world.add(posto);
     const g = new THREE.Group(); posto.add(g);
-    dec[id] = { posto, anima: COSTRUISCI[id](g, { toc }), scintille: creaScintille(posto, g) };
+    dec[id] = { posto, g, dove: null, anima: COSTRUISCI[id](g, { toc }), scintille: creaScintille(posto, g) };
   }
-  // dove non deve crescere l'erba, per ogni decorazione: [dx, dz, raggio] attorno al suo posto
-  const ZONE = { pietre: [[0, 0, .5]], panchina: [[0, 0, .75]], fontana: [[.1, 0, .85]], gatto: [[0, .05, .55]], ponte: [[-1.4, 0, .45], [1.4, 0, .45]] };
-  let primaVolta = true;
+  // anello sotto la decorazione che si sta spostando: verde dove si può posare, rosso dove no
+  const anello = new THREE.Mesh(new THREE.RingGeometry(.86, 1, 48), new THREE.MeshBasicMaterial({ color: VERDE, transparent: true, opacity: .85, depthWrite: false }));
+  anello.rotation.x = -PI / 2; anello.visible = false; anello.renderOrder = 3; world.add(anello);
+  let scelta = null, prova = null, primaVolta = true, tempo = 0;
+
+  // mette il gruppo della decorazione nel punto giusto (con prova, quello mentre la si trascina)
+  function colloca(id) {
+    const d = dec[id], p = id === scelta && prova ? prova : d.dove;
+    if (!p) return;
+    d.posto.position.set(p.x, 0, p.z); d.posto.rotation.y = p.r;
+    // mentre la si trascina si solleva un poco, come presa in mano
+    d.g.position.y = id === scelta && prova?.inMano ? .14 : 0;
+    if (id === scelta) {
+      anello.position.set(p.x, .03, p.z); anello.scale.setScalar(RAGGIO[id] * 1.1);
+      anello.material.color.copy(prova && !prova.valido ? ROSSO : VERDE);
+    }
+  }
   return {
+    // lista: le decorazioni nel giardino, { id, x, z, r }; quelle nuove (dopo la prima volta) spuntano con le stelline
+    setDecorazioni(lista) {
+      for (const id in dec) {
+        const d = dec[id], qui = lista.find(x => x.id === id);
+        if (qui && !d.posto.visible && !primaVolta) d.scintille.avvia();
+        d.posto.visible = !!qui; d.dove = qui ?? null;
+        colloca(id);
+      }
+      if (scelta && !dec[scelta].posto.visible) this.seleziona(null);
+      primaVolta = false;
+    },
     // le zone senza erba delle decorazioni nel giardino, in coordinate dell'isola
     zone() {
       const z = [];
-      for (const id in dec) if (dec[id].posto.visible) {
-        const [x, zz, r] = POSTI[id];
-        for (const [dx, dz, raggio] of ZONE[id]) z.push([+(x + dx * Math.cos(r) + dz * Math.sin(r)).toFixed(3), +(zz - dx * Math.sin(r) + dz * Math.cos(r)).toFixed(3), raggio]);
+      for (const id in dec) {
+        const p = dec[id].dove; if (!p || !dec[id].posto.visible) continue;
+        for (const [dx, dz, raggio] of ZONE[id]) z.push([+(p.x + dx * Math.cos(p.r) + dz * Math.sin(p.r)).toFixed(3), +(p.z - dx * Math.sin(p.r) + dz * Math.cos(p.r)).toFixed(3), raggio]);
       }
       return z;
     },
-    // messe: gli id delle decorazioni nel giardino; quelle nuove (dopo la prima volta) spuntano con le stelline
-    setDecorazioni(messe) {
+    // la decorazione toccata dal dito (id), oppure null
+    tocca(raycaster) {
+      let meglio = null, d = Infinity;
       for (const id in dec) {
-        const d = dec[id], si = messe.includes(id);
-        if (si && !d.posto.visible && !primaVolta) d.scintille.avvia();
-        d.posto.visible = si;
+        if (!dec[id].posto.visible) continue;
+        const hit = raycaster.intersectObject(dec[id].g, true)[0];
+        if (hit && hit.distance < d) { d = hit.distance; meglio = id; }
       }
-      primaVolta = false;
+      return meglio;
     },
+    // la decorazione da spostare (id), oppure null per finire
+    seleziona(id) {
+      if (scelta && scelta !== id) { const s = scelta; scelta = null; prova = null; colloca(s); }
+      scelta = id; prova = null; anello.visible = !!id;
+      if (id) colloca(id);
+    },
+    // posizione provvisoria mentre la si trascina ({ x, z, r, valido, inMano }), oppure null
+    prova(p) { prova = p; if (scelta) colloca(scelta); },
+    // dov'è adesso la decorazione scelta (anche mentre la si trascina)
+    get posizione() { return scelta ? { ...(prova ?? dec[scelta].dove) } : null; },
     aggiorna(dt) {
+      tempo += dt;
+      if (anello.visible) anello.material.opacity = .6 + .3 * Math.sin(tempo * 5);
       for (const id in dec) {
         const d = dec[id]; if (!d.posto.visible) continue;
         d.anima?.(dt, true);

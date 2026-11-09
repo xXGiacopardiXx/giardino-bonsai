@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -872,5 +872,48 @@ test('un salvataggio della versione 15 riceve le decorazioni vuote', () => {
   vecchio.versione = 15; delete vecchio.decorazioni;
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
-  assert.deepEqual(s.decorazioni, { possedute: [], messe: [] });
+  assert.deepEqual(s.decorazioni, { possedute: [], messe: [], posti: {} });
+});
+
+test('le decorazioni si spostano e si girano dove si vuole, ma solo sul prato libero', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  compraDecorazione(s, 'gatto'); compraDecorazione(s, 'panchina');
+  assert.deepEqual(s.decorazioni.posti.gatto, { x: 3.3, z: 3.05, r: -.6 });
+  assert.equal(posaDecorazione(s, 'gatto', -1, 5, Math.PI / 2), 'ok');
+  assert.deepEqual(vista(s).decorazioni.find(d => d.id === 'gatto').dove, { x: -1, z: 5, r: 1.5708 });
+  // sull'acero, nel laghetto, oltre il bordo, dietro la staccionata, sopra la panchina: no
+  assert.equal(posaDecorazione(s, 'gatto', 0, -2.4, 0), 'occupato');
+  assert.equal(posaDecorazione(s, 'gatto', -2.3, 3.45, 0), 'acqua');
+  assert.equal(posaDecorazione(s, 'gatto', 5.5, 0, 0), 'fuori');
+  assert.equal(posaDecorazione(s, 'gatto', 0, -5.6, 0), 'fuori');
+  assert.equal(posaDecorazione(s, 'gatto', -3.3, -2.85, 0), 'occupato');
+  assert.deepEqual(s.decorazioni.posti.gatto, { x: -1, z: 5, r: 1.5708 });
+  // il ponticello invece va sul laghetto
+  compraDecorazione(s, 'ponte');
+  assert.equal(postoLibero(s, 'ponte', -2.3, 3.45), 'ok');
+  // una decorazione non comprata non si posa
+  assert.equal(posaDecorazione(s, 'fontana', 3, 3, 0), 'nessuno');
+});
+
+test('comprata o rimessa, una decorazione cerca un posto libero se il suo è occupato', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  compraDecorazione(s, 'gatto');
+  posaDecorazione(s, 'gatto', 2.4, 4.45, 0); // dove andrebbero le pietre
+  compraDecorazione(s, 'pietre');
+  const p = s.decorazioni.posti.pietre, g = s.decorazioni.posti.gatto;
+  assert.notDeepEqual([p.x, p.z], [2.4, 4.45]);
+  assert.ok(Math.hypot(p.x - g.x, p.z - g.z) >= (.4 + .45) * .85);
+  // tolta, il suo posto si occupa; rimessa, si sposta lì accanto
+  mettiDecorazione(s, 'gatto', false);
+  posaDecorazione(s, 'pietre', 2.4, 4.45, 0);
+  mettiDecorazione(s, 'gatto', true);
+  assert.equal(postoLibero(s, 'gatto', s.decorazioni.posti.gatto.x, s.decorazioni.posti.gatto.z), 'ok');
+});
+
+test('un salvataggio della versione 16 tiene le decorazioni al loro posto', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 16; vecchio.decorazioni = { possedute: ['ponte'], messe: ['ponte'] };
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.decorazioni.posti, { ponte: { x: -2.3, z: 3.45, r: 0 } });
 });

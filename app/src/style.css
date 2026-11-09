@@ -93,6 +93,10 @@ button{touch-action:manipulation}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 /* diario fotografico: il mirino nasconde etichette, barra e pulsanti; resta il riquadro 3:4 della foto */
 .fotografando .hud,.fotografando .tags,.fotografando .toolbar,.fotografando .suoni-b,.fotografando .hint{display:none}
+/* spostare una decorazione: stessi pulsanti grandi del mirino, senza il riquadro */
+.spostando .tags,.spostando .toolbar,.spostando .hint,.spostando .quest{display:none}
+.sposta-togli{color:#d8402f}
+.sposta-ruota{color:#3f92d6}
 .mirino{position:absolute;inset:0;pointer-events:none;z-index:5}
 .mirino[hidden]{display:none}
 .mirino-cornice{position:absolute;left:4cqw;right:4cqw;top:50%;height:122.7cqw;transform:translateY(-50%)}

@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 16;
+export const VERSIONE = 17;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
@@ -29,14 +29,15 @@ export const VASI = [
   { id: 'nuvola', nome: 'Crema con piedini a nuvola', prezzo: 250 },
 ];
 
-// Decorazioni del giardino (sezione 8.2): ognuna ha il suo posto sull'isola, scelto perché stia bene.
-// Comprata compare subito; dal negozio si può togliere e rimettere quando si vuole.
+// Decorazioni del giardino (sezione 8.2): ognuna si mette dove si vuole sul prato e si gira, così ogni
+// giardino è diverso. posto: dove va appena comprata ([x, z, rotazione], coordinate dell'isola);
+// raggio: il suo ingombro, per non sovrapporla alle piante e alle altre decorazioni.
 export const DECORAZIONI = [
-  { id: 'pietre', nome: 'Pietre impilate', prezzo: 50, descrizione: 'Tre sassi tondi in equilibrio, vicino al sentiero.' },
-  { id: 'panchina', nome: 'Panchina di legno', prezzo: 90, descrizione: 'Per sedersi a guardare la ghiaia rastrellata.' },
-  { id: 'fontana', nome: 'Fontana di bambù', prezzo: 120, descrizione: 'Il bambù si riempie d\'acqua, si inclina e batte sulla pietra: toc.' },
-  { id: 'gatto', nome: 'Gatto che dorme', prezzo: 150, descrizione: 'Un gatto rosso acciambellato al sole, accanto al pino.' },
-  { id: 'ponte', nome: 'Ponticello rosso', prezzo: 200, descrizione: 'Un ponte ad arco laccato sopra il laghetto delle carpe.' },
+  { id: 'pietre', nome: 'Pietre impilate', prezzo: 50, raggio: .4, posto: [2.4, 4.45, .4], descrizione: 'Tre sassi tondi in equilibrio, vicino al sentiero.' },
+  { id: 'panchina', nome: 'Panchina di legno', prezzo: 90, raggio: .65, posto: [-3.3, -2.85, .99], descrizione: 'Per sedersi a guardare la ghiaia rastrellata.' },
+  { id: 'fontana', nome: 'Fontana di bambù', prezzo: 120, raggio: .7, posto: [-3.55, 1.75, .25], descrizione: 'Il bambù si riempie d\'acqua, si inclina e batte sulla pietra: toc.' },
+  { id: 'gatto', nome: 'Gatto che dorme', prezzo: 150, raggio: .45, posto: [3.3, 3.05, -.6], descrizione: 'Un gatto rosso acciambellato al sole, accanto al pino.' },
+  { id: 'ponte', nome: 'Ponticello rosso', prezzo: 200, raggio: 1, posto: [-2.3, 3.45, 0], sullAcqua: true, descrizione: 'Un ponte ad arco laccato sopra il laghetto delle carpe.' },
 ];
 
 // Fasi della disidratazione (sezione 6.1). "da" è in giorni di sete, cioè giorni reali
@@ -214,7 +215,8 @@ export function nuovoStato(ora) {
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // decorazioni comprate e quelle messe nel giardino
-    decorazioni: { possedute: [], messe: [] },
+    // decorazioni comprate, quelle messe nel giardino e dove sono ({ x, z, r })
+    decorazioni: { possedute: [], messe: [], posti: {} },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
     conifere: { pino: coniferaNuova('pino'), ginepro: coniferaNuova('ginepro') },
     inventario: { ...INVENTARIO_INIZIALE },
@@ -294,6 +296,13 @@ export function migra(stato) {
   if (stato.versione === 14) { stato.diario = {}; stato.versione = 15; }
   // decorazioni: nessuna ancora
   if (stato.versione === 15) { stato.decorazioni = { possedute: [], messe: [] }; stato.versione = 16; }
+  // decorazioni spostabili: quelle già comprate restano nel posto dove erano
+  if (stato.versione === 16) {
+    stato.decorazioni.posti = Object.fromEntries(stato.decorazioni.possedute.map(id => {
+      const [x, z, r] = DECORAZIONI.find(d => d.id === id).posto; return [id, { x, z, r }];
+    }));
+    stato.versione = 17;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -705,7 +714,43 @@ export function compra(stato, id) {
   return { esito: 'ok', mancano: 0 };
 }
 
-// Compra una decorazione e la mette subito nel giardino. esito: 'ok', 'pochi', 'gia' o 'nessuno'
+// Il prato dell'isola, per le decorazioni (coordinate dell'isola, come la scena): le cose che non si
+// spostano, con il loro ingombro [x, z, raggio], e il laghetto (dove va solo il ponticello).
+const ISOLA_ZS = 1.32;
+const INGOMBRI = [[0, -2.4, 1.25], [-2.3, .6, 1.05], [2.1, 2.0, 1.1], [3.3, -2.4, .6], [.95, 1.05, .55]];
+const LAGHETTO = [-2.3, 3.45, 1.2];
+const distanza = (x, z, a, b) => Math.hypot(x - a, z - b);
+
+// Si può posare la decorazione id in (x, z)? esito: 'ok', 'fuori' (oltre il prato o dietro la
+// staccionata), 'acqua' (nel laghetto), 'occupato' (su una pianta, la lanterna o un'altra decorazione)
+export function postoLibero(stato, id, x, z) {
+  const d = DECORAZIONI.find(v => v.id === id);
+  if (!d) return 'nessuno';
+  // distanza dal centro misurata sull'isola ovale; sul retro c'è la staccionata
+  const rho = Math.hypot(x, z / ISOLA_ZS), dietro = z < 0 && Math.abs(Math.atan2(x, -z / ISOLA_ZS)) < 1;
+  if (rho + d.raggio * (dietro ? .5 : .7) > (dietro ? 4.3 : 4.85)) return 'fuori';
+  if (!d.sullAcqua && distanza(x, z, LAGHETTO[0], LAGHETTO[1]) < LAGHETTO[2] + d.raggio * .6) return 'acqua';
+  for (const [a, b, r] of INGOMBRI) if (distanza(x, z, a, b) < r + d.raggio * .8) return 'occupato';
+  for (const altra of stato.decorazioni.messe) {
+    const p = stato.decorazioni.posti[altra];
+    if (altra === id || !p) continue;
+    if (distanza(x, z, p.x, p.z) < (d.raggio + DECORAZIONI.find(v => v.id === altra).raggio) * .85) return 'occupato';
+  }
+  return 'ok';
+}
+
+// un posto libero vicino a quello preferito (cercando a spirale), per mettere una decorazione nel giardino
+function postoVicino(stato, id, x, z, r) {
+  for (let i = 0; i < 160; i++) {
+    const a = i * 2.39996, d = .18 * Math.sqrt(i);
+    const px = +(x + Math.cos(a) * d).toFixed(3), pz = +(z + Math.sin(a) * d).toFixed(3);
+    if (postoLibero(stato, id, px, pz) === 'ok') return { x: px, z: pz, r };
+  }
+  return { x, z, r };
+}
+
+// Compra una decorazione e la mette subito nel giardino, al suo posto o vicino se è occupato.
+// esito: 'ok', 'pochi', 'gia' o 'nessuno'
 export function compraDecorazione(stato, id) {
   const d = DECORAZIONI.find(x => x.id === id);
   if (!d) return { esito: 'nessuno', mancano: 0 };
@@ -713,17 +758,33 @@ export function compraDecorazione(stato, id) {
   if (stato.semi < d.prezzo) return { esito: 'pochi', mancano: d.prezzo - stato.semi };
   stato.semi -= d.prezzo;
   stato.decorazioni.possedute.push(id);
+  stato.decorazioni.posti[id] = postoVicino(stato, id, ...d.posto);
   stato.decorazioni.messe.push(id);
   return { esito: 'ok', mancano: 0 };
 }
 
-// Mette (si = true) o toglie una decorazione già comprata. Restituisce false se non è tua.
+// Mette (si = true) o toglie una decorazione già comprata. Rimessa, torna dov'era (o lì vicino, se
+// intanto quel posto si è occupato). Restituisce false se non è tua.
 export function mettiDecorazione(stato, id, si) {
   const dec = stato.decorazioni;
   if (!dec.possedute.includes(id)) return false;
   dec.messe = dec.messe.filter(x => x !== id);
-  if (si) dec.messe.push(id);
+  if (si) {
+    const p = dec.posti[id] ?? (([x, z, r]) => ({ x, z, r }))(DECORAZIONI.find(d => d.id === id).posto);
+    dec.posti[id] = postoLibero(stato, id, p.x, p.z) === 'ok' ? p : postoVicino(stato, id, p.x, p.z, p.r);
+    dec.messe.push(id);
+  }
   return true;
+}
+
+// Sposta e gira una decorazione nel giardino. esito: 'ok', 'nessuno' (non è tua) o quello di postoLibero
+export function posaDecorazione(stato, id, x, z, r) {
+  if (!stato.decorazioni.possedute.includes(id)) return 'nessuno';
+  const esito = postoLibero(stato, id, x, z);
+  if (esito !== 'ok') return esito;
+  stato.decorazioni.posti[id] = { x: +x.toFixed(3), z: +z.toFixed(3), r: +(((r % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)).toFixed(4) };
+  if (!stato.decorazioni.messe.includes(id)) stato.decorazioni.messe.push(id);
+  return 'ok';
 }
 
 // Mette all'albero un vaso già comprato. Restituisce false se il vaso non è tuo.
@@ -817,7 +878,7 @@ export function vista(stato) {
     // catalogo del negozio con lo stato di ogni vaso
     vasi: VASI.map(v => ({ ...v, tuo: stato.vasi.posseduti.includes(v.id), inUso: stato.vasi.scelto === v.id })),
     // catalogo delle decorazioni: comprate (tua) e messe nel giardino (messa)
-    decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id) })),
+    decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id), dove: stato.decorazioni.posti[d.id] ? { ...stato.decorazioni.posti[d.id] } : null })),
     serie: stato.serie.giorni,
     sete: a.sete,
     salute: a.salute,
