@@ -4,6 +4,7 @@
 // così il giocatore capisce la pianta invece di seguire una regola. Tono gentile, senza rimproveri né premi.
 // Ogni consiglio si mostra una volta sola (stato.maestro.visti). Puro come il resto del motore.
 import { vista } from './stato.js';
+import { STILI } from './stili.js';
 
 export const NOME_MAESTRO = 'Il maestro Ren';
 const STAGIONI = ['Primavera', 'Estate', 'Autunno', 'Inverno'];
@@ -101,6 +102,15 @@ const MOMENTI = [
           ? { fai: 'Usa l\'akadama.', perche: 'È argilla cotta in granuli: trattiene l\'acqua dentro i granuli e lascia passare l\'aria tra uno e l\'altro. È proprio quello che vogliono le radici dell\'acero.' }
           : { fai: 'Usa un terriccio drenante, meglio la miscela per conifere.', perche: 'Asciuga in fretta e lascia tanta aria: le radici delle conifere stanno bene a lungo, e il rinvaso dopo si può aspettare di più.' },
       ] })) } : null;
+  },
+  // all'inizio di un anno nuovo si sbloccano stili più difficili
+  (v) => {
+    const piante = ORDINE.map(p => ({ p, nuovi: STILI[p].filter(s => (s.anno ?? 1) === v.anno && v.stile[p].aperti.includes(s.id)) })).filter(x => x.nuovi.length);
+    return piante.length && v.anno > 1 ? { id: `stili-${v.anno}`, titolo: 'Stili nuovi',
+      intro: `Le tue piante hanno vissuto ${v.anno - 1 === 1 ? 'un anno' : (v.anno - 1) + ' anni'} con te. Il tronco si è irrobustito, i rami hanno imparato la loro strada: ora possono provare forme più difficili.`,
+      piante: piante.map(({ p, nuovi }) => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: nuovi.map(s => ({
+        fai: `Ora puoi provare il ${s.nome} (${s.sottotitolo.toLowerCase()}): tocca la pianta, poi Stile e Cambia stile.`, perche: s.perche,
+      })) })) } : null;
   },
   // la prima volta che le radici marciscono per troppa acqua
   (v) => {

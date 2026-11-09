@@ -4,6 +4,7 @@
 // I dati arrivano da main.js (valutazione della scena e vista del motore).
 
 const SIGILLO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#c4291c" stroke="#3b2716" stroke-width="1.6"/><path d="M8 12.5l2.6 2.6L16.4 9" stroke="#fff4e0" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const LUCCHETTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.4" fill="#d9b25a" stroke="#3b2716" stroke-width="1.8"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#3b2716" stroke-width="1.8"/><circle cx="12" cy="15.5" r="1.6" fill="#3b2716"/></svg>';
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
 // azioni: cambia(id), fine()
@@ -43,12 +44,20 @@ export function creaPannelloStile(azioni) {
 
   function apriScelta() {
     if (!ultimo) return;
-    const { stili, attuale, sigilli } = ultimo;
-    v(scelta, 'sotto').textContent = `Gli stili adatti ${ultimo.aChi}`;
-    v(scelta, 'lista').innerHTML = stili.map(s => `<div class="riga-prodotto${s.id === attuale ? ' in-corso' : ''}">
+    const { stili, attuale, sigilli, aperti, sblocco } = ultimo;
+    v(scelta, 'sotto').textContent = `Gli stili adatti ${ultimo.aChi}. I più difficili si aprono con gli anni.`;
+    // gli stili ancora chiusi mostrano il lucchetto, l'anno, i giorni che mancano e il perché del maestro
+    const giorni = (n) => n === 1 ? 'domani' : `tra ${n} giorni`;
+    v(scelta, 'lista').innerHTML = stili.map(s => {
+      const chiuso = !aperti.includes(s.id);
+      const destra = s.id === attuale ? '<span class="riga-manca">In corso</span>'
+        : chiuso ? `<span class="riga-manca stile-chiuso">${LUCCHETTO}Anno ${s.anno}</span>`
+        : `<button class="vaso-b usa" data-a="scegli" data-id="${s.id}">Scegli</button>`;
+      return `<div class="riga-prodotto${s.id === attuale ? ' in-corso' : ''}${chiuso ? ' chiusa' : ''}">
       <div class="riga-testo"><b>${s.nome} <small>· ${s.sottotitolo}</small>${sigilli.includes(s.id) ? ` <span class="stile-sigillo">${SIGILLO}</span>` : ''}</b>
-      <small>${s.descrizione}</small><span>Completato: +${s.premio} ${SEME}</span></div>
-      ${s.id === attuale ? '<span class="riga-manca">In corso</span>' : `<button class="vaso-b usa" data-a="scegli" data-id="${s.id}">Scegli</button>`}</div>`).join('');
+      <small>${s.descrizione}</small>${chiuso ? `<small class="stile-perche">Si apre ${giorni(sblocco[s.id])}, nell'anno ${s.anno} della pianta. ${s.perche}</small>` : ''}<span>Completato: +${s.premio} ${SEME}</span></div>
+      ${destra}</div>`;
+    }).join('');
     scelta.hidden = false;
   }
 
@@ -56,7 +65,7 @@ export function creaPannelloStile(azioni) {
     get aperto() { return !card.hidden; },
     apri() { card.hidden = false; },
     chiudi() { card.hidden = true; scelta.hidden = true; },
-    // dati: { stile, valutazione, sigilli, stili (compatibili), aChi ("all'acero", "al pino"...) }
+    // dati: { stile, valutazione, sigilli, stili (compatibili), aperti (id che si possono scegliere), sblocco ({ id: giorni }), aChi ("all'acero", "al pino"...) }
     mostra(dati) {
       ultimo = { ...dati, attuale: dati.stile.id };
       const { stile, valutazione: val, sigilli } = dati;

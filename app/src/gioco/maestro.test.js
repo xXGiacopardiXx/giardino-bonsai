@@ -84,3 +84,13 @@ test('il maestro dice come si sente ogni pianta, dal suo stato vero', () => {
   c = consiglioStagione(s);
   assert.match(c.piante.find(p => p.id === 'acero').sente, /da giorni/);
 });
+
+test('all\'anno nuovo il maestro annuncia gli stili sbloccati, spiegando perché servono anni', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(28 + 7.5)); // estate dell'anno 2: niente rinvaso in corso
+  const c = consiglioMaestro(s);
+  assert.equal(c.id, 'stili-2');
+  assert.deepEqual(c.piante.map(p => p.id), ['acero', 'ginepro', 'pino']);
+  assert.match(c.piante[0].punti[0].fai, /Bunjingi/);
+  assert.ok(c.piante[0].punti[0].perche.length > 20);
+});

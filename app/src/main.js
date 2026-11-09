@@ -201,7 +201,7 @@ function avvia() {
     if (stilando) {
       const { stile, ciuffi, val } = valutazioni[stilando];
       stileScena.mostra(stilando, stile, ciuffi, val.fuori);
-      pannelloStile?.mostra({ stile, valutazione: val, sigilli: v.stile[stilando].sigilli, stili: STILI[stilando], aChi: AL[stilando] });
+      pannelloStile?.mostra({ stile, valutazione: val, sigilli: v.stile[stilando].sigilli, stili: STILI[stilando], aperti: v.stile[stilando].aperti, sblocco: v.stile[stilando].sblocco, aChi: AL[stilando] });
     }
   }
   function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); maestroParla(); }
@@ -288,7 +288,8 @@ function avvia() {
   if (!stato.guida.fatta) guida.avvia();
 
   // --- Il maestro (sezione 7.4): un consiglio nuovo arriva da solo, dopo la guida e quando non c'è
-  // altro aperto; il pulsante col ritratto fa rileggere quello della stagione ---
+  // altro aperto, uno per volta (se ne ha altri, un pallino rosso sul pulsante); il pulsante col ritratto
+  // mostra quello nuovo, o fa rileggere quello della stagione ---
   const consigli = creaConsigli(), maestroBtn = document.getElementById('maestro');
   maestroBtn.innerHTML = RITRATTO;
   const occupato = () => guida.attiva || consigli.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
@@ -297,7 +298,7 @@ function avvia() {
     const c = consiglioMaestro(stato);
     maestroBtn.classList.toggle('nuovo', !!c);
     if (!c || occupato()) return;
-    consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.remove('nuovo'); setTimeout(maestroParla, 600); });
+    consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.toggle('nuovo', !!consiglioMaestro(stato)); });
     suoni.fruscio(.1);
   }
   maestroBtn.addEventListener('click', () => {

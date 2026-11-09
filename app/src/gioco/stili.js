@@ -6,6 +6,10 @@
 // Percentuale = 35% riempimento (i ciuffi che stanno dentro la sagoma ci sono ancora: non tagliati troppo,
 // chioma sana) + 45% pulizia (pochi ciuffi fuori dalla sagoma: ogni ciuffo fuori conta il doppio, così
 // senza forbice non si arriva al sigillo) + 20% regole rispettate.
+//
+// Stili sbloccati con l'età (sezione 5.3): anno = anno di gioco della pianta nel giardino da cui lo stile
+// si può scegliere (1 = subito). Gli stili più difficili chiedono una pianta che abbia già vissuto qualche
+// anno con te; perche spiega, con le parole del maestro, perché serve tempo.
 
 const E = (x, y, z, rx, ry, rz) => ({ c: [x, y, z], r: [rx, ry, rz] });
 const ramoGiu = (i, quanto = -0.2) => (v) => (v.rami[i]?.piega ?? 0) <= quanto;
@@ -29,6 +33,22 @@ export const STILI = {
         { testo: 'Rami bassi alzati col filo, verso l\'alto', ok: (v) => ramoSu(0)(v) && ramoSu(1)(v) },
         { testo: 'Chioma sana (almeno 80%)', ok: sana },
       ] },
+    { id: 'bunjingi', nome: 'Bunjingi', sottotitolo: 'Letterato', premio: 600, anno: 2,
+      descrizione: 'Tronco libero e nudo, e in cima pochi rami con una chioma piccola e leggera. L\'eleganza del poco.',
+      perche: 'Il Bunjingi si ottiene togliendo, non aggiungendo: serve una pianta che abbia già un tronco con carattere e la forza di ricacciare dall\'alto.',
+      sagoma: [E(.12, 2.02, -.02, .62, .26, .5), E(-.38, 1.84, .14, .32, .14, .28)],
+      regole: [
+        { testo: 'Rami bassi abbassati col filo, come piegati dagli anni', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) },
+        { testo: 'Chioma sana (almeno 80%)', ok: sana },
+      ] },
+    { id: 'fukinagashi', nome: 'Fukinagashi', sottotitolo: 'Battuto dal vento', premio: 650, anno: 3,
+      descrizione: 'Come cresciuto su un crinale ventoso: tutta la chioma corre verso destra, a sinistra il tronco resta nudo.',
+      perche: 'Il vento modella un albero in molti anni: per imitarlo servono rami robusti, che reggano il filo a lungo senza spezzarsi.',
+      sagoma: [E(.85, 1.3, 0, .62, .22, .45), E(.5, 1.85, .05, .55, .22, .42), E(.95, 1.02, -.05, .4, .17, .34)],
+      regole: [
+        { testo: 'Rami bassi abbassati col filo, come spinti dal vento', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) },
+        { testo: 'Chioma sana (almeno 80%)', ok: sana },
+      ] },
   ],
   pino: [
     { id: 'shakan', nome: 'Shakan', sottotitolo: 'Inclinato', premio: 400,
@@ -45,6 +65,22 @@ export const STILI = {
         E(.55, 1.88, -.1, .38, .24, .34), E(.3, 1.32, .35, .3, .2, .28)],
       regole: [
         { testo: 'Ramo apicale piegato verso il centro col filo', ok: ramoGiu(3, -0.15) },
+        { testo: 'Chioma sana (almeno 80%)', ok: sana },
+      ] },
+    { id: 'bunjingi', nome: 'Bunjingi', sottotitolo: 'Letterato', premio: 600, anno: 2,
+      descrizione: 'Il tronco sale nudo e sottile; in cima pochi cuscinetti, come un vecchio pino sulle rocce dipinto con l\'inchiostro.',
+      perche: 'Il pino si lascia spogliare solo quando è forte: tolti i rami bassi, deve ricacciare dagli aghi in cima. Un pino giovane non ce la farebbe.',
+      sagoma: [E(.3, 1.86, 0, .55, .2, .42), E(.75, 1.62, -.05, .3, .14, .26)],
+      regole: [
+        { testo: 'Ramo apicale piegato verso il centro col filo', ok: ramoGiu(3, -0.15) },
+        { testo: 'Chioma sana (almeno 80%)', ok: sana },
+      ] },
+    { id: 'fukinagashi', nome: 'Fukinagashi', sottotitolo: 'Battuto dal vento', premio: 650, anno: 3,
+      descrizione: 'Un pino delle scogliere: la chioma è tutta a destra, stesa dal vento del mare.',
+      perche: 'I rami del pino si piegano piano e il filo deve restare a lungo: lo stile chiede una pianta matura e paziente.',
+      sagoma: [E(1.0, 1.15, 0, .55, .2, .42), E(.65, 1.78, 0, .55, .2, .4)],
+      regole: [
+        { testo: 'Ramo basso abbassato col filo, come spinto dal vento', ok: ramoGiu(0) },
         { testo: 'Chioma sana (almeno 80%)', ok: sana },
       ] },
   ],
@@ -65,12 +101,22 @@ export const STILI = {
         { testo: 'Ramo di sinistra alzato verso destra col filo', ok: ramoSu(2, 0.1) },
         { testo: 'Chioma sana (almeno 80%)', ok: sana },
       ] },
+    { id: 'bunjingi', nome: 'Bunjingi', sottotitolo: 'Letterato', premio: 600, anno: 2,
+      descrizione: 'Il tronco che si torce resta in vista; in cima una sola nuvola di squame.',
+      perche: 'Il ginepro ricaccia solo dove c\'è già verde: prima di spogliare il tronco bisogna che la cima sia piena e forte.',
+      sagoma: [E(.08, 1.8, 0, .52, .24, .42)],
+      regole: [
+        { testo: 'Rami bassi abbassati col filo', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) },
+        { testo: 'Chioma sana (almeno 80%)', ok: sana },
+      ] },
   ],
 };
 
 export const STILE_INIZIALE = { acero: 'moyogi', pino: 'shakan', ginepro: 'moyogi' };
 export const COMPLETATO_DA = 90;   // percentuale per il sigillo dello stile
 export const stileDi = (pianta, id) => STILI[pianta]?.find(s => s.id === id) ?? null;
+// uno stile si può scegliere dall'anno indicato; quello in corso e quelli già sigillati restano sempre scelti
+export const stileAperto = (stile, anno, c) => (stile.anno ?? 1) <= anno || c?.stile.id === stile.id || !!c?.stile.sigilli.includes(stile.id);
 
 // un punto è dentro la sagoma se sta in almeno uno degli ellissoidi (con un po' di tolleranza)
 export function dentroSagoma(sagoma, x, y, z, margine = 1.08) {

@@ -651,9 +651,9 @@ test("un salvataggio della versione 11 riceve il rinvaso e un po' di akadama", (
 
 test('ogni pianta ha gli stili adatti al suo tronco, e si parte con il primo', () => {
   const v = vista(nuovoStato(T0));
-  assert.deepEqual(v.stile.acero.compatibili, ['moyogi', 'hokidachi']);
-  assert.deepEqual(v.stile.pino.compatibili, ['shakan', 'moyogi']);
-  assert.deepEqual(v.stile.ginepro.compatibili, ['moyogi', 'fukinagashi']);
+  assert.deepEqual(v.stile.acero.compatibili, ['moyogi', 'hokidachi', 'bunjingi', 'fukinagashi']);
+  assert.deepEqual(v.stile.pino.compatibili, ['shakan', 'moyogi', 'bunjingi', 'fukinagashi']);
+  assert.deepEqual(v.stile.ginepro.compatibili, ['moyogi', 'fukinagashi', 'bunjingi']);
   assert.equal(v.stile.pino.id, 'shakan');
   const s = nuovoStato(T0);
   assert.equal(scegliStile(s, 'ginepro', 'fukinagashi'), true);
@@ -916,4 +916,23 @@ test('un salvataggio della versione 16 tiene le decorazioni al loro posto', () =
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.decorazioni.posti, { ponte: { x: -2.3, z: 3.45, r: 0 } });
+});
+
+test('gli stili più difficili si sbloccano con gli anni della pianta', () => {
+  const s = nuovoStato(T0);
+  let v = vista(s);
+  assert.deepEqual(v.stile.acero.aperti, ['moyogi', 'hokidachi']);
+  assert.deepEqual(v.stile.acero.sblocco, { bunjingi: 28, fukinagashi: 56 });
+  assert.equal(scegliStile(s, 'acero', 'bunjingi'), false, 'il primo anno non si può');
+  avanza(s, dopo(20.5));
+  assert.equal(vista(s).stile.acero.sblocco.bunjingi, 8);
+  // dall'anno 2 il Bunjingi si sceglie; il Fukinagashi aspetta l'anno 3
+  avanza(s, dopo(28.5));
+  v = vista(s);
+  assert.deepEqual(v.stile.pino.aperti, ['shakan', 'moyogi', 'bunjingi']);
+  assert.equal(scegliStile(s, 'acero', 'bunjingi'), true);
+  assert.equal(scegliStile(s, 'acero', 'fukinagashi'), false);
+  avanza(s, dopo(56.5));
+  assert.equal(scegliStile(s, 'acero', 'fukinagashi'), true);
+  assert.deepEqual(vista(s).stile.acero.sblocco, {});
 });

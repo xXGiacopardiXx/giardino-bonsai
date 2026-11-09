@@ -3,7 +3,7 @@
 // e con il cursore dei giorni senza aspettare davvero.
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
-import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
+import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
 export const VERSIONE = 18;
 
@@ -628,10 +628,12 @@ export function tagliaCiuffi(stato, ora, pianta, indici) {
   return { esito: 'ok', tagliati: nuovi.length, bonusSerie: registraCura(stato, ora) };
 }
 
-// Sceglie lo stile da seguire tra quelli adatti alla pianta. Restituisce false se non è adatto.
+// Sceglie lo stile da seguire tra quelli adatti alla pianta. Restituisce false se non è adatto
+// o se la pianta non è ancora abbastanza vecchia (stile.anno, sezione 5.3).
 export function scegliStile(stato, pianta, id) {
   const c = PIANTE[pianta] ? curaDi(stato, pianta) : null;
-  if (!c || !stileDi(pianta, id)) return false;
+  const stile = c && stileDi(pianta, id);
+  if (!stile || !stileAperto(stile, calendario(stato.inizio, stato.aggiornato).anno, c)) return false;
   c.stile.id = id;
   return true;
 }
@@ -843,6 +845,8 @@ function vistaRistagno(r, asciugaAlGiorno) {
 }
 // quanta acqua in più scola dal vaso di una pianta in un giorno, adesso
 const asciugaAlGiorno = (c, p, stagione) => FATTORE_SETE[stagione] * scoloSpecie(p) * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
+// giorni (interi, per eccesso) che mancano all'inizio dell'anno di gioco indicato
+const giorniAllAnno = (stato, anno) => Math.max(1, Math.ceil(((anno - 1) * 28 * GIORNO - (stato.aggiornato - stato.inizio)) / GIORNO - 1e-9));
 const giorniFino = (fino, t) => Math.ceil((fino - t) / GIORNO - 1e-9);
 function vistaCura(c, t, stagione) {
   const ore = oreParassiti(c, t);
@@ -909,7 +913,10 @@ export function vista(stato) {
     // stile di ogni pianta: quello scelto, i compatibili, i sigilli già presi, i ciuffi tagliati che ricrescono
     stile: Object.fromEntries(Object.keys(PIANTE).map(p => {
       const c = curaDi(stato, p);
-      return [p, { id: c.stile.id, sigilli: [...c.stile.sigilli], tagli: { ...c.tagli }, compatibili: STILI[p].map(s => s.id) }];
+      return [p, { id: c.stile.id, sigilli: [...c.stile.sigilli], tagli: { ...c.tagli }, compatibili: STILI[p].map(s => s.id),
+        // stili che si possono scegliere adesso, e fra quanti giorni si sblocca ognuno degli altri
+        aperti: STILI[p].filter(s => stileAperto(s, cal.anno, c)).map(s => s.id),
+        sblocco: Object.fromEntries(STILI[p].filter(s => !stileAperto(s, cal.anno, c)).map(s => [s.id, giorniAllAnno(stato, s.anno)])) }];
     })),
     // rinvaso di ogni pianta: se serve, se la finestra è aperta, se il vaso è già stretto, quanto manca
     rinvaso: Object.fromEntries(Object.keys(PIANTE).map(p => {

@@ -329,5 +329,10 @@ button{touch-action:manipulation}
 .maestro-punti span{display:block;margin-top:.6cqw;font:500 3.2cqw/1.4 var(--display);color:#5a4632}
 .maestro-punti i{font-style:normal;font-weight:700;color:#8a6a48}
 .maestro-ok{align-self:center;flex:none}
+/* stili ancora chiusi: lucchetto, anno e perché del maestro */
+.riga-prodotto.chiusa{opacity:.8;background:#f1e9d8}
+.stile-chiuso{display:flex;align-items:center;gap:.8cqw;white-space:nowrap}
+.stile-chiuso svg{width:4.4cqw;height:4.4cqw}
+.stile-perche{color:#8a6a48;font-style:italic}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}

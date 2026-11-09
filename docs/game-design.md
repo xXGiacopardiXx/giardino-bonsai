@@ -136,6 +136,18 @@ L'obiettivo di lungo periodo di ogni albero è uno stile classico. La potatura e
 - **Forbice:** un tocco su un ciuffo lo taglia insieme ai vicinissimi (una sforbiciata), con le foglie o gli aghi che cadono. I ciuffi tagliati ricrescono piano con il vigore della pianta (circa 3 settimane d'estate sull'acero, il doppio sulle conifere): la forma va mantenuta, come nei bonsai veri. Tagliare conta come cura del giorno.
 - **Percentuale** (sull'etichetta di ogni pianta e nella scheda dello stile): 35% riempimento (i ciuffi dentro la sagoma ci sono ancora: non tagliati troppo, chioma sana) + 45% pulizia (ogni ciuffo fuori dalla sagoma pesa il doppio, così senza forbice non si arriva al sigillo) + 20% regole dello stile (per esempio "rami bassi abbassati col filo", "ramo basso di contrappeso abbassato", "chioma sana"). La scheda elenca le regole fatte (✓) e da fare (○).
 - **Sigillo:** al 90% lo stile è compiuto: un sigillo sulla pianta (la percentuale sull'etichetta diventa rossa con ✓) e 300–500 Semi a seconda dello stile, una volta sola per stile e pianta.
+- **Stili sbloccati con l'età:** gli stili più difficili si aprono con gli anni della pianta nel giardino (anni di gioco: 1 anno = 4 settimane reali), così c'è un obiettivo a lungo termine per chi torna ogni giorno.
+
+  | Pianta | Subito | Anno 2 | Anno 3 |
+  |---|---|---|---|
+  | Acero | Moyogi, Hokidachi | **Bunjingi** (letterato: tronco nudo, chioma piccola in cima; 600 Semi) | **Fukinagashi** (battuto dal vento: chioma tutta a destra; 650 Semi) |
+  | Pino | Shakan, Moyogi | **Bunjingi** (pochi cuscinetti in cima, come un pino sulle rocce; 600 Semi) | **Fukinagashi** (pino delle scogliere; 650 Semi) |
+  | Ginepro | Moyogi, Fukinagashi | **Bunjingi** (una sola nuvola di squame sul tronco che si torce; 600 Semi) | |
+
+  - Sono più difficili perché la sagoma è piccola o tutta da un lato: bisogna tagliare molti ciuffi e piegare i rami col filo.
+  - Nella scelta degli stili quelli chiusi hanno il lucchetto, "Anno N", fra quanti giorni si aprono e il **perché** servono anni, con le parole del maestro (per esempio: il Bunjingi si ottiene togliendo, serve una pianta con un tronco che ha già carattere e la forza di ricacciare dall'alto).
+  - All'inizio di un anno nuovo **il maestro** annuncia gli stili che si sono aperti, pianta per pianta, con il perché (sezione 7.4).
+  - Lo stile in corso e quelli già sigillati restano sempre scelti, anche se fossero di un anno successivo.
 
 ## 6. Salute della pianta e trascuratezza
 
@@ -285,13 +297,13 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po' alla volta, senza manuali. Lo scopo è far **capire** le piante: ogni azione suggerita ha il suo perché (cosa succede dentro la pianta), così il giocatore impara a decidere da solo quando dare più o meno acqua, come tagliare, quando aspettare. Tono gentile, mai rimproveri; i consigli non danno Semi e non sono obblighi.
 
-- **Quando parla:** all'apertura del gioco (e quando l'app torna in primo piano), se c'è un consiglio nuovo. Mai durante la guida dei primi passi né sopra un'altra cosa aperta (negozio, potatura, filo, stile, foto, Sposta, anteprima del pannello di prova): aspetta la volta dopo.
+- **Quando parla:** all'apertura del gioco (e quando l'app torna in primo piano), se c'è un consiglio nuovo, **uno per volta**: se ne ha altri, il pulsante del maestro ha il pallino rosso e li mostra al tocco (o arrivano alla prossima apertura). Mai durante la guida dei primi passi né sopra un'altra cosa aperta (negozio, potatura, filo, stile, foto, Sposta, anteprima del pannello di prova): aspetta la volta dopo.
 - **Com'è fatto un consiglio:**
   - una **riflessione** sulla stagione: cosa sta vivendo il giardino (due testi per stagione, alternati negli anni dispari e pari);
   - una **scheda per pianta** (Acero, Ginepro, Pino) con **Come si sente**: preso dal suo stato vero in quel momento (radici fradice, terriccio zuppo, sete da giorni, prima sete, afidi, vaso stretto, chioma diradata), oppure, se sta bene, come vive quella stagione (l'acero che porta gli zuccheri nei rami e per questo si fa rosso, il pino che allunga le candele, il ginepro che si fa bronzeo contro il gelo...);
   - i **punti da fare**, numerati, ognuno con il suo **Perché** (per esempio: si potano i germogli dell'acero perché la linfa, fermata più in basso, sveglia gemme vicino al tronco e la chioma si infittisce; il pino vuole il terriccio quasi asciutto perché le sue radici vivono con un fungo che ha bisogno d'aria; il ginepro si pizzica con le dita perché le squame tagliate con le forbici imbruniscono).
 - **Cosa dice**, in ordine di importanza:
-  1. **Momenti chiave**, solo per le piante interessate: si apre la finestra del rinvaso (una volta per anno: rinvasare ora e perché, quale terriccio e perché); la prima volta che le radici marciscono per troppa acqua (una volta sola: saltare l'acqua e perché, guardare il terriccio prima di annaffiare).
+  1. **Momenti chiave**, solo per le piante interessate: si apre la finestra del rinvaso (una volta per anno: rinvasare ora e perché, quale terriccio e perché); all'inizio di un anno nuovo, gli stili che si sono aperti (sezione 5.3); la prima volta che le radici marciscono per troppa acqua (una volta sola: saltare l'acqua e perché, guardare il terriccio prima di annaffiare).
   2. **Stagione:** a ogni stagione nuova, per tutte e tre le piante (acqua, potatura, candele, pizzicatura, aghi vecchi, filo, concime, riposo).
 - **Come si vede:** un pannello con il ritratto (barba bianca, codino), "Il maestro Ren" e la stagione, la riflessione in corsivo, le schede delle piante e il pulsante **Grazie, maestro**: solo allora il consiglio conta come letto. Se è lungo, la parte della pianta scorre.
 - **Pulsante del maestro**, col suo ritratto, sotto quelli dei suoni e della musica: fa rileggere il consiglio della stagione (o quello nuovo, se c'è), con "come si sente" aggiornato a quel momento. Un pallino rosso dice che c'è un consiglio da leggere.
