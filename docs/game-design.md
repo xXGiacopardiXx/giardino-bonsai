@@ -281,6 +281,18 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 **Regola di bilanciamento:** un giocatore costante deve potersi permettere una cosa piccola ogni 2–3 giorni e una grande ogni 3–4 settimane.
 
+### 7.4 I consigli del maestro
+
+Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po' alla volta, senza manuali. Tono gentile, mai rimproveri; i consigli non danno Semi e non sono obblighi.
+
+- **Quando parla:** all'apertura del gioco (e quando l'app torna in primo piano), se c'è un consiglio nuovo. Mai durante la guida dei primi passi né sopra un'altra cosa aperta (negozio, potatura, filo, stile, foto, Sposta, anteprima del pannello di prova): aspetta la volta dopo.
+- **Cosa dice**, in ordine di importanza:
+  1. **Momenti chiave:** si apre la finestra del rinvaso per una pianta che ne ha bisogno (una volta per anno); la prima volta che le radici marciscono per troppa acqua (una volta sola).
+  2. **Stagione:** a ogni stagione nuova un consiglio sulle tre piante (acqua, potatura, candele, pizzicatura, aghi vecchi, filo, concime, riposo). Due testi per stagione, alternati negli anni dispari e pari.
+- **Come si vede:** un fumetto in alto come quello della guida, con il ritratto (barba bianca, codino), "Il maestro Ren · stagione" e il pulsante **Grazie, maestro**: solo allora il consiglio conta come letto.
+- **Pulsante del maestro**, col suo ritratto, sotto quelli dei suoni e della musica: fa rileggere il consiglio della stagione (o quello nuovo, se c'è). Un pallino rosso dice che c'è un consiglio da leggere.
+- Nel salvataggio si tengono solo gli ultimi consigli letti.
+
 ## 8. Giardino
 
 - Il giardino è un'**isola fluttuante** in stile diorama, con ghiaia rastrellata, prato, laghetto, lanterna, staccionata di bambù.

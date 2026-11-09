@@ -306,5 +306,12 @@ button{touch-action:manipulation}
 /* pulsante per accendere e spegnere i suoni, sotto i Semi */
 .suoni-b{all:unset;cursor:pointer;position:absolute;right:3.5cqw;top:calc(var(--top) + 15.4cqw);width:9cqw;height:9cqw;border-radius:50%;display:grid;place-items:center;background:linear-gradient(var(--cream),var(--cream-2));border:.55cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);box-sizing:border-box}
 .musica-b{top:calc(var(--top) + 26.4cqw)}
+/* il maestro: pulsante col ritratto sotto la musica, e il suo fumetto (come quello della guida) */
+.maestro-b{top:calc(var(--top) + 37.4cqw);background:radial-gradient(circle at 35% 30%,#fff1c2,#f0b45a)}
+.maestro-b svg,.maestro-ic svg{width:88%;height:88%}
+.maestro-b.nuovo::after{content:"";position:absolute;top:-.6cqw;right:-.6cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#e2483a;border:.45cqw solid var(--ink)}
+.maestro{z-index:5}
+.maestro-chi{margin:0;font:600 3cqw/1 var(--display);color:#8a6a48}
+.maestro-chi b{color:var(--ink)}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}

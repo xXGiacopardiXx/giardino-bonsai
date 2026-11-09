@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 17;
+export const VERSIONE = 18;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
@@ -222,6 +222,8 @@ export function nuovoStato(ora) {
     inventario: { ...INVENTARIO_INIZIALE },
     // la guida dei primi passi si mostra una volta sola, alla prima partita
     guida: { fatta: false },
+    // consigli del maestro già letti (gioco/maestro.js)
+    maestro: { visti: [] },
     // diario fotografico: per ogni pianta la stagione dell'ultima foto premiata ("anno-stagione")
     diario: {},
     // si comincia annaffiando, perché la pianta ha già sete
@@ -303,6 +305,8 @@ export function migra(stato) {
     }));
     stato.versione = 17;
   }
+  // consigli del maestro: nessuno ancora letto, così arriva subito quello della stagione
+  if (stato.versione === 17) { stato.maestro = { visti: [] }; stato.versione = 18; }
   return stato.versione === VERSIONE ? stato : null;
 }
 

@@ -28,6 +28,8 @@ import { creaNegozio } from './negozio.js';
 import { creaCure } from './cure.js';
 import { creaCura } from './scena/cura.js';
 import { creaGuida } from './guida.js';
+import { creaConsigli, RITRATTO } from './consigli.js';
+import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/maestro.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
@@ -202,7 +204,7 @@ function avvia() {
       pannelloStile?.mostra({ stile, valutazione: val, sigilli: v.stile[stilando].sigilli, stili: STILI[stilando], aChi: AL[stilando] });
     }
   }
-  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); }
+  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); maestroParla(); }
 
   // --- Acqua: ogni pianta ha la sua sete (sezione 6.1.4). Acqua nella barra annaffia la pianta
   // che ne ha bisogno; se sono più d'una, si tocca quella da annaffiare. Dalla tendina di una pianta
@@ -282,8 +284,28 @@ function avvia() {
   disegna();
 
   // --- Guida dei primi passi e suoni ---
-  const guida = creaGuida({ vista: () => vista(stato), finita: () => { stato.guida.fatta = true; salva(stato); } });
+  const guida = creaGuida({ vista: () => vista(stato), finita: () => { stato.guida.fatta = true; salva(stato); setTimeout(maestroParla, 1500); } });
   if (!stato.guida.fatta) guida.avvia();
+
+  // --- Il maestro (sezione 7.4): un consiglio nuovo arriva da solo, dopo la guida e quando non c'è
+  // altro aperto; il pulsante col ritratto fa rileggere quello della stagione ---
+  const consigli = creaConsigli(), maestroBtn = document.getElementById('maestro');
+  maestroBtn.innerHTML = RITRATTO;
+  const occupato = () => guida.attiva || consigli.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
+  function maestroParla() {
+    if (!stato.guida.fatta) return;
+    const c = consiglioMaestro(stato);
+    maestroBtn.classList.toggle('nuovo', !!c);
+    if (!c || occupato()) return;
+    consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.remove('nuovo'); setTimeout(maestroParla, 600); });
+    suoni.fruscio(.1);
+  }
+  maestroBtn.addEventListener('click', () => {
+    if (consigli.aperto) { consigli.chiudi(); return; }
+    const c = consiglioMaestro(stato) ?? consiglioStagione(stato);
+    consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.toggle('nuovo', !!consiglioMaestro(stato)); });
+  });
+  setTimeout(maestroParla, 1800);
   const suoniBtn = document.getElementById('suoni');
   const ICONE_SUONI = { si: suoniBtn.innerHTML, no: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#d9cdb6" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="#c4291c" stroke-width="2" stroke-linecap="round"/></svg>` };
   function mostraSuoni() {
