@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -845,4 +845,32 @@ test('un salvataggio della versione 14 riceve il diario vuoto', () => {
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.diario, {});
   assert.equal(fotografa(s, T0, 'ginepro').ricordo, true);
+});
+
+test('una decorazione comprata va subito nel giardino; si toglie e si rimette', () => {
+  const s = nuovoStato(T0);
+  s.semi = 120;
+  assert.equal(compraDecorazione(s, 'ponte').esito, 'pochi');
+  assert.equal(compraDecorazione(s, 'ponte').mancano, 80);
+  assert.equal(compraDecorazione(s, 'pietre').esito, 'ok');
+  assert.equal(s.semi, 70);
+  assert.equal(compraDecorazione(s, 'pietre').esito, 'gia');
+  let d = vista(s).decorazioni.find(x => x.id === 'pietre');
+  assert.deepEqual([d.tua, d.messa], [true, true]);
+  assert.equal(mettiDecorazione(s, 'pietre', false), true);
+  d = vista(s).decorazioni.find(x => x.id === 'pietre');
+  assert.deepEqual([d.tua, d.messa], [true, false]);
+  mettiDecorazione(s, 'pietre', true); mettiDecorazione(s, 'pietre', true);
+  assert.deepEqual(s.decorazioni.messe, ['pietre']);
+  assert.equal(mettiDecorazione(s, 'gatto', true), false);
+  assert.equal(compraDecorazione(s, 'drago').esito, 'nessuno');
+  assert.equal(DECORAZIONI.length, vista(s).decorazioni.length);
+});
+
+test('un salvataggio della versione 15 riceve le decorazioni vuote', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 15; delete vecchio.decorazioni;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.decorazioni, { possedute: [], messe: [] });
 });

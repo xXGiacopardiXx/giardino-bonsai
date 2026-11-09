@@ -14,6 +14,7 @@ import { creaCielo, creaNuvole } from './scena/cielo.js';
 import { creaIsola } from './scena/isola.js';
 import { creaAlberi } from './scena/alberi.js';
 import { creaGiardino } from './scena/giardino.js';
+import { creaDecorazioni } from './scena/decorazioni.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
 import { creaAghiVecchi } from './scena/aghi-vecchi.js';
@@ -30,7 +31,7 @@ import { creaGuida } from './guida.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -71,6 +72,8 @@ function avvia() {
   const alberi = creaAlberi(world);
   const giardino = creaGiardino(world, { reduce });
   const nuvole = creaNuvole(scene);
+  // decorazioni comprate: non usano numeri casuali, l'ordine qui non conta
+  const decorazioni = creaDecorazioni(world, { toc: () => suoni.toc() });
 
   // Telecamera: si ruota col dito e si zooma col pizzico, senza spostarsi di lato
   const controls = new OrbitControls(camera, canvas);
@@ -154,6 +157,8 @@ function avvia() {
     negozio?.mostra(v);
     cure?.mostra(v);
     rinvasoScena.setRinvaso(v.rinvaso);
+    decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa).map(d => d.id));
+    giardino.liberaErba(decorazioni.zone());
     for (const p in curaScene) {
       const c = v.cura[p];
       curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime);
@@ -399,6 +404,19 @@ function avvia() {
       salva(stato); disegna(); suoni.semi();
       const p = vista(stato).prodotti.find(x => x.id === id);
       ui.toast(`${p.nome}: ${p.dosi} dosi nell\'inventario. Per usarlo tocca una pianta e scegli Cura.`, 3500);
+    },
+    // decorazioni (sezione 8.2): la comprata spunta subito nel giardino; si chiude il negozio per vederla
+    compraDecorazione(id) {
+      const esito = compraDecorazione(stato, id);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); negozio.chiudi(); disegna(); suoni.magia();
+      const d = vista(stato).decorazioni.find(x => x.id === id);
+      ui.toast(`${d.nome}: ora è nel giardino! Si toglie e si rimette da Negozio, scheda Giardino.`, 4000);
+    },
+    mettiDecorazione(id, si) {
+      if (!mettiDecorazione(stato, id, si)) return;
+      salva(stato); disegna(); suoni.tocco();
     },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
@@ -792,6 +810,7 @@ function avvia() {
     aghiVecchi.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     rinvasoScena.aggiorna(dt);
+    decorazioni.aggiorna(dt);
     stileScena.aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);

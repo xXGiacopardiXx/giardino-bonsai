@@ -117,6 +117,7 @@ export function creaGiardino(world, { reduce }) {
   // Prato: fili d'erba e fiorellini, tranne dove ci sono ghiaia, laghetto, pino e sentiero
   const inEll = (x, z, cx, cz, rx, rz) => ((x - cx) / rx) ** 2 + ((z - cz) / rz) ** 2 < 1;
   const blocked = (x, z) => inEll(x, z, GX, GZ, GRX * 1.06, GRZ * 1.06) || inEll(x, z, -2.3, 3.45, 1.55, 1.35) || (Math.abs(x - 2.1) < 1.0 && Math.abs(z - 2.0) < .72) || inEll(x, z, 1.2, 4.5, .6, 1.6);
+  let erba, fiori = [];
   {
     const N = 1300, geo = new THREE.ConeGeometry(.05, .24, 4); geo.translate(0, .12, 0);
     const im = new THREE.InstancedMesh(geo, toon({ color: 0xffffff }), N); im.receiveShadow = true;
@@ -130,11 +131,12 @@ export function creaGiardino(world, { reduce }) {
       d.updateMatrix(); im.setMatrixAt(n, d.matrix); im.setColorAt(n, new THREE.Color(pal[Math.floor(rnd() * pal.length)])); n++;
     }
     im.count = n; world.add(im);
+    erba = { im, originali: im.instanceMatrix.array.slice() };
     const fl = ['#ffffff', '#ffe27a', '#f6b3c8', '#fff3c4'];
     for (let i = 0; i < 70; i++) {
       const x = R(-5, 5), z = R(-6.6, 6.6);
       if (!inEll(x, z, 0, 0, 4.9, 4.9 * ZS) || blocked(x, z)) continue;
-      mesh(new THREE.SphereGeometry(.045, 6, 5), M(new THREE.Color(fl[i % 4]).getHex()), world, x, .2, z, false);
+      fiori.push(mesh(new THREE.SphereGeometry(.045, 6, 5), M(new THREE.Color(fl[i % 4]).getHex()), world, x, .2, z, false));
     }
   }
 
@@ -162,7 +164,20 @@ export function creaGiardino(world, { reduce }) {
     L.reset(); m.position.y = R(.3, 3.2); falling.push(L);
   }
 
+  let zoneLibere = "";
   return {
+    // niente erba né fiorellini dove ci sono le decorazioni (zone: [x, z, raggio])
+    liberaErba(zone) {
+      const chiave = JSON.stringify(zone); if (chiave === zoneLibere) return; zoneLibere = chiave;
+      const dentro = (x, z) => zone.some(([zx, zz, r]) => (x - zx) ** 2 + (z - zz) ** 2 < r * r);
+      const a = erba.im.instanceMatrix.array, o = erba.originali;
+      for (let i = 0; i < erba.im.count; i++) {
+        const k = i * 16, via = dentro(o[k + 12], o[k + 14]);
+        for (let j = 0; j < 16; j++) a[k + j] = via ? 0 : o[k + j];
+      }
+      erba.im.instanceMatrix.needsUpdate = true;
+      fiori.forEach(f => { f.visible = !dentro(f.position.x, f.position.z); });
+    },
     // le foglie d'acero cadono da metà autunno all'inizio dell'inverno e restano a terra ancora un po'
     // (p: punto dell'anno, 0 = inizio primavera, 2 = autunno, 3 = inverno)
     setStagione(p) {

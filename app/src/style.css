@@ -213,6 +213,7 @@ button{touch-action:manipulation}
 .negozio-schede{display:flex;gap:2cqw;margin-top:2.4cqw}
 .negozio-schede[hidden]{display:none}
 .scheda{all:unset;cursor:pointer;flex:1;text-align:center;padding:1.8cqw 0;border-radius:2.8cqw;border:.5cqw solid var(--ink);background:#efe2c6;font:700 3.6cqw/1 var(--display);color:#8a6a48;box-shadow:0 .6cqw 0 var(--ink)}
+.vaso-b.togli{background:linear-gradient(#f3e8d2,#e2d2b2);color:#8a6a48;text-shadow:none}
 .scheda.on{background:linear-gradient(#ffe08a,#f2b93e);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
 .prodotto-per{font:600 2.5cqw/1.1 var(--display);color:#2f6a1a}
 .prodotto-dosi{font:600 2.5cqw/1.1 var(--display);color:#8a6a48}

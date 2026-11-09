@@ -176,6 +176,14 @@ export function scatto() {
   soffio({ t: .1, durata: .05, tipo: 'bandpass', freq: 2300, q: 1.2, volume: .22, attacco: .002 });
 }
 
+// fontana di bambù: il bambù batte sulla pietra, un "toc" di legno cavo, piano
+export function toc() {
+  if (!pronto()) return;
+  nota({ freq: 310, durata: .18, volume: .06, tipo: 'triangle' });
+  nota({ freq: 620, durata: .06, volume: .025, tipo: 'triangle' });
+  soffio({ durata: .03, tipo: 'bandpass', freq: 1400, q: 3, volume: .05, attacco: .002 });
+}
+
 // tocco su un pulsante: un piccolo "pop" di legno
 export function tocco() {
   if (!pronto()) return;

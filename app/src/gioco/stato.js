@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi } from './stili.js';
 
-export const VERSIONE = 15;
+export const VERSIONE = 16;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
@@ -27,6 +27,16 @@ export const VASI = [
   { id: 'rettangolare', nome: 'Rettangolare in grès', prezzo: 120 },
   { id: 'celadon', nome: 'Ovale celadon', prezzo: 180 },
   { id: 'nuvola', nome: 'Crema con piedini a nuvola', prezzo: 250 },
+];
+
+// Decorazioni del giardino (sezione 8.2): ognuna ha il suo posto sull'isola, scelto perché stia bene.
+// Comprata compare subito; dal negozio si può togliere e rimettere quando si vuole.
+export const DECORAZIONI = [
+  { id: 'pietre', nome: 'Pietre impilate', prezzo: 50, descrizione: 'Tre sassi tondi in equilibrio, vicino al sentiero.' },
+  { id: 'panchina', nome: 'Panchina di legno', prezzo: 90, descrizione: 'Per sedersi a guardare la ghiaia rastrellata.' },
+  { id: 'fontana', nome: 'Fontana di bambù', prezzo: 120, descrizione: 'Il bambù si riempie d\'acqua, si inclina e batte sulla pietra: toc.' },
+  { id: 'gatto', nome: 'Gatto che dorme', prezzo: 150, descrizione: 'Un gatto rosso acciambellato al sole, accanto al pino.' },
+  { id: 'ponte', nome: 'Ponticello rosso', prezzo: 200, descrizione: 'Un ponte ad arco laccato sopra il laghetto delle carpe.' },
 ];
 
 // Fasi della disidratazione (sezione 6.1). "da" è in giorni di sete, cioè giorni reali
@@ -203,6 +213,8 @@ export function nuovoStato(ora) {
     albero: { sete: 1, ristagno: 0, avvisatoUmido: false, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
     serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
+    // decorazioni comprate e quelle messe nel giardino
+    decorazioni: { possedute: [], messe: [] },
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
     conifere: { pino: coniferaNuova('pino'), ginepro: coniferaNuova('ginepro') },
     inventario: { ...INVENTARIO_INIZIALE },
@@ -280,6 +292,8 @@ export function migra(stato) {
   }
   // diario fotografico: nessuna foto ancora
   if (stato.versione === 14) { stato.diario = {}; stato.versione = 15; }
+  // decorazioni: nessuna ancora
+  if (stato.versione === 15) { stato.decorazioni = { possedute: [], messe: [] }; stato.versione = 16; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -691,6 +705,27 @@ export function compra(stato, id) {
   return { esito: 'ok', mancano: 0 };
 }
 
+// Compra una decorazione e la mette subito nel giardino. esito: 'ok', 'pochi', 'gia' o 'nessuno'
+export function compraDecorazione(stato, id) {
+  const d = DECORAZIONI.find(x => x.id === id);
+  if (!d) return { esito: 'nessuno', mancano: 0 };
+  if (stato.decorazioni.possedute.includes(id)) return { esito: 'gia', mancano: 0 };
+  if (stato.semi < d.prezzo) return { esito: 'pochi', mancano: d.prezzo - stato.semi };
+  stato.semi -= d.prezzo;
+  stato.decorazioni.possedute.push(id);
+  stato.decorazioni.messe.push(id);
+  return { esito: 'ok', mancano: 0 };
+}
+
+// Mette (si = true) o toglie una decorazione già comprata. Restituisce false se non è tua.
+export function mettiDecorazione(stato, id, si) {
+  const dec = stato.decorazioni;
+  if (!dec.possedute.includes(id)) return false;
+  dec.messe = dec.messe.filter(x => x !== id);
+  if (si) dec.messe.push(id);
+  return true;
+}
+
 // Mette all'albero un vaso già comprato. Restituisce false se il vaso non è tuo.
 export function scegliVaso(stato, id) {
   if (!stato.vasi.posseduti.includes(id)) return false;
@@ -781,6 +816,8 @@ export function vista(stato) {
     vaso: stato.vasi.scelto,
     // catalogo del negozio con lo stato di ogni vaso
     vasi: VASI.map(v => ({ ...v, tuo: stato.vasi.posseduti.includes(v.id), inUso: stato.vasi.scelto === v.id })),
+    // catalogo delle decorazioni: comprate (tua) e messe nel giardino (messa)
+    decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id) })),
     serie: stato.serie.giorni,
     sete: a.sete,
     salute: a.salute,

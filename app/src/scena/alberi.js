@@ -416,7 +416,7 @@ export function creaAlberi(world) {
 }
 
 // Stelline dorate che girano attorno al vaso e salgono per un paio di secondi, mentre il vaso fa un saltello
-function creaScintille(parent, vaso) {
+export function creaScintille(parent, vaso) {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 30);
   g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.25, 'rgba(255,240,170,.9)'); g.addColorStop(1, 'rgba(255,210,90,0)');
