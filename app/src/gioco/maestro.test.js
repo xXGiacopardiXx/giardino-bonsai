@@ -2,11 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO } from './tempo.js';
-import { nuovoStato, avanza, annaffia, migra, VERSIONE } from './stato.js';
+import { nuovoStato as nuovoStatoVero, avanza, annaffia, migra, meteoDelGiorno, VERSIONE } from './stato.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './maestro.js';
 
 const T0 = new Date(2026, 9, 26, 12).getTime();
 const dopo = (giorni) => T0 + giorni * GIORNO;
+const nuovoStato = (t) => { const s = nuovoStatoVero(t); s.meteo.attivo = false; return s; };
 
 test('il maestro dà il consiglio della stagione una volta sola, e cambia con la stagione', () => {
   const s = nuovoStato(T0);
@@ -93,4 +94,17 @@ test('all\'anno nuovo il maestro annuncia gli stili sbloccati, spiegando perché
   assert.deepEqual(c.piante.map(p => p.id), ['acero', 'ginepro', 'pino']);
   assert.match(c.piante[0].punti[0].fai, /Bunjingi/);
   assert.ok(c.piante[0].punti[0].perche.length > 20);
+});
+
+test('alla prima pioggia il maestro spiega perché quel giorno non serve l\'acqua', () => {
+  const s = nuovoStatoVero(T0);
+  // il primo giorno di pioggia della partita, a metà della pioggia
+  let g = 1, m; for (; g < 200; g++) { m = meteoDelGiorno(s, dopo(g)); if (m.tipo === 'pioggia') break; }
+  const d = new Date(dopo(g)); d.setHours(m.da, 30, 0, 0);
+  avanza(s, d.getTime());
+  for (const id of ['stagione-1-0', 'stagione-1-1', 'stagione-1-2', 'rinvaso-2', 'stili-2', 'ristagno']) segnaConsiglio(s, id);
+  const c = consiglioMaestro(s);
+  assert.equal(c.id, 'pioggia');
+  assert.match(c.piante[0].punti[0].fai, /non annaffiare/);
+  assert.match(c.piante[0].sente, /pioggia/);
 });

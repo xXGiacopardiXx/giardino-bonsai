@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -12,6 +12,8 @@ const tratta = (s, t) => usaProdotto(pieno(s), t, 'acero', 'sapone-molle');
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
+// nei test la sete deve essere prevedibile: niente meteo, tranne nei test del meteo
+const nuovoStato = (t) => { const s = nuovoStatoVero(t); s.meteo.attivo = false; return s; };
 const dopo = (giorni) => T0 + giorni * GIORNO;
 
 test('il calendario: una settimana per stagione, quattro settimane per anno', () => {
@@ -935,4 +937,66 @@ test('gli stili più difficili si sbloccano con gli anni della pianta', () => {
   avanza(s, dopo(56.5));
   assert.equal(scegliStile(s, 'acero', 'fukinagashi'), true);
   assert.deepEqual(vista(s).stile.acero.sblocco, {});
+});
+
+// un giorno di pioggia (o di neve, in inverno) per questa partita, cercato tra i primi giorni dopo da
+function giornoDi(s, tipo, da = 0) {
+  for (let g = da; g < da + 200; g++) { const t = dopo(g); const m = meteoDelGiorno(s, t); if (m.tipo === tipo) return { t, m }; }
+  throw new Error('nessun giorno di ' + tipo);
+}
+const alle = (t, ora) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime() + ora * 3600 * 1000; };
+
+test('il meteo è prevedibile, cambia con la partita, e piove più in primavera e autunno che in estate', () => {
+  const s = nuovoStatoVero(T0);
+  assert.deepEqual(meteoDelGiorno(s, dopo(3)), meteoDelGiorno(s, dopo(3)));
+  const conta = (stagione) => { let n = 0; for (let g = 0; g < 7; g++) for (let anno = 0; anno < 12; anno++) if (meteoDelGiorno(s, dopo(anno * 28 + stagione * 7 + g + .5)).tipo !== 'sereno') n++; return n; };
+  assert.ok(conta(0) > conta(1), `primavera ${conta(0)}, estate ${conta(1)}`);
+  // in inverno cade la neve, mai la pioggia
+  for (let g = 21; g < 28; g++) assert.notEqual(meteoDelGiorno(s, dopo(g + .5)).tipo, 'pioggia');
+  // spento, è sempre sereno
+  assert.equal(meteoDelGiorno(nuovoStato(T0), giornoDi(s, 'pioggia').t).tipo, 'sereno');
+});
+
+test('la pioggia annaffia tutte le piante, senza troppa acqua', () => {
+  const s = nuovoStatoVero(T0);
+  const { t, m } = giornoDi(s, 'pioggia', 2);
+  avanza(s, alle(t, m.da) - 1);
+  const prima = vista(s);
+  assert.ok(prima.sete > 1, 'l\'acero ha sete prima della pioggia');
+  assert.equal(prima.meteo.adesso, null);
+  avanza(s, alle(t, m.da + 1.5));
+  const v = vista(s);
+  assert.equal(v.meteo.adesso, 'pioggia');
+  assert.equal(v.meteo.piovutoOggi, true);
+  assert.equal(v.sete, 0);
+  assert.equal(v.conifere.pino.sete, 0);
+  assert.equal(v.ristagno, 0, 'i vasi hanno i fori: niente acqua in più');
+  assert.equal(cadeAlle(s, alle(t, m.da + 1.5)), 'pioggia');
+});
+
+test('se piove sulla pianta da annaffiare, la sfida del giorno cambia', () => {
+  const s = nuovoStatoVero(T0);
+  const { t, m } = giornoDi(s, 'pioggia', 2);
+  avanza(s, alle(t, m.da) - 1);
+  if (s.oggi.sfida?.tipo !== 'acqua') return; // la sfida di quel giorno era già un'altra
+  avanza(s, alle(t, m.da + 1.5));
+  assert.notEqual(s.oggi.sfida.tipo, 'acqua');
+});
+
+test('sotto la neve il terriccio non si asciuga', () => {
+  const s = nuovoStatoVero(T0);
+  const { t, m } = giornoDi(s, 'neve', 21);
+  avanza(s, alle(t, m.da) + 60 * 1000);
+  const prima = s.albero.sete;
+  avanza(s, alle(t, m.a) - 60 * 1000);
+  assert.equal(vista(s).meteo.adesso, 'neve');
+  assert.ok(Math.abs(s.albero.sete - prima) < 0.01);
+});
+
+test('un salvataggio della versione 18 riceve il meteo', () => {
+  const vecchio = nuovoStatoVero(T0);
+  vecchio.versione = 18; delete vecchio.meteo;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.meteo, { attivo: true, ultimaPioggia: null });
 });

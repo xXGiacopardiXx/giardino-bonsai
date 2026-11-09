@@ -34,7 +34,8 @@ export function creaGiardino(world, { reduce }) {
     });
   }
 
-  // Lanterna di pietra accesa
+  // Lanterna di pietra accesa: di notte fa più luce (scena/atmosfera.js)
+  let lanterna;
   {
     const L = new THREE.Group(); L.position.set(3.3, 0, -2.4); world.add(L);
     const st = 0xaba79a, st2 = 0x918d81;
@@ -46,6 +47,7 @@ export function creaGiardino(world, { reduce }) {
     mesh(flatGeo(new THREE.ConeGeometry(.5, .28, 6)), M(st2), L, 0, 1.3, 0);
     mesh(new THREE.SphereGeometry(.08, 10, 8), M(st), L, 0, 1.48, 0);
     const pl = new THREE.PointLight(0xffc56b, .55 * PI, 3.2, 1); pl.position.y = 1.0; L.add(pl);
+    lanterna = { lamp, luce: pl };
     for (let i = 0; i < 5; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.12, .2), 1), M(0x6a9a40), L, R(-.45, .45), .03, R(-.45, .45)); b.scale.y = .35; }
   }
 
@@ -166,6 +168,7 @@ export function creaGiardino(world, { reduce }) {
 
   let zoneLibere = "";
   return {
+    lanterna,
     // niente erba né fiorellini dove ci sono le decorazioni (zone: [x, z, raggio])
     liberaErba(zone) {
       const chiave = JSON.stringify(zone); if (chiave === zoneLibere) return; zoneLibere = chiave;

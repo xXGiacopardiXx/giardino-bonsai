@@ -306,6 +306,10 @@ button{touch-action:manipulation}
 /* pulsante per accendere e spegnere i suoni, sotto i Semi */
 .suoni-b{all:unset;cursor:pointer;position:absolute;right:3.5cqw;top:calc(var(--top) + 15.4cqw);width:9cqw;height:9cqw;border-radius:50%;display:grid;place-items:center;background:linear-gradient(var(--cream),var(--cream-2));border:.55cqw solid var(--ink);box-shadow:0 .7cqw 0 var(--ink);box-sizing:border-box}
 .musica-b{top:calc(var(--top) + 26.4cqw)}
+/* meteo e ora del giorno, accanto al nome della stagione */
+.season{position:relative;padding-right:9cqw}
+.meteo-ic{position:absolute;right:2.2cqw;top:50%;transform:translateY(-50%);width:6.4cqw;height:6.4cqw;display:grid;place-items:center}
+.meteo-ic svg{width:100%;height:100%}
 /* il maestro: pulsante col ritratto sotto la musica, e il suo fumetto (come quello della guida) */
 .maestro-b{top:calc(var(--top) + 37.4cqw);background:radial-gradient(circle at 35% 30%,#fff1c2,#f0b45a)}
 .maestro-b svg,.maestro-ic svg{width:88%;height:88%}

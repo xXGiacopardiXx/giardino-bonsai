@@ -86,6 +86,9 @@ function sente(v, p) {
   if (cura.parassiti?.visibili) return 'Ha gli afidi sui germogli: le succhiano la linfa delle punte tenere, e si sente stanca.';
   if (vaso.stretto) return 'Le radici hanno riempito il vaso e girano in tondo: non trovano più spazio né nutrimento, e la crescita rallenta.';
   if (c.salute < .7) return 'La chioma si è diradata: sta ricostruendo i rametti persi, piano, con le forze che ha.';
+  if (v.meteo.adesso === 'pioggia') return 'Beve la pioggia dalle radici e la sente sulle foglie: per oggi ha tutta l\'acqua che le serve.';
+  if (v.meteo.adesso === 'neve') return 'Dorme sotto la neve, al riparo dal vento gelido. Non ha bisogno di niente.';
+  if (v.meteo.piovutoOggi) return 'Oggi ha piovuto: il terriccio è ancora fresco e le radici hanno bevuto.';
   return STA_BENE[p][v.stagione];
 }
 
@@ -112,6 +115,13 @@ const MOMENTI = [
         fai: `Ora puoi provare il ${s.nome} (${s.sottotitolo.toLowerCase()}): tocca la pianta, poi Stile e Cambia stile.`, perche: s.perche,
       })) })) } : null;
   },
+  // la prima pioggia e la prima neve sulle piante
+  (v) => {
+    const tipo = v.meteo.adesso ?? (v.meteo.piovutoOggi ? 'pioggia' : null);
+    const m = tipo && METEO[tipo];
+    return m ? { id: tipo, titolo: m.titolo, intro: m.intro,
+      piante: ORDINE.map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: m.punti[p] })) } : null;
+  },
   // la prima volta che le radici marciscono per troppa acqua
   (v) => {
     const piante = ORDINE.filter(q => (q === 'acero' ? v : v.conifere[q]).marciume);
@@ -123,6 +133,26 @@ const MOMENTI = [
       ] })) } : null;
   },
 ];
+
+// la prima pioggia e la prima neve (una volta sola): perché quel giorno l'acqua non serve
+const METEO = {
+  pioggia: { titolo: 'La pioggia',
+    intro: 'Oggi piove. Senti l\'odore della terra bagnata? La pioggia bagna il terriccio fino in fondo, piano e in modo uniforme, meglio di qualsiasi annaffiatoio.',
+    punti: {
+      acero: [{ fai: 'Oggi non annaffiare: ci ha pensato la pioggia.', perche: 'Il terriccio è pieno d\'acqua fino alle radici più basse. Acqua in più non servirebbe: uscirebbe dai fori del vaso, o resterebbe a togliere aria alle radici.' },
+        { fai: 'Domani guarda di nuovo il terriccio.', perche: 'Con il cielo coperto le foglie traspirano poco e il vaso asciuga più piano del solito: la sete tornerà più tardi.' }],
+      ginepro: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Le conifere vogliono il terriccio quasi asciutto prima di bere di nuovo: dopo la pioggia ci vorrà qualche giorno.' }],
+      pino: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Il fungo amico delle radici del pino ha bisogno d\'aria: meglio che il terriccio torni asciutto prima della prossima acqua.' }],
+    } },
+  neve: { titolo: 'La neve',
+    intro: 'Nevica. Il giardino si fa silenzioso e le piante dormono sotto una coperta bianca.',
+    punti: {
+      acero: [{ fai: 'Lascia la neve sui rami e sul vaso.', perche: 'La neve è una coperta: ripara le radici dal gelo più forte e, sciogliendosi piano, le bagna senza fretta.' },
+        { fai: 'Non annaffiare mentre nevica.', perche: 'Sotto la neve il terriccio non si asciuga, e l\'acqua in più potrebbe gelare nel vaso.' }],
+      ginepro: [{ fai: 'Non preoccuparti del colore bronzeo.', perche: 'È la sua difesa contro il freddo: con la neve e il gelo il ginepro si protegge da solo.' }],
+      pino: [{ fai: 'Se la neve è tanta, scuotila via dai rami.', perche: 'I cuscinetti di aghi la trattengono: troppo peso potrebbe piegare i rami legati col filo.' }],
+    } },
+};
 
 // il consiglio della stagione in corso (anche già visto): per rileggerlo dal pulsante del maestro
 export function consiglioStagione(stato) {

@@ -48,6 +48,18 @@ Il bisogno d'acqua si misura in **giorni reali**, non in giorni di gioco (altrim
 - L'orario di riferimento arriva **dal server**, mai dall'orologio del telefono, per impedire di imbrogliare. **Nell'MVP si usa l'orologio del telefono:** è un gioco per una persona sola e barare non danneggia nessuno. Il server arriverà con account e parte social.
 - La pianta **non viene simulata ad app chiusa**. All'apertura si calcola il tempo trascorso e si ricostruisce lo stato in un solo passaggio.
 
+### 3.4 Ora del giorno e meteo
+
+Il giardino segue **l'ora vera del telefono** e ha un suo **meteo**, che come l'acqua segue i giorni e le ore reali.
+
+- **Ora del giorno:** alba (dalle 5 alle 8), giorno, tramonto (dalle 17.30 alle 21) e notte. Cambiano piano il cielo, la nebbia, il colore e la direzione del sole, la luce del cielo e le nuvole; di notte la luna arriva dall'altra parte e **la lanterna di pietra si accende** davvero, illuminando il prato intorno. D'estate, nelle notti serene, sul prato vagano le **lucciole**.
+- **Meteo:** ogni giorno del calendario del telefono può essere sereno o, per qualche ora (da 2 a 5, tra le 6 e le 19), di **pioggia** o, in inverno, di **neve**. Si decide con un caso prevedibile, diverso per ogni partita. Giorni di pioggia: 30% in primavera e autunno, 15% d'estate; neve: 25% d'inverno.
+- **La pioggia annaffia davvero** tutte le piante (in un'ora il vaso è bagnato), senza troppa acqua: i vasi hanno i fori. Non conta per la serie né per i Semi, perché non è un'azione del giocatore; se la sfida del giorno era annaffiare una pianta che ha già bevuto la pioggia, la sfida cambia. Annaffiare subito dopo vale come annaffiare col terriccio umido (sezione 6.3).
+- **La neve copre i vasi:** finché nevica il terriccio non si asciuga.
+- **Come si vede:** pioggia a trattini inclinati e cielo grigio; neve a fiocchi che ondeggiano e cielo bianco-azzurro; di notte il cielo coperto è più scuro. Accanto al nome della stagione un'icona: sole, luna, pioggia o neve.
+- **Avvisi:** la prima pioggia e la prima neve le spiega il maestro (sezione 7.4: perché quel giorno l'acqua non serve, perché la neve protegge le radici); dopo, una scritta breve una volta al giorno ("Piove: la pioggia annaffia tutte le piante", "Oggi ha piovuto: le piante hanno già bevuto").
+- Più avanti: la neve che imbianca il prato e i rami, le pozzanghere, un temporale d'estate.
+
 ## 4. Azioni di cura
 
 | Azione | Effetto | Frequenza |

@@ -7,17 +7,19 @@ export function creaCielo(scene) {
   const sx = sc.getContext('2d'), gr = sx.createLinearGradient(0, 0, 0, 512);
   gr.addColorStop(0, '#6fb2da'); gr.addColorStop(.42, '#b4dbe8'); gr.addColorStop(.72, '#f2e3cc'); gr.addColorStop(1, '#f5c99e');
   sx.fillStyle = gr; sx.fillRect(0, 0, 4, 512);
-  scene.background = new THREE.CanvasTexture(sc);
+  const cieloTex = new THREE.CanvasTexture(sc);
+  scene.background = cieloTex;
   scene.fog = new THREE.Fog(0xf1dcc4, 40, 95);
 
   // Le intensità sono moltiplicate per PI per avere la stessa luce del prototipo (Three.js r128)
-  scene.add(new THREE.HemisphereLight(0xdcefff, 0x9a8a5e, 0.5 * Math.PI));
+  const hemi = new THREE.HemisphereLight(0xdcefff, 0x9a8a5e, 0.5 * Math.PI); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff0d6, 0.74 * Math.PI);
   sun.position.set(7, 14, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 45 });
   sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.025;
   scene.add(sun);
-  return { sun };
+  // per l'ora del giorno e il meteo (scena/atmosfera.js): luci e sfumatura del cielo da ridisegnare
+  return { sun, hemi, cielo: { ctx: sx, tex: cieloTex } };
 }
 
 export function creaNuvole(scene) {
@@ -36,6 +38,7 @@ export function creaNuvole(scene) {
   [[-11, -1.5, -6, 1.5], [10, -.5, -10, 1.7], [-8, 4.5, -17, 2.2], [12, 5.5, -20, 2.4], [3, -6.5, -5, 2.0], [-12, -5, 4, 1.5], [12, -4.5, 2, 1.4], [-1, 8, -26, 3.0], [6, -9, 6, 1.8]].forEach(a => cloud(...a));
 
   return {
+    mat, // colore delle nuvole: lo cambiano ora del giorno e meteo
     aggiorna(dt) {
       clouds.forEach(o => { o.c.position.x += o.sp * dt; if (o.c.position.x > 18) o.c.position.x = -18; });
     },
