@@ -283,14 +283,18 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 ### 7.4 I consigli del maestro
 
-Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po' alla volta, senza manuali. Tono gentile, mai rimproveri; i consigli non danno Semi e non sono obblighi.
+Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po' alla volta, senza manuali. Lo scopo è far **capire** le piante: ogni azione suggerita ha il suo perché (cosa succede dentro la pianta), così il giocatore impara a decidere da solo quando dare più o meno acqua, come tagliare, quando aspettare. Tono gentile, mai rimproveri; i consigli non danno Semi e non sono obblighi.
 
 - **Quando parla:** all'apertura del gioco (e quando l'app torna in primo piano), se c'è un consiglio nuovo. Mai durante la guida dei primi passi né sopra un'altra cosa aperta (negozio, potatura, filo, stile, foto, Sposta, anteprima del pannello di prova): aspetta la volta dopo.
+- **Com'è fatto un consiglio:**
+  - una **riflessione** sulla stagione: cosa sta vivendo il giardino (due testi per stagione, alternati negli anni dispari e pari);
+  - una **scheda per pianta** (Acero, Ginepro, Pino) con **Come si sente**: preso dal suo stato vero in quel momento (radici fradice, terriccio zuppo, sete da giorni, prima sete, afidi, vaso stretto, chioma diradata), oppure, se sta bene, come vive quella stagione (l'acero che porta gli zuccheri nei rami e per questo si fa rosso, il pino che allunga le candele, il ginepro che si fa bronzeo contro il gelo...);
+  - i **punti da fare**, numerati, ognuno con il suo **Perché** (per esempio: si potano i germogli dell'acero perché la linfa, fermata più in basso, sveglia gemme vicino al tronco e la chioma si infittisce; il pino vuole il terriccio quasi asciutto perché le sue radici vivono con un fungo che ha bisogno d'aria; il ginepro si pizzica con le dita perché le squame tagliate con le forbici imbruniscono).
 - **Cosa dice**, in ordine di importanza:
-  1. **Momenti chiave:** si apre la finestra del rinvaso per una pianta che ne ha bisogno (una volta per anno); la prima volta che le radici marciscono per troppa acqua (una volta sola).
-  2. **Stagione:** a ogni stagione nuova un consiglio sulle tre piante (acqua, potatura, candele, pizzicatura, aghi vecchi, filo, concime, riposo). Due testi per stagione, alternati negli anni dispari e pari.
-- **Come si vede:** un fumetto in alto come quello della guida, con il ritratto (barba bianca, codino), "Il maestro Ren · stagione" e il pulsante **Grazie, maestro**: solo allora il consiglio conta come letto.
-- **Pulsante del maestro**, col suo ritratto, sotto quelli dei suoni e della musica: fa rileggere il consiglio della stagione (o quello nuovo, se c'è). Un pallino rosso dice che c'è un consiglio da leggere.
+  1. **Momenti chiave**, solo per le piante interessate: si apre la finestra del rinvaso (una volta per anno: rinvasare ora e perché, quale terriccio e perché); la prima volta che le radici marciscono per troppa acqua (una volta sola: saltare l'acqua e perché, guardare il terriccio prima di annaffiare).
+  2. **Stagione:** a ogni stagione nuova, per tutte e tre le piante (acqua, potatura, candele, pizzicatura, aghi vecchi, filo, concime, riposo).
+- **Come si vede:** un pannello con il ritratto (barba bianca, codino), "Il maestro Ren" e la stagione, la riflessione in corsivo, le schede delle piante e il pulsante **Grazie, maestro**: solo allora il consiglio conta come letto. Se è lungo, la parte della pianta scorre.
+- **Pulsante del maestro**, col suo ritratto, sotto quelli dei suoni e della musica: fa rileggere il consiglio della stagione (o quello nuovo, se c'è), con "come si sente" aggiornato a quel momento. Un pallino rosso dice che c'è un consiglio da leggere.
 - Nel salvataggio si tengono solo gli ultimi consigli letti.
 
 ## 8. Giardino

@@ -1,6 +1,7 @@
-// Fumetto del maestro (game-design.md, sezione 7.4): mostra i consigli scelti dal motore (gioco/maestro.js).
-// Arriva da solo quando c'è un consiglio nuovo, dopo la guida dei primi passi e mai sopra un'altra cosa;
-// il pulsante col suo ritratto, in alto a destra, fa rileggere il consiglio della stagione.
+// Pannello del maestro (game-design.md, sezione 7.4): mostra i consigli scelti dal motore (gioco/maestro.js).
+// In alto il maestro e una riflessione sulla stagione; sotto una scheda per pianta, con come si sente
+// e i punti da fare, ognuno col suo perché. Arriva da solo quando c'è un consiglio nuovo, dopo la guida
+// dei primi passi e mai sopra un'altra cosa; il pulsante col ritratto, in alto a destra, lo fa rileggere.
 import { NOME_MAESTRO } from './gioco/maestro.js';
 
 // il ritratto: un vecchio maestro con la barba bianca e il codino
@@ -15,28 +16,52 @@ export const RITRATTO = `<svg viewBox="0 0 48 48" aria-hidden="true">
   <circle cx="16" cy="25.5" r="1.6" fill="#ef9a7a" opacity=".6"/><circle cx="32" cy="25.5" r="1.6" fill="#ef9a7a" opacity=".6"/>
 </svg>`;
 
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
 export function creaConsigli() {
   const el = document.createElement('section');
-  el.className = 'guida maestro'; el.hidden = true;
-  el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+  el.className = 'negozio maestro'; el.hidden = true;
+  el.setAttribute('aria-label', 'Il consiglio del maestro');
   el.innerHTML = `
-    <span class="guida-ic maestro-ic">${RITRATTO}</span>
-    <div class="guida-corpo">
-      <p class="maestro-chi"><b>${NOME_MAESTRO}</b> · <span data-v="titolo"></span></p>
-      <p class="guida-testo" data-v="testo"></p>
-      <div class="guida-piede"><span></span><button class="guida-avanti">Grazie, maestro</button></div>
+    <div class="negozio-pannello maestro-pannello" role="dialog" aria-modal="true" aria-labelledby="maestro-titolo">
+      <div class="maestro-testa">
+        <span class="guida-ic maestro-ic">${RITRATTO}</span>
+        <div><p class="maestro-chi">${NOME_MAESTRO}</p><h2 id="maestro-titolo" data-v="titolo"></h2></div>
+      </div>
+      <p class="maestro-intro" data-v="intro"></p>
+      <div class="negozio-schede" data-v="schede"></div>
+      <div class="maestro-pianta" data-v="pianta"></div>
+      <button class="guida-avanti maestro-ok">Grazie, maestro</button>
     </div>`;
   document.getElementById('screen').appendChild(el);
-  let letto = null;
-  el.querySelector('.guida-avanti').addEventListener('click', () => { el.hidden = true; const f = letto; letto = null; f?.(); });
+  const v = (n) => el.querySelector(`[data-v="${n}"]`);
+  let consiglio = null, letto = null;
+
+  // la scheda di una pianta: come si sente, poi i punti col perché
+  function mostraPianta(id) {
+    el.querySelectorAll('[data-pianta]').forEach(b => b.classList.toggle('on', b.dataset.pianta === id));
+    const p = consiglio.piante.find(x => x.id === id);
+    v('pianta').innerHTML = `
+      <div class="maestro-sente"><b>Come si sente</b><p>${esc(p.sente)}</p></div>
+      <ol class="maestro-punti">${p.punti.map(x => `<li><b>${esc(x.fai)}</b><span><i>Perché:</i> ${esc(x.perche)}</span></li>`).join('')}</ol>`;
+    v('pianta').scrollTop = 0;
+  }
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pianta) mostraPianta(b.dataset.pianta);
+    else if (b.classList.contains('maestro-ok')) { el.hidden = true; const f = letto; letto = null; f?.(); }
+  });
   return {
     get aperto() { return !el.hidden; },
-    // consiglio: { titolo, testo }; quandoLetto(): chiamata col "Grazie, maestro"
-    mostra(consiglio, quandoLetto) {
-      el.querySelector('[data-v="titolo"]').textContent = consiglio.titolo;
-      el.querySelector('[data-v="testo"]').textContent = consiglio.testo;
-      letto = quandoLetto; el.hidden = false;
-      el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    // c: { titolo, intro, piante: [{ id, nome, sente, punti: [{ fai, perche }] }] }; quandoLetto(): col "Grazie, maestro"
+    mostra(c, quandoLetto) {
+      consiglio = c; letto = quandoLetto;
+      v('titolo').textContent = c.titolo;
+      v('intro').textContent = c.intro;
+      v('schede').innerHTML = c.piante.map(p => `<button class="scheda" data-pianta="${p.id}">${p.nome}</button>`).join('');
+      v('schede').hidden = c.piante.length < 2;
+      mostraPianta(c.piante[0].id);
+      el.hidden = false;
     },
     chiudi() { el.hidden = true; letto = null; },
   };

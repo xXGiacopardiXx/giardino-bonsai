@@ -310,8 +310,24 @@ button{touch-action:manipulation}
 .maestro-b{top:calc(var(--top) + 37.4cqw);background:radial-gradient(circle at 35% 30%,#fff1c2,#f0b45a)}
 .maestro-b svg,.maestro-ic svg{width:88%;height:88%}
 .maestro-b.nuovo::after{content:"";position:absolute;top:-.6cqw;right:-.6cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#e2483a;border:.45cqw solid var(--ink)}
-.maestro{z-index:5}
-.maestro-chi{margin:0;font:600 3cqw/1 var(--display);color:#8a6a48}
-.maestro-chi b{color:var(--ink)}
+/* pannello del maestro: riflessione, schede per pianta, punti col perché; scorre se è lungo */
+.maestro{z-index:7}
+.maestro-pannello{max-height:78vh;display:flex;flex-direction:column;gap:2cqw}
+.maestro-testa{display:flex;align-items:center;gap:2.6cqw}
+.maestro-testa h2{margin:.6cqw 0 0}
+.maestro-chi{margin:0;font:600 3.1cqw/1 var(--display);color:#8a6a48}
+.maestro-intro{margin:0;font:italic 500 3.4cqw/1.4 var(--display);color:#6b4a2a}
+.maestro .negozio-schede{margin-top:0}
+.maestro-pianta{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;min-height:0;flex:1;display:grid;gap:2cqw;padding-right:.6cqw}
+.maestro-sente{padding:2cqw 2.6cqw;border-radius:3cqw;background:#eef6e2;border:.45cqw solid #9cc27a}
+.maestro-sente b{font:700 3cqw/1 var(--display);color:#4f7a2e}
+.maestro-sente p{margin:1cqw 0 0;font:500 3.3cqw/1.38 var(--display);color:var(--ink)}
+.maestro-punti{margin:0;padding:0 0 0 5cqw;display:grid;gap:2.2cqw}
+.maestro-punti li{padding-left:.6cqw}
+.maestro-punti li::marker{font:700 3.4cqw var(--display);color:#c2741f}
+.maestro-punti b{display:block;font:700 3.4cqw/1.3 var(--display);color:var(--ink)}
+.maestro-punti span{display:block;margin-top:.6cqw;font:500 3.2cqw/1.4 var(--display);color:#5a4632}
+.maestro-punti i{font-style:normal;font-weight:700;color:#8a6a48}
+.maestro-ok{align-self:center;flex:none}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}

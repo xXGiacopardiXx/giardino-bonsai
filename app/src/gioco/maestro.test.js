@@ -13,7 +13,10 @@ test('il maestro dà il consiglio della stagione una volta sola, e cambia con la
   const c = consiglioMaestro(s);
   assert.equal(c.id, 'stagione-1-0');
   assert.equal(c.titolo, 'Primavera');
-  assert.match(c.testo, /germogli/);
+  // per pianta, con come si sente e il perché di ogni azione
+  assert.deepEqual(c.piante.map(p => p.id), ['acero', 'ginepro', 'pino']);
+  assert.match(c.piante[0].punti[0].fai, /germogli/);
+  assert.ok(c.piante.every(p => p.sente && p.punti.every(x => x.fai && x.perche)));
   segnaConsiglio(s, c.id);
   assert.equal(consiglioMaestro(s), null);
   // il consiglio della stagione si può sempre rileggere
@@ -24,11 +27,11 @@ test('il maestro dà il consiglio della stagione una volta sola, e cambia con la
 
 test('negli anni pari il consiglio della stagione è diverso', () => {
   const s = nuovoStato(T0);
-  const primo = consiglioStagione(s).testo;
+  const primo = consiglioStagione(s).intro;
   avanza(s, dopo(28.5));
   const secondo = consiglioStagione(s);
   assert.equal(secondo.id, 'stagione-2-0');
-  assert.notEqual(secondo.testo, primo);
+  assert.notEqual(secondo.intro, primo);
 });
 
 test('i momenti chiave vengono prima della stagione: radici fradice, una volta per sempre', () => {
@@ -38,6 +41,9 @@ test('i momenti chiave vengono prima della stagione: radici fradice, una volta p
   for (let i = 1; i <= 4; i++) annaffia(s, T0 + i * 3600 * 1000, 'acero', true);
   const c = consiglioMaestro(s);
   assert.equal(c.id, 'ristagno');
+  // solo la pianta con le radici fradice, e lei dice come si sente
+  assert.deepEqual(c.piante.map(p => p.id), ['acero']);
+  assert.match(c.piante[0].sente, /respirano/);
   segnaConsiglio(s, c.id);
   assert.equal(consiglioMaestro(s), null);
 });
@@ -48,7 +54,7 @@ test('alla fine dell\'inverno il maestro avvisa del rinvaso', () => {
   avanza(s, dopo(28 + 21 + 4.5));
   const c = consiglioMaestro(s);
   assert.equal(c.id, 'rinvaso-2');
-  assert.match(c.testo, /Rinvasa/);
+  assert.ok(c.piante.some(p => p.id === 'acero' && /Rinvasa/.test(p.punti[0].fai)));
 });
 
 test('si tengono solo gli ultimi consigli letti', () => {
@@ -65,4 +71,16 @@ test('un salvataggio della versione 17 riceve il maestro', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.maestro, { visti: [] });
+});
+
+test('il maestro dice come si sente ogni pianta, dal suo stato vero', () => {
+  const s = nuovoStato(T0);
+  // all'inizio l'acero ha un po' di sete, le conifere stanno bene
+  let c = consiglioStagione(s);
+  assert.match(c.piante.find(p => p.id === 'acero').sente, /sete/);
+  assert.match(c.piante.find(p => p.id === 'pino').sente, /candele/);
+  // dopo giorni senz'acqua l'acero soffre davvero
+  avanza(s, dopo(5));
+  c = consiglioStagione(s);
+  assert.match(c.piante.find(p => p.id === 'acero').sente, /da giorni/);
 });
