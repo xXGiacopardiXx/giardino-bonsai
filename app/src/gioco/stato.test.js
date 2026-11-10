@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1102,4 +1102,37 @@ test('una decorazione al posto dell\'azalea si sposta quando la si compra', () =
   const g = s.decorazioni.posti.gatto;
   assert.ok(Math.hypot(g.x - 3.4, g.z + 1.05) > 1.2);
   assert.equal(posaDecorazione(s, 'gatto', 3.4, -1.05, 0), 'occupato');
+});
+
+test('le piante si spostano dove si vuole, col vaso, ma non sopra le altre né nel laghetto', () => {
+  const s = nuovoStato(T0);
+  assert.deepEqual(vista(s).piantePosti.pino, { x: 2.1, z: 2.0, r: 0, raggio: 1.1 });
+  assert.equal(posaPianta(s, 'pino', -0.8, 4.6, 1), 'ok');
+  assert.deepEqual(vista(s).piantePosti.pino, { x: -0.8, z: 4.6, r: 1, raggio: 1.1 });
+  assert.equal(posaPianta(s, 'pino', 0, -2.2, 0), 'occupato', 'sull\'acero no');
+  assert.equal(posaPianta(s, 'pino', -2.3, 3.45, 0), 'acqua');
+  assert.equal(posaPianta(s, 'pino', 5.5, 0, 0), 'fuori');
+  assert.equal(posaPianta(s, 'azalea', 1, 1, 0), 'nessuno', 'l\'azalea non c\'è ancora');
+  // il vecchio posto del pino ora è libero per una decorazione; il nuovo no
+  s.semi = 1000; compraDecorazione(s, 'gatto');
+  assert.equal(posaDecorazione(s, 'gatto', 2.1, 2.0, 0), 'ok');
+  assert.equal(posaDecorazione(s, 'gatto', -0.8, 4.6, 0), 'occupato');
+  // e una pianta non va sopra una decorazione
+  assert.equal(posaPianta(s, 'ginepro', 2.1, 2.0, 0), 'occupato');
+});
+
+test('se il posto dell\'azalea è occupato da un\'altra pianta, la si compra lì vicino', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  assert.equal(posaPianta(s, 'ginepro', 3.2, -0.6, 0), 'ok');
+  compraPianta(s, T0, 'azalea');
+  const a = vista(s).piantePosti.azalea, g = vista(s).piantePosti.ginepro;
+  assert.ok(Math.hypot(a.x - g.x, a.z - g.z) >= (1 + 1.05) * .82);
+});
+
+test('un salvataggio della versione 20 riceve le piante al loro posto', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 20; delete vecchio.piantePosti;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.piantePosti, {});
 });

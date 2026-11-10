@@ -379,6 +379,17 @@ Ogni decorazione si mette **dove si vuole** sul prato e si gira, così ogni giar
 - Nessun effetto sulle piante: le decorazioni sono solo per il piacere del giardino.
 - Più avanti: altre decorazioni, e forse spostare anche le cose fisse (lanterna, pietre del sentiero).
 
+### 8.3 Piante dove si vuole
+
+Anche i bonsai si spostano, come le decorazioni, così il giardino si compone a piacere.
+
+- **Sposta** è l'ultimo pulsante della tendina di ogni pianta (acero, pino, ginepro e azalea). Si entra nella stessa modalità delle decorazioni: nome in alto, in basso **Ruota** e **Fatto** (niente Togli: le piante restano sempre nel giardino). Etichette, barra e indicatori in alto spariscono.
+- La pianta si sposta **con il suo vaso e il supporto** (il tavolo dell'acero, la lastra del ginepro, la base del pino, la lastra dell'azalea): col dito la si trascina (si solleva un poco), o si tocca il prato dove la si vuole. **Ruota** la gira di un ottavo di giro.
+- Anello verde dove si può posare, rosso dove no. Non si posa sopra un'altra pianta, una decorazione, la lanterna o la pietra col muschio, nel laghetto, oltre il bordo del prato né dietro la staccionata. Sulla ghiaia sì.
+- Spostando la pianta si spostano anche l'anello della sete, l'annaffiatoio, l'etichetta, il punto che la telecamera guarda per Pota, Filo, Stile e Foto, i granuli di concime e le radici del vaso stretto.
+- Le posizioni si salvano nella partita (`piantePosti`); una pianta mai spostata sta al suo posto iniziale. Se il posto dell'azalea è già occupato da un'altra pianta quando la si compra, l'azalea va lì vicino.
+- Sotto le piante spostate l'erba non cresce. I cerchi rastrellati nella ghiaia restano dove erano le piante all'inizio (sono disegnati nella ghiaia): da sistemare più avanti.
+
 ## 9. Stile grafico
 
 ### 9.1 Direzione

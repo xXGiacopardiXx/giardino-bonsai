@@ -71,6 +71,9 @@ export function creaCura(scene, pianta, id = 'acero') {
     granuli.setColorAt(i, new THREE.Color(rg() < .5 ? 0xf0dc9a : 0xe2c47a));
   }
   granuli.visible = false; scene.add(granuli);
+  // i granuli seguono il vaso quando la pianta si sposta (sezione 8.3): si spostano quanto il terriccio
+  const potTop0 = pianta.potTop.clone();
+  const seguiVaso = () => granuli.position.copy(pianta.potTop).sub(potTop0);
   let quantita = 0, nuovo = -1;
   const d = new THREE.Object3D();
   function disponiGranuli(pop = 1) {
@@ -106,6 +109,7 @@ export function creaCura(scene, pianta, id = 'acero') {
     },
     // vista(stato).concime: { attivo, giorni }
     setConcime(v) {
+      seguiVaso();
       const q = v.attivo ? Math.max(.25, v.giorni / 7) : 0;
       if (q === quantita) return;
       quantita = q; granuli.visible = q > 0;

@@ -34,7 +34,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -173,7 +173,9 @@ function avvia() {
     cure?.mostra(v);
     rinvasoScena.setRinvaso(v.rinvaso);
     decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa && d.dove).map(d => ({ id: d.id, ...d.dove })));
-    giardino.liberaErba(decorazioni.zone());
+    // le piante dove le ha messe il giocatore (sezione 8.3); niente erba sotto piante e decorazioni
+    alberi.setPosti(v.piantePosti);
+    giardino.liberaErba([...decorazioni.zone(), ...Object.values(v.piantePosti).map(p => [p.x, p.z, p.raggio * .85])]);
     for (const p in curaScene) {
       const c = v.cura[p];
       if (!c) continue;
@@ -533,6 +535,7 @@ function avvia() {
     else if (a === 'rinvasa') rinvasaPianta(p);
     else if (a === 'stile') stilatura(p);
     else if (a === 'foto') fotoPianta(p);
+    else if (a === 'sposta') sposta(p);
     else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
@@ -546,6 +549,7 @@ function avvia() {
     else if (a === 'rinvasa') rinvasaPianta('acero');
     else if (a === 'stile') stilatura('acero');
     else if (a === 'foto') fotoPianta('acero');
+    else if (a === 'sposta') sposta('acero');
   });
   const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro', azalea: 'Azalea Satsuki' };
 
@@ -684,15 +688,20 @@ function avvia() {
     else if (a === 'fine') { suoni.tocco(); fotoPianta(null); }
   });
 
-  // --- Decorazioni dove si vuole (sezione 8.2): toccandone una (o da Sposta nel negozio) si sceglie;
-  // col dito la si trascina sul prato, un tocco sul prato la porta lì, Ruota la gira di un ottavo di giro.
-  // L'anello sotto è verde dove si può posare e rosso dove no (piante, lanterna, laghetto, fuori dal prato,
-  // altre decorazioni). Lasciata in un posto sbagliato, torna dov'era. ---
+  // --- Decorazioni e piante dove si vuole (sezioni 8.2 e 8.3): toccando una decorazione (o da Sposta nel
+  // negozio, o da Sposta nella tendina di una pianta) si sceglie; col dito la si trascina sul prato, un tocco
+  // sul prato la porta lì, Ruota la gira di un ottavo di giro. L'anello sotto è verde dove si può posare e
+  // rosso dove no (piante, lanterna, laghetto, fuori dal prato, decorazioni). Lasciata in un posto
+  // sbagliato, torna dov'era. Le piante non si tolgono dal giardino: per loro Togli non c'è. ---
   let spostando = null;
-  const barraSposta = document.getElementById('sposta');
+  const barraSposta = document.getElementById('sposta'), togliBtn = barraSposta.querySelector('[data-a="togli"]');
   const MOTIVO = { fuori: 'Lì è fuori dal prato.', acqua: 'Nel laghetto ci va solo il ponticello.', occupato: 'Lì c\'è già qualcosa: scegli un posto libero.' };
   const nomeDeco = (id) => vista(stato).decorazioni.find(d => d.id === id).nome;
-  // id: decorazione da spostare, oppure null per finire
+  // decorazione o pianta: le piante passano per alberi, le decorazioni per decorazioni
+  const ePianta = (id) => TUTTE.includes(id);
+  const posizioneSpostata = () => ePianta(spostando) ? alberi.posizioneSposta : decorazioni.posizione;
+  const provaSpostata = (p) => ePianta(spostando) ? alberi.provaPosto(p) : decorazioni.prova(p);
+  // id: decorazione o pianta da spostare, oppure null per finire
   function sposta(id) {
     if (id === spostando) return;
     if (id) { potatura(null); filatura(null); stilatura(null); fotoPianta(null); annullaScelta(); chiudiMenu(); negozio.chiudi(); }
@@ -700,11 +709,14 @@ function avvia() {
     spostando = id;
     screenEl.classList.toggle('spostando', !!id);
     barraSposta.hidden = !id;
-    decorazioni.seleziona(id);
+    decorazioni.seleziona(ePianta(id) ? null : id);
+    alberi.selezionaSposta(ePianta(id) ? id : null, ePianta(id) ? vista(stato).piantePosti[id].raggio * .95 : 1);
     if (id) {
-      document.getElementById('sposta-titolo').textContent = nomeDeco(id);
+      document.getElementById('sposta-titolo').textContent = ePianta(id) ? nomiPiante[id] : nomeDeco(id);
+      togliBtn.hidden = ePianta(id);
       suoni.tocco();
-      if (!prima) ui.toast('Trascina col dito per spostarla, o tocca il prato dove la vuoi. Ruota per girarla.', 4500);
+      if (!prima) ui.toast(ePianta(id) ? 'Trascina la pianta col dito, con il suo vaso, o tocca il prato dove la vuoi. Ruota per girarla.'
+        : 'Trascina col dito per spostarla, o tocca il prato dove la vuoi. Ruota per girarla.', 4500);
     }
   }
   const suolo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), puntoSuolo = new THREE.Vector3();
@@ -713,15 +725,15 @@ function avvia() {
   // prova a posare la decorazione scelta: se il posto non va, resta dov'era e si dice perché
   function posaQui(x, z, r) {
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    const esito = posaDecorazione(stato, spostando, x, z, r);
-    decorazioni.prova(null);
+    const esito = ePianta(spostando) ? posaPianta(stato, spostando, x, z, r) : posaDecorazione(stato, spostando, x, z, r);
+    provaSpostata(null);
     if (esito === 'ok') { salva(stato); suoni.fruscio(.08); } else ui.toast(MOTIVO[esito] ?? 'Lì non ci sta.', 2500);
     disegna();
   }
   barraSposta.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a || !spostando) return;
-    if (a === 'ruota') { const p = decorazioni.posizione; posaQui(p.x, p.z, p.r + Math.PI / 4); }
-    else if (a === 'togli') {
+    if (a === 'ruota') { const p = posizioneSpostata(); posaQui(p.x, p.z, p.r + Math.PI / 4); }
+    else if (a === 'togli' && !ePianta(spostando)) {
       const id = spostando; sposta(null);
       mettiDecorazione(stato, id, false); salva(stato); disegna(); suoni.tocco();
       ui.toast(`${nomeDeco(id)}: messa da parte. La rimetti da Negozio, scheda Giardino.`, 3500);
@@ -732,12 +744,13 @@ function avvia() {
   screenEl.addEventListener('pointerdown', (e) => {
     if (!spostando || e.target !== canvas || presa || tiro) return;
     punta(e);
-    const id = decorazioni.tocca(raycaster);
+    // si prende la decorazione o la pianta sotto il dito (anche un'altra: diventa quella da spostare)
+    const id = decorazioni.tocca(raycaster) ?? alberi.tocca(raycaster);
     if (!id || !sulPrato()) return;
     e.stopPropagation();
     controls.enabled = false;
     if (id !== spostando) sposta(id);
-    const p = decorazioni.posizione;
+    const p = posizioneSpostata();
     presa = { id: e.pointerId, dx: p.x - puntoSuolo.x, dz: p.z - puntoSuolo.z, r: p.r, x0: e.clientX, y0: e.clientY, mosso: false };
   }, true);
   window.addEventListener('pointermove', (e) => {
@@ -746,14 +759,14 @@ function avvia() {
     if (!presa.mosso) return;
     punta(e); if (!sulPrato()) return;
     const x = puntoSuolo.x + presa.dx, z = puntoSuolo.z + presa.dz;
-    decorazioni.prova({ x, z, r: presa.r, valido: postoLibero(stato, spostando, x, z) === 'ok', inMano: true });
+    provaSpostata({ x, z, r: presa.r, valido: postoLibero(stato, spostando, x, z) === 'ok', inMano: true });
   });
   const lascia = (e) => {
     if (!presa || e.pointerId !== presa.id) return;
     const { mosso, r } = presa; presa = null;
     controls.enabled = true;
-    if (!mosso || e.type === 'pointercancel') { decorazioni.prova(null); return; }
-    const p = decorazioni.posizione;
+    if (!mosso || e.type === 'pointercancel') { provaSpostata(null); return; }
+    const p = posizioneSpostata();
     posaQui(p.x, p.z, r);
   };
   window.addEventListener('pointerup', lascia);
@@ -948,7 +961,7 @@ function avvia() {
     if (potando) { potaQui(e, r); return; }
     if (filando || fotografando) return;
     // spostando una decorazione, un tocco sul prato la porta lì
-    if (spostando) { if (sulPrato()) { const p = decorazioni.posizione; posaQui(puntoSuolo.x, puntoSuolo.z, p.r); } return; }
+    if (spostando) { if (sulPrato()) { const p = posizioneSpostata(); posaQui(puntoSuolo.x, puntoSuolo.z, p.r); } return; }
     // un tocco su una decorazione la sceglie per spostarla
     const deco = scelta ? null : decorazioni.tocca(raycaster);
     if (deco) { chiudiMenu(); sposta(deco); return; }
@@ -979,7 +992,7 @@ function avvia() {
       camera.position.copy(controls.target).addScaledVector(dir, volo.daD + (volo.aD - volo.daD) * k);
     }
     controls.update();
-    alberi.aggiorna(clock);
+    alberi.aggiorna(clock); alberi.aggiornaAnello(clock);
     for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
     aghiVecchi.aggiorna(dt, clock); fioriAppassiti.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);

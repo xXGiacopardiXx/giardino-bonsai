@@ -102,7 +102,8 @@ export function creaRinvaso(scene, piante) {
 
   return {
     // vista(stato).rinvaso: le radici escono quando il rinvaso è dovuto
-    setRinvaso(v) { for (const id in stati) if (stati[id].t < 0) stati[id].fuori.visible = !!v[id]?.dovuto; },
+    // le radici che escono dal vaso seguono la pianta, anche se è stata spostata
+    setRinvaso(v) { for (const id in stati) if (stati[id].t < 0) { stati[id].fuori.visible = !!v[id]?.dovuto; stati[id].fuori.position.copy(stati[id].p.potTop); } },
     get attivo() { return Object.values(stati).some(x => x.t >= 0); },
     // terriccio: id del terriccio usato (colore dei granuli);
     // eventi: taglio() a ogni colpo di forbici, pioggia() quando cadono i granuli, posata() quando la pianta

@@ -482,7 +482,52 @@ export function creaAlberi(world) {
   });
 
   cure.acero = acero;
+
+  // Piante spostabili (sezione 8.3): ogni pianta si sposta col vaso e il supporto (il gruppo radice), e con
+  // lei i punti che usano gli altri pezzi della scena (terriccio, punto da guardare, etichetta), aggiornati
+  // sul posto. setPosto mette la pianta dove dice il motore; provaPosto la sposta per un attimo, mentre la
+  // si trascina, con l'anello verde (si può posare) o rosso (no) sotto.
+  const ASSE = new THREE.Vector3(0, 1, 0);
+  const spostabili = {};
+  for (const id in trees) {
+    const radice = trees[id].radice, cura = cure[id], base = radice.position.clone();
+    const punti = [cura.potTop, cura.fuoco, trees[id].tag].map(v => ({ v, off: v.clone().sub(base) }));
+    spostabili[id] = { radice, punti, posto: { x: base.x, z: base.z, r: 0 }, prova: null };
+  }
+  const anelloSposta = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 56), new THREE.MeshBasicMaterial({ color: 0x8fe06a, transparent: true, opacity: .8, depthWrite: false }));
+  anelloSposta.rotation.x = -PI / 2; anelloSposta.visible = false; anelloSposta.renderOrder = 3; world.add(anelloSposta);
+  let sceltaSposta = null, raggioScelta = 1;
+  function colloca(id) {
+    const s = spostabili[id], p = s.prova ?? s.posto;
+    s.radice.position.set(p.x, s.prova?.inMano ? .12 : 0, p.z); s.radice.rotation.y = p.r;
+    for (const { v, off } of s.punti) v.copy(off).applyAxisAngle(ASSE, p.r).add(new THREE.Vector3(p.x, 0, p.z));
+    if (id === sceltaSposta) {
+      anelloSposta.position.set(p.x, .03, p.z); anelloSposta.scale.setScalar(raggioScelta);
+      anelloSposta.material.color.setHex(s.prova && !s.prova.valido ? 0xff6a4a : 0x8fe06a);
+    }
+  }
   return {
+    // posti: { id: { x, z, r } } dalla vista del motore (vista.piantePosti)
+    setPosti(posti) {
+      for (const id in posti) {
+        const s = spostabili[id], p = posti[id];
+        if (!s || (s.posto.x === p.x && s.posto.z === p.z && s.posto.r === p.r)) continue;
+        s.posto = { x: p.x, z: p.z, r: p.r }; colloca(id);
+      }
+    },
+    // la pianta da spostare (id, col suo raggio), oppure null
+    selezionaSposta(id, raggio = 1) {
+      const prima = sceltaSposta; sceltaSposta = id; raggioScelta = raggio;
+      if (prima && prima !== id) { spostabili[prima].prova = null; colloca(prima); }
+      anelloSposta.visible = !!id;
+      if (id) colloca(id);
+    },
+    // posizione provvisoria della pianta scelta ({ x, z, r, valido, inMano }), oppure null per tornare al suo posto
+    provaPosto(p) { if (!sceltaSposta) return; spostabili[sceltaSposta].prova = p; colloca(sceltaSposta); },
+    // dove sta adesso la pianta scelta (anche mentre la si trascina)
+    get posizioneSposta() { const s = spostabili[sceltaSposta]; return s ? { ...(s.prova ?? s.posto) } : null; },
+    // l'anello pulsa, come quello delle decorazioni
+    aggiornaAnello(clock) { if (anelloSposta.visible) anelloSposta.material.opacity = .6 + .3 * Math.sin(clock * 5); },
     trees,
     acero,
     // le tre piante viste dalla cura: ciuffi dei cuscinetti, gruppi e terriccio
