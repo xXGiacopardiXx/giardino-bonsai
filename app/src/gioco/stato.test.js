@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1142,11 +1142,11 @@ test('ogni elemento del giardino si sposta e si gira, ma non sopra le altre cose
   assert.equal(ELEMENTI.length, 13);
   // all'inizio ognuno è al suo posto, e il suo posto va bene
   for (const e of ELEMENTI) {
-    assert.deepEqual(vista(s).elementiPosti[e.id], { x: e.posto[0], z: e.posto[1], r: 0, raggio: e.raggio });
+    assert.deepEqual(vista(s).elementiPosti[e.id], { x: e.posto[0], z: e.posto[1], r: 0, raggio: e.raggio, tolto: false });
     assert.equal(postoLibero(s, e.id, ...e.posto), 'ok', e.id);
   }
   assert.equal(posaElemento(s, 'lanterna', -3.2, -1.0, 1), 'ok');
-  assert.deepEqual(vista(s).elementiPosti.lanterna, { x: -3.2, z: -1, r: 1, raggio: .6 });
+  assert.deepEqual(vista(s).elementiPosti.lanterna, { x: -3.2, z: -1, r: 1, raggio: .6, tolto: false });
   // il vecchio posto della lanterna è libero, il nuovo no
   assert.equal(posaPianta(s, 'pino', 3.2, -2.2, 0), 'ok');
   assert.equal(posaPianta(s, 'ginepro', -3.2, -1.0, 0), 'occupato');
@@ -1177,4 +1177,24 @@ test('un salvataggio della versione 21 riceve gli elementi del giardino al loro 
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.elementiPosti, {});
+});
+
+test('un elemento del giardino si toglie e si rimette gratis, dove era o lì vicino', () => {
+  const s = nuovoStato(T0); const semi = s.semi;
+  assert.equal(mettiElemento(s, 'lanterna', false), true);
+  assert.equal(mettiElemento(s, 'lanterna', false), false, 'già tolta');
+  assert.equal(vista(s).elementiPosti.lanterna.tolto, true);
+  assert.deepEqual(vista(s).elementiDaParte, [{ id: 'lanterna', nome: 'Lanterna di pietra' }]);
+  assert.equal(posaElemento(s, 'lanterna', 0, 0, 0), 'nessuno', 'tolta non si sposta');
+  // tolta, non ingombra più: al suo posto ci va una pianta
+  assert.equal(posaPianta(s, 'pino', 3.0, -1.9, 0), 'ok');
+  // rimessa, il suo posto è occupato dal pino: va lì vicino
+  assert.equal(mettiElemento(s, 'lanterna', true), true);
+  const l = vista(s).elementiPosti.lanterna, p = vista(s).piantePosti.pino;
+  assert.equal(l.tolto, false);
+  assert.deepEqual(vista(s).elementiDaParte, []);
+  assert.equal(postoLibero(s, 'lanterna', l.x, l.z), 'ok');
+  assert.ok(Math.hypot(l.x - p.x, l.z - p.z) > 1);
+  assert.equal(s.semi, semi, 'gratis');
+  assert.equal(mettiElemento(s, 'nessuno', false), false);
 });

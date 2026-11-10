@@ -25,11 +25,13 @@ export function creaElementi(world, oggetti) {
     }
   }
   return {
-    // posti: { id: { x, z, r } } dalla vista del motore
+    // posti: { id: { x, z, r, tolto } } dalla vista del motore; quelli tolti non si vedono
     setPosti(posti) {
       for (const id in posti) {
         const e = el[id], p = posti[id];
-        if (!e || (e.posto.x === p.x && e.posto.z === p.z && e.posto.r === p.r)) continue;
+        if (!e) continue;
+        e.g.visible = !p.tolto;
+        if (e.posto.x === p.x && e.posto.z === p.z && e.posto.r === p.r) continue;
         e.posto = { x: p.x, z: p.z, r: p.r }; colloca(id);
       }
     },
@@ -37,6 +39,7 @@ export function creaElementi(world, oggetti) {
     tocca(raycaster) {
       let meglio = null, d = Infinity;
       for (const id in el) {
+        if (!el[id].g.visible) continue;
         const hit = raycaster.intersectObject(el[id].g, true)[0];
         if (hit && hit.distance < d) { d = hit.distance; meglio = id; }
       }

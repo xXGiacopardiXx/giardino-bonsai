@@ -29,6 +29,15 @@ const DECO = {
   gatto: `<ellipse cx="30" cy="36" rx="20" ry="10" fill="#e8913a"/><path d="M12 38c2 8 22 10 34 6" stroke="#e8913a" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="47" cy="31" r="9" fill="#e8913a"/><path d="M41 25l1-8 5 5ZM48 23l5-6 1 8Z" fill="#e8913a"/><path d="M44 31h3M49 31h3" stroke="#3b2716" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="50" cy="35" rx="4" ry="2.4" fill="#f7e3c4"/>`,
   ponte: `<path d="M4 44Q32 14 60 44" stroke="#9a6a46" stroke-width="6" fill="none"/><path d="M6 34Q32 6 58 34" stroke="#c8402c" stroke-width="3" fill="none"/><path d="M10 40v-8M21 30v-9M32 26v-8M43 30v-9M54 40v-8" stroke="#c8402c" stroke-width="2.6"/><path d="M2 47h60" stroke="#6cb6c8" stroke-width="3"/>`,
 };
+// gli elementi del giardino messi da parte (sezione 8.4), per id senza il numero
+const ELEMENTI_DISEGNI = {
+  lanterna: `<rect x="25" y="40" width="14" height="6" rx="1" fill="#918d81"/><rect x="29" y="24" width="6" height="16" fill="#aba79a"/><rect x="23" y="20" width="18" height="4" rx="1" fill="#918d81"/><rect x="25" y="10" width="14" height="10" fill="#ffd892"/><path d="M20 11 32 2l12 9Z" fill="#918d81"/>`,
+  sasso: `<ellipse cx="29" cy="38" rx="18" ry="10" fill="#8e8a7e"/><ellipse cx="47" cy="43" rx="8" ry="5" fill="#9d998c"/><ellipse cx="27" cy="30" rx="12" ry="4.5" fill="#6d9a43"/>`,
+  laghetto: `<ellipse cx="32" cy="32" rx="28" ry="14" fill="#a9a597"/><ellipse cx="32" cy="32" rx="24" ry="11" fill="#6cb6c8"/><ellipse cx="24" cy="30" rx="6" ry="2.4" fill="#f07a2e"/><ellipse cx="40" cy="35" rx="5" ry="2.2" fill="#f5f0e6"/><circle cx="44" cy="27" r="3" fill="#5c9645"/>`,
+  cespuglio: `<circle cx="22" cy="32" r="12" fill="#4c7f45"/><circle cx="40" cy="30" r="13" fill="#5d9150"/><circle cx="31" cy="22" r="11" fill="#73a35e"/>`,
+  sentiero: `<ellipse cx="32" cy="34" rx="22" ry="11" fill="#b5b0a2"/><ellipse cx="32" cy="31" rx="20" ry="9" fill="#c4bfb1"/>`,
+};
+const disegnoElemento = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${ELEMENTI_DISEGNI[id.replace(/-\d+$/, '')] || ''}</svg>`;
 // le piante in vendita: un'azalea in fiore nel suo vaso tondo
 const PIANTE_DISEGNI = {
   azalea: `<path d="M16 34h32l-3 12H19Z" fill="#6e4a38"/><rect x="13" y="31" width="38" height="4" rx="2" fill="#5f3e2f"/><path d="M32 31c-1-6 3-8 1-14" stroke="#7a4e3a" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="21" rx="10" ry="6" fill="#3f6e30"/><ellipse cx="42" cy="18" rx="10" ry="6" fill="#467a36"/><ellipse cx="32" cy="11" rx="9" ry="5.5" fill="#4e823b"/><g fill="#f27ea6"><circle cx="18" cy="18" r="2.6"/><circle cx="25" cy="17" r="2.4"/><circle cx="22" cy="23" r="2.2"/><circle cx="38" cy="15" r="2.6"/><circle cx="46" cy="16" r="2.4"/><circle cx="42" cy="21" r="2.2"/><circle cx="29" cy="9" r="2.4"/><circle cx="35" cy="8" r="2.2"/></g><g fill="#fbd3e1"><circle cx="21" cy="20" r="1.4"/><circle cx="44" cy="19" r="1.4"/><circle cx="33" cy="11" r="1.4"/></g>`,
@@ -73,6 +82,7 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'deco') azioni.compraDecorazione(b.dataset.id);
     else if (b.dataset.a === 'pianta') azioni.compraPianta(b.dataset.id);
     else if (b.dataset.a === 'metti') azioni.mettiDecorazione(b.dataset.id, true);
+    else if (b.dataset.a === 'rimetti') azioni.mettiElemento(b.dataset.id);
     else if (b.dataset.a === 'sposta') azioni.sposta(b.dataset.id);
     else if (b.dataset.scheda) api.apri('negozio', b.dataset.scheda);
     else if (b.dataset.cat) { categoria = b.dataset.cat; api.apri('negozio', 'cura'); }
@@ -94,7 +104,7 @@ export function creaNegozio(azioni) {
       lista.scrollTop = 0;
       v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
         : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + ' (3 dosi a confezione)'
-        : scheda === 'giardino' ? 'Piante nuove e decorazioni da mettere dove vuoi' : 'Vasi per l\'acero';
+        : scheda === 'giardino' ? 'Piante nuove, decorazioni e cose messe da parte' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -117,7 +127,7 @@ export function creaNegozio(azioni) {
           const pulsante = d.tua ? `<button class="vaso-b usa" data-a="${d.messa ? 'sposta' : 'metti'}" data-id="${d.id}">${d.messa ? 'Sposta' : 'Metti'}</button>`
             : `<button class="vaso-b compra${vista.semi < d.prezzo ? ' caro' : ''}" data-a="deco" data-id="${d.id}" aria-label="Compra per ${d.prezzo} Semi">${d.prezzo}${SEME}</button>`;
           return `<div class="vaso${d.messa ? ' in-uso' : ''}" title="${d.descrizione}"><div class="vaso-img">${disegnoDeco(d.id)}</div><span class="vaso-nome">${d.nome}</span>${pulsante}</div>`;
-        }).join('');
+        }).join('') + vista.elementiDaParte.map(e => `<div class="vaso" title="Messo da parte: rimetterlo è gratis"><div class="vaso-img">${disegnoElemento(e.id)}</div><span class="vaso-nome">${e.nome}</span><button class="vaso-b usa" data-a="rimetti" data-id="${e.id}">Rimetti</button></div>`).join('');
         return;
       }
       const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi;

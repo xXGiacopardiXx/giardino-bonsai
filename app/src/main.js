@@ -35,7 +35,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -183,9 +183,10 @@ function avvia() {
     elementi.setPosti(v.elementiPosti);
     giardino.setAcero(v.piantePosti.acero);
     const ep = v.elementiPosti, gin = v.piantePosti.ginepro;
-    isola.setCerchi([...ELEMENTI.filter(e => e.cerchi).map(e => [ep[e.id].x, ep[e.id].z, e.cerchi]), [gin.x, gin.z, .95]]);
+    const nelGiardino = ELEMENTI.filter(e => !ep[e.id].tolto);
+    isola.setCerchi([...nelGiardino.filter(e => e.cerchi).map(e => [ep[e.id].x, ep[e.id].z, e.cerchi]), [gin.x, gin.z, .95]]);
     giardino.liberaErba([...decorazioni.zone(), ...Object.values(v.piantePosti).map(p => [p.x, p.z, p.raggio * .85]),
-      ...ELEMENTI.map(e => [ep[e.id].x, ep[e.id].z, e.raggio * (e.acqua ? 1.22 : e.bordo ? .7 : 1.05)])]);
+      ...nelGiardino.map(e => [ep[e.id].x, ep[e.id].z, e.raggio * (e.acqua ? 1.22 : e.bordo ? .7 : 1.05)])]);
     for (const p in curaScene) {
       const c = v.cura[p];
       if (!c) continue;
@@ -515,6 +516,12 @@ function avvia() {
       salva(stato); disegna(); suoni.magia();
       if (si) sposta(id);
     },
+    // elementi del giardino tolti (sezione 8.4): si rimettono dove erano, e si possono subito spostare
+    mettiElemento(id) {
+      if (!mettiElemento(stato, id, true)) return;
+      salva(stato); disegna(); suoni.magia();
+      sposta(id);
+    },
     sposta(id) { sposta(id); },
     usa(id) {
       if (!scegliVaso(stato, id)) return;
@@ -702,7 +709,7 @@ function avvia() {
   // (o da Sposta nel negozio, o da Sposta nella tendina di una pianta) si sceglie; col dito lo si trascina
   // sul prato, un tocco sul prato lo porta lì, Ruota lo gira di un ottavo di giro. L'anello sotto è verde
   // dove si può posare e rosso dove no (sopra altre cose, nel laghetto, fuori dal prato). Lasciato in un
-  // posto sbagliato, torna dov'era. Togli c'è solo per le decorazioni. ---
+  // posto sbagliato, torna dov'era. Togli c'è per decorazioni ed elementi, non per le piante. ---
   let spostando = null;
   const barraSposta = document.getElementById('sposta'), togliBtn = barraSposta.querySelector('[data-a="togli"]');
   const MOTIVO = { fuori: 'Lì è fuori dal prato.', acqua: 'Nel laghetto ci va solo il ponticello.', occupato: 'Lì c\'è già qualcosa: scegli un posto libero.' };
@@ -726,7 +733,7 @@ function avvia() {
     elementi.seleziona(el ? id : null, el ? el.raggio * (el.acqua ? 1.15 : 1.1) : 1);
     if (id) {
       document.getElementById('sposta-titolo').textContent = ePianta(id) ? nomiPiante[id] : el ? el.nome : nomeDeco(id);
-      togliBtn.hidden = ePianta(id) || !!el;
+      togliBtn.hidden = ePianta(id);
       suoni.tocco();
       if (!prima) ui.toast(ePianta(id) ? 'Trascina la pianta col dito, con il suo vaso, o tocca il prato dove la vuoi. Ruota per girarla.'
         : el?.acqua ? 'Trascina il laghetto col dito, carpe comprese, o tocca il prato dove lo vuoi. Ruota per girarlo.'
@@ -748,7 +755,12 @@ function avvia() {
   barraSposta.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a || !spostando) return;
     if (a === 'ruota') { const p = posizioneSpostata(); posaQui(p.x, p.z, p.r + Math.PI / 4); }
-    else if (a === 'togli' && !ePianta(spostando) && !elemento(spostando)) {
+    else if (a === 'togli' && elemento(spostando)) {
+      // gli elementi del giardino si tolgono e si rimettono gratis dal negozio (sezione 8.4)
+      const el = elemento(spostando); sposta(null);
+      mettiElemento(stato, el.id, false); salva(stato); disegna(); suoni.tocco();
+      ui.toast(`${el.nome}: ${el.f ? 'messa' : 'messo'} da parte. ${el.f ? 'La' : 'Lo'} rimetti da Negozio, scheda Giardino.`, 3500);
+    } else if (a === 'togli' && !ePianta(spostando)) {
       const id = spostando; sposta(null);
       mettiDecorazione(stato, id, false); salva(stato); disegna(); suoni.tocco();
       ui.toast(`${nomeDeco(id)}: messa da parte. La rimetti da Negozio, scheda Giardino.`, 3500);

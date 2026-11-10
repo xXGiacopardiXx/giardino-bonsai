@@ -397,7 +397,8 @@ Oltre a piante e decorazioni, si sposta tutto quello che c'è nel giardino fin d
 
 - Elementi spostabili: la **lanterna di pietra** (con la sua luce e il cappello di neve), la **pietra col muschio**, il **laghetto delle carpe** (con ninfee, fiore di loto e carpe), i **sei cespugli** (uno rosso) e le **quattro pietre del sentiero**, una per una.
 - Restano fermi solo la cornice dell'isola: la ghiaia, la staccionata di bambù, l'albero dietro e il bambù.
-- Un tocco sull'elemento (fuori dalle piante) apre la stessa modalità Sposta delle decorazioni: nome in alto, **Ruota** e **Fatto**. Niente Togli: gli elementi restano nel giardino. Si trascina col dito o si tocca il prato dove lo si vuole.
+- Un tocco sull'elemento (fuori dalle piante) apre la stessa modalità Sposta delle decorazioni: nome in alto, **Togli**, **Ruota** e **Fatto**. Si trascina col dito o si tocca il prato dove lo si vuole.
+- **Togli** mette l'elemento da parte: sparisce dal giardino e non ingombra più (al suo posto ci va altro; la lanterna tolta non fa più luce, nella ghiaia spariscono i suoi cerchi, sotto torna l'erba). Si rimette **gratis** dal Negozio, scheda Giardino, col pulsante **Rimetti**: torna dov'era (o lì vicino, se intanto il posto si è occupato) e si può subito spostare. Gli elementi tolti si salvano nella partita (`elementiTolti`).
 - Anello verde dove si può posare, rosso dove no. Nessuna cosa va sopra un'altra; nel laghetto entra solo il ponticello. I cespugli possono stare proprio sul bordo dell'isola; le altre cose no.
 - **Laghetto e ponticello**: spostando o girando il laghetto, il ponticello che ci sta sopra lo segue (si vede al momento di posarlo).
 - **Ghiaia**: i cerchi rastrellati si ridisegnano intorno a lanterna, pietra col muschio e ginepro quando stanno nella ghiaia; dove non c'è più niente torna la ghiaia a righe.
