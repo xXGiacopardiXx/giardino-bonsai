@@ -34,7 +34,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -84,7 +84,7 @@ function avvia() {
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, { enablePan: false, enableDamping: true, dampingFactor: .08, rotateSpeed: .55, zoomSpeed: .8, minPolarAngle: .55, maxPolarAngle: 1.2 });
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
-  // potando, filando: la pianta su cui si sta lavorando ('acero', 'pino', 'ginepro'), oppure null
+  // potando, filando: la pianta su cui si sta lavorando ('acero', 'pino', 'ginepro', 'azalea'), oppure null
   let baseDist = 30, potando = null, filando = null, fotografando = null;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
@@ -108,11 +108,18 @@ function avvia() {
   const ui = creaInterfaccia(screenEl, camera, alberi.trees);
   // La pianta del motore è l'acero, unica specie da curare nell'MVP (game-design.md, sezione 14.1)
   const acero = alberi.acero;
-  // germogli dell'acero, candele del pino, punte del ginepro; aghi vecchi del pino
-  const germogliScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaGermogli(scene, alberi.cure[p])]));
+  // tutte le piante della scena (l'azalea c'è anche prima di comprarla, nascosta); quelle del giardino
+  // in un dato momento sono v.piante della vista
+  const TUTTE = ['acero', 'pino', 'ginepro', 'azalea'];
+  const altreDi = (v) => v.piante.filter(p => p !== 'acero');
+  // germogli dell'acero, candele del pino, punte del ginepro, germogli dell'azalea; aghi vecchi del pino
+  // e fiori appassiti dell'azalea
+  const germogliScene = Object.fromEntries(TUTTE.map(p => [p, creaGermogli(scene, alberi.cure[p])]));
   const aghiVecchi = creaAghiVecchi(alberi.cure.pino);
-  // afidi, concime e spray su tutte e tre le piante
-  const curaScene = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaCura(scene, alberi.cure[p], p)]));
+  const fioriAppassiti = creaAghiVecchi(alberi.cure.azalea, { cuscinetti: [0, 1, 2, 3, 0, 1, 2, 3], quanti: 2, grandezza: .8, seme: 811,
+    geo: new THREE.IcosahedronGeometry(.42, 0).scale(1, .5, 1), tinte: [0xc8968a, 0xb8847a, 0xd6a89a, 0xa87468] });
+  // afidi, concime e spray su tutte le piante
+  const curaScene = Object.fromEntries(TUTTE.map(p => [p, creaCura(scene, alberi.cure[p], p)]));
   // radici che escono dal vaso stretto e animazione del rinvaso
   const rinvasoScena = creaRinvaso(scene, alberi.cure);
   // sagoma fantasma dello stile e ciuffi da tagliare
@@ -132,7 +139,7 @@ function avvia() {
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
   const avvisati = new Set();
-  const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro' };
+  const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro', azalea: "sull'azalea" };
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
     const base = giorniAnteprima > 0 ? avanza(structuredClone(stato), ora() + giorniAnteprima * GIORNO) : stato;
@@ -146,8 +153,9 @@ function avvia() {
       acero.ring.visible = v.haSete || (scelta === 'acqua' && v.puoAnnaffiare);
       acero.setAppassimento(v.appassimento);
     }
-    // pino e ginepro: aghi che ingialliscono, terriccio che schiarisce, anello quando hanno sete
-    for (const p of ['pino', 'ginepro']) {
+    // pino, ginepro e azalea: aghi e foglie che ingialliscono, terriccio che schiarisce, anello quando hanno sete
+    alberi.setAzalea(!!v.conifere.azalea);
+    for (const p of altreDi(v)) {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
       pianta.setThirst(c.ingiallimento); pianta.setSoil(c.terriccio); pianta.setSalute(c.salute);
@@ -155,8 +163,10 @@ function avvia() {
       pianta.ring.visible = c.haSete || (scelta === 'acqua' && c.puoAnnaffiare);
     }
     acero.filo.setRami(v.rami);
-    for (const p of ['pino', 'ginepro']) alberi.cure[p].filo.setRami(v.conifere[p].rami);
-    document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere || v.conifere.pino.filoDaTogliere || v.conifere.ginepro.filoDaTogliere);
+    for (const p of altreDi(v)) alberi.cure[p].filo.setRami(v.conifere[p].rami);
+    document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere || altreDi(v).some(p => v.conifere[p].filoDaTogliere));
+    // azalea: boccioli e fiori
+    if (v.conifere.azalea) alberi.cure.azalea.setFioritura(v.conifere.azalea.boccioli, v.conifere.azalea.fioritura);
     acero.setSalute(v.salute);
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
@@ -166,6 +176,7 @@ function avvia() {
     giardino.liberaErba(decorazioni.zone());
     for (const p in curaScene) {
       const c = v.cura[p];
+      if (!c) continue;
       curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime);
       // la prima volta che gli afidi diventano evidenti, un avviso gentile
       if (c.parassiti?.visibili && !avvisati.has(p) && giorniAnteprima === 0) {
@@ -183,11 +194,12 @@ function avvia() {
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
     germogliScene.acero.sincronizza(v.germogli, v.gemme);
-    for (const p of ['pino', 'ginepro']) germogliScene[p].sincronizza(v.conifere[p].germogli, []);
+    for (const p of altreDi(v)) germogliScene[p].sincronizza(v.conifere[p].germogli, []);
     aghiVecchi.sincronizza(v.conifere.pino.vecchi);
+    fioriAppassiti.sincronizza(v.conifere.azalea?.vecchi ?? []);
     pannello?.mostra(v, base.aggiornato);
     // stile: i ciuffi tagliati (che ricrescono), la valutazione di ogni pianta e la percentuale sull'etichetta
-    for (const p of ['acero', 'pino', 'ginepro']) {
+    for (const p of v.piante) {
       alberi.cure[p].setTagli(v.stile[p].tagli);
       const stile = stileDi(p, v.stile[p].id), ciuffi = alberi.cure[p].ciuffiStile();
       const val = valutaStile(stile, ciuffi, { rami: p === 'acero' ? v.rami : v.conifere[p].rami, salute: p === 'acero' ? v.salute : v.conifere[p].salute });
@@ -245,13 +257,13 @@ function avvia() {
   const waterBtn = document.getElementById('t-water');
   const esiti = {};
   const ANTEPRIMA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
-  const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro' };
+  const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro', azalea: 'L\'azalea' };
   const DOPO = {
     acero: 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.',
     pino: 'Il pino ha bevuto. Come tutte le conifere vuole il terriccio quasi asciutto: avrà di nuovo sete tra qualche giorno.',
     ginepro: 'Il ginepro ha bevuto. Come tutte le conifere vuole il terriccio quasi asciutto: avrà di nuovo sete tra qualche giorno.',
   };
-  const annaffiature = Object.fromEntries(['acero', 'pino', 'ginepro'].map(p => [p, creaAnnaffiatura(scene, alberi.cure[p], {
+  const annaffiature = Object.fromEntries(TUTTE.map(p => [p, creaAnnaffiatura(scene, alberi.cure[p], {
     assorbita: () => { if (p === 'acero') ui.nascondiAvvisoSete(); suoni.assorbe(); },
     completata: () => {
       if (esiti[p].esito === 'troppa') {
@@ -300,7 +312,7 @@ function avvia() {
     if (pannello.anteprima > 0) { ui.toast('Stai guardando un\'anteprima: chiudila o fai passare il tempo.'); return; }
     chiudiMenu(); potatura(null); filatura(null);
     const v = vista(stato);
-    const asciutte = [v.puoAnnaffiare && 'acero', v.conifere.pino.puoAnnaffiare && 'pino', v.conifere.ginepro.puoAnnaffiare && 'ginepro'].filter(Boolean);
+    const asciutte = [v.puoAnnaffiare && 'acero', ...altreDi(v).filter(p => v.conifere[p].puoAnnaffiare)].filter(Boolean);
     if (!asciutte.length) { ui.toast('Tutte le piante hanno il terriccio ancora umido. Riprova più tardi.'); return; }
     if (asciutte.length === 1) { annaffiaPianta(asciutte[0]); return; }
     // più piante da annaffiare: si sceglie toccandola (hanno l'anello azzurro)
@@ -411,7 +423,7 @@ function avvia() {
   document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(null); filatura(null); cure.apri('inventario'); disegna(); });
   // --- Rinvaso (sezione 4.4): dalla tendina della pianta (si usa il terriccio migliore che hai, prima lo
   // specifico) o dal pannello Cura scegliendo il terriccio. Si fa tra fine inverno e inizio primavera. ---
-  const DEL = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro' };
+  const DEL = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea" };
   const anniTesto = (n) => n === 1 ? 'un anno' : `${n} anni`;
   function rinvasaPianta(p, id = null) {
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
@@ -461,6 +473,15 @@ function avvia() {
       const p = vista(stato).prodotti.find(x => x.id === id);
       ui.toast(`${p.nome}: ${p.dosi} dosi nell\'inventario. Per usarlo tocca una pianta e scegli Cura.`, 3500);
     },
+    // piante nuove (sezione 5.4): l'azalea compare al suo posto, con le stelline e la telecamera che la guarda
+    compraPianta(id) {
+      const esito = compraPianta(stato, ora(), id);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); negozio.chiudi(); disegna(); suoni.magia();
+      vola(fuocoPianta(id).clone().add(new THREE.Vector3(0, -.4, 0)), baseDist * .55);
+      ui.toast('L\'azalea è nel tuo giardino! Toccala per curarla: vuole il terriccio sempre un po\' umido, e a fine primavera fiorisce.', 5000);
+    },
     // decorazioni (sezione 8.2): la comprata spunta nel giardino e si può subito spostare dove si vuole
     compraDecorazione(id) {
       const esito = compraDecorazione(stato, id);
@@ -488,14 +509,14 @@ function avvia() {
   // --- Tendine delle piante: si aprono toccando la pianta. L'acero ha Acqua, Pota, Filo, Cura e Aspetto;
   // pino e ginepro Acqua, Pota, Filo e Cura ---
   const menuAcero = document.getElementById('menu-acero');
-  const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro') };
+  const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro'), azalea: document.getElementById('menu-azalea') };
   function chiudiMenu() {
     for (const m of Object.values(menuPiante)) { m.hidden = true; m.parentElement.classList.remove('aperta'); }
     screenEl.classList.remove('menu-aperto');
   }
   // la tendina aperta passa sopra al banner della sfida, che si fa da parte
   function apriMenu(m) { m.hidden = false; m.parentElement.classList.add('aperta'); screenEl.classList.add('menu-aperto'); }
-  for (const p of ['pino', 'ginepro']) menuPiante[p].addEventListener('click', (e) => {
+  for (const p of ['pino', 'ginepro', 'azalea']) menuPiante[p].addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
     if (a === 'acqua') annaffiaPianta(p);
@@ -518,7 +539,7 @@ function avvia() {
     else if (a === 'stile') stilatura('acero');
     else if (a === 'foto') fotoPianta('acero');
   });
-  const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
+  const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro', azalea: 'Azalea Satsuki' };
 
   // --- Potatura e filo su tutte le piante (sezioni 4.2 e 4.3). Pota e Filo avvicinano la telecamera
   // alla pianta scelta: dalla sua tendina, oppure dalla barra (se più piante ne hanno bisogno, si tocca
@@ -553,6 +574,10 @@ function avvia() {
     const v = vista(stato);
     if (p === 'acero') return v.puoPotare ? 'Tocca un germoglio che brilla per tagliarlo. Tocca Pota per finire.' : 'Per ora l\'acero non ha niente da potare: ogni giorno spunta un germoglio nuovo.';
     const c = v.conifere[p];
+    if (p === 'azalea') return c.vecchi.length ? 'Togli i fiori appassiti: tocca quelli sbiaditi che brillano, uno per uno.'
+      : c.germogli.some(g => g.potabile) ? 'Pota i germogli nuovi che brillano: dopo la fioritura è il momento giusto.'
+      : c.fioritura > 0 || c.boccioli > 0 ? 'Mentre fiorisce non si pota: aspetta che i fiori appassiscano.'
+      : 'L\x27azalea si pota subito dopo la fioritura, a inizio estate. Per ora non c\x27è niente da fare.';
     if (p === 'pino') return c.vecchi.length ? 'Togli gli aghi vecchi: tocca i ciuffi gialli che brillano.'
       : c.germogli.some(g => g.potabile) ? 'Cima le candele: tocca quelle chiare che brillano, in punta ai rami.'
       : 'Il pino mette le candele in primavera; in autunno si tolgono gli aghi vecchi. Per ora non c\'è niente da fare.';
@@ -566,7 +591,7 @@ function avvia() {
     if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
     potando = p;
     for (const q in germogliScene) germogliScene[q].potatura = q === p;
-    aghiVecchi.potatura = p === 'pino';
+    aghiVecchi.potatura = p === 'pino'; fioriAppassiti.potatura = p === 'azalea';
     if (p) chiudiMenu();
     pruneBtn.classList.toggle('attivo', !!p);
     if (p) { avvicina(p, p === 'acero' ? .27 : .3); ui.toast(consiglioPota(p), 4000); } else allontana();
@@ -575,7 +600,7 @@ function avvia() {
   // --- Stile (sezione 5.2): la sagoma fantasma dello stile attorno alla chioma; i ciuffi che ne escono
   // brillano e si tagliano con un tocco (insieme ai vicinissimi). La percentuale e le regole stanno nella
   // scheda in basso; da lì si cambia stile tra quelli adatti alla pianta. ---
-  const AL = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro' };
+  const AL = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea" };
   pannelloStile = creaPannelloStile({
     cambia(id) { if (stilando && scegliStile(stato, stilando, id)) { salva(stato); disegna(); suoni.magia(); } },
     fine() { stilatura(null); },
@@ -750,7 +775,7 @@ function avvia() {
     if (p === filando) return;
     if (p) { potatura(null); stilatura(null); }
     if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
-    for (const q of ['acero', 'pino', 'ginepro']) filoDi(q).maniglie = q === p;
+    for (const q of TUTTE) filoDi(q).maniglie = q === p;
     filando = p;
     if (p) chiudiMenu();
     wireBtn.classList.toggle('attivo', !!p);
@@ -773,7 +798,7 @@ function avvia() {
     if (potando) { potatura(null); return; }
     if (annullaScelta()) return;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    const v = vista(stato), pronte = ['acero', 'pino', 'ginepro'].filter(p => potabile(v, p));
+    const v = vista(stato), pronte = v.piante.filter(p => potabile(v, p));
     if (pronte.length === 0) { ui.toast('Per ora non c\'è niente da potare. Ogni giorno l\'acero mette un germoglio; il pino ha le candele in primavera e gli aghi vecchi in autunno; il ginepro le punte in primavera ed estate.', 5000); return; }
     if (pronte.length === 1) { potatura(pronte[0]); return; }
     chiudiMenu(); scegli('pota', 'Tocca la pianta da potare: hanno tutte qualcosa da sistemare.');
@@ -782,7 +807,7 @@ function avvia() {
     if (filando) { filatura(null); return; }
     if (annullaScelta()) return;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    const v = vista(stato), pronte = ['acero', 'pino', 'ginepro'].filter(p => daSlegare(v, p));
+    const v = vista(stato), pronte = v.piante.filter(p => daSlegare(v, p));
     if (pronte.length === 1) { filatura(pronte[0]); return; }
     chiudiMenu(); scegli('filo', 'Tocca la pianta su cui lavorare con il filo.');
   });
@@ -864,19 +889,23 @@ function avvia() {
   const DOPO_TAGLIO = {
     pino: 'Candela cimata: gli aghi nuovi resteranno corti e la chioma compatta.',
     ginepro: 'Punta pizzicata: il ginepro resterà fitto e compatto.',
+    azalea: 'Germoglio potato: la chioma resta compatta, e sui rami nuovi nasceranno i boccioli.',
   };
   function potaQui(e, r) {
     const p = potando;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    // aghi vecchi del pino
-    const vecchio = p === 'pino' ? aghiVecchi.tocca(raycaster) : null;
+    // aghi vecchi del pino, fiori appassiti dell'azalea
+    const daTogliere = p === 'pino' ? aghiVecchi : p === 'azalea' ? fioriAppassiti : null;
+    const vecchio = daTogliere ? daTogliere.tocca(raycaster) : null;
     if (vecchio !== null) {
-      const esito = togliAghi(stato, ora(), vecchio);
+      const esito = togliAghi(stato, ora(), vecchio, p);
       if (esito.esito !== 'ok') return;
-      aghiVecchi.togli(vecchio); suoni.fruscio(.16);
+      daTogliere.togli(vecchio); suoni.fruscio(.16);
       salva(stato); disegna();
       if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
-      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!` : 'Aghi vecchi tolti: luce e aria arrivano dentro la chioma.');
+      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+        : p === 'azalea' ? 'Fiore appassito tolto: la forza resta ai rami, e l\'anno prossimo fiorirà in pieno.'
+        : 'Aghi vecchi tolti: luce e aria arrivano dentro la chioma.');
     } else {
       const id = germogliScene[p].tocca(raycaster);
       if (id === null) return;
@@ -944,7 +973,7 @@ function avvia() {
     controls.update();
     alberi.aggiorna(clock);
     for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
-    aghiVecchi.aggiorna(dt, clock);
+    aghiVecchi.aggiorna(dt, clock); fioriAppassiti.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     rinvasoScena.aggiorna(dt);
     decorazioni.aggiorna(dt);

@@ -16,7 +16,8 @@ export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 2
 // mettere il filo, l'azione tipica della stagione (sezione 4.1).
 export const SFIDE = { acqua: 'Annaffia l\'acero', pota: 'Pota un germoglio', filo: 'Metti il filo a un ramo', concime: 'Concima l\'acero' };
 // sfide di potatura delle conifere, con la tecnica giusta per ognuna
-const SFIDE_POTA = { candele: 'Cima le candele del pino', aghi: 'Togli gli aghi vecchi del pino', pizzica: 'Pizzica il ginepro' };
+const SFIDE_POTA = { candele: 'Cima le candele del pino', aghi: 'Togli gli aghi vecchi del pino', pizzica: 'Pizzica il ginepro',
+  fiori: 'Togli i fiori appassiti dell\'azalea', azalea: 'Pota i germogli dell\'azalea' };
 
 // Vasi del mini-negozio (sezione 14.1): il primo c'è già, gli altri si comprano con i Semi.
 // Prezzi nella fascia della sezione 7.3: con l'acqua di ogni giorno e il bonus della serie
@@ -56,7 +57,7 @@ export const SETE_PER_ANNAFFIARE = 0.5; // sotto questa soglia il terriccio è a
 // in un giorno d'estate; pino nero e ginepro, aghi e squame che trattengono l'acqua, vogliono il
 // terriccio quasi asciutto tra un'annaffiatura e l'altra: circa ogni 3-4 giorni d'estate, il doppio d'inverno.
 // Le fasi della sete (FASI) sono le stesse: per le conifere arrivano solo più tardi.
-export const SETE_SPECIE = { acero: 1, pino: 0.28, ginepro: 0.33 };
+export const SETE_SPECIE = { acero: 1, pino: 0.28, ginepro: 0.33, azalea: 0.8 };
 const SETE_MASSIMA = 60;               // oltre non cambia più niente
 
 // Troppa acqua (sezione 6.3): con il terriccio ancora umido si può annaffiare lo stesso, ma l'acqua in più
@@ -81,7 +82,7 @@ const SALUTE_MINIMA = 0.2;             // tronco, rami principali e una gemma re
 const PERDITA_AL_GIORNO = 0.08;        // quanto in fretta la chioma si dirada sotto stress
 const RIPRESA_AL_GIORNO = 0.15;        // da quasi spoglia a piena in 5-6 giorni di cure
 // le conifere perdono e rifanno la chioma alla metà del ritmo dell'acero: aghi e squame durano anni
-const RITMO_CHIOMA = { acero: 1, pino: 0.5, ginepro: 0.5 };
+const RITMO_CHIOMA = { acero: 1, pino: 0.5, ginepro: 0.5, azalea: 0.7 };
 
 // Potatura (sezione 14.1): germogli sulle punte della chioma; tagliandone uno, sotto il taglio
 // spuntano 2 gemme che crescono nei giorni successivi e rendono la chioma più fitta.
@@ -99,10 +100,10 @@ const VIGORE = [1.4, 1, 0.6, 0.5];     // primavera, estate, autunno, inverno
 // Poi il filo va tolto: se resta troppo a lungo segna la corteccia (segno che sparisce piano).
 // piega: da -1 (ramo abbassato al massimo) a 1 (alzato al massimo); l'angolo vero lo decide la scena.
 export const RAMI = 6;                 // rami principali dell'acero, tutti legabili (li disegna la scena)
-export const RAMI_SPECIE = { acero: RAMI, pino: 5, ginepro: 4 };
+export const RAMI_SPECIE = { acero: RAMI, pino: 5, ginepro: 4, azalea: 4 };
 const PRESA_AL_GIORNO = 0.25;          // in estate: il ramo prende la forma in 4 giorni (più in fretta in primavera)
 // il legno delle conifere è più duro e cresce più piano: il filo ci mette il doppio (o quasi) a fare presa
-const PRESA_SPECIE = { acero: 1, pino: 0.5, ginepro: 0.6 };
+const PRESA_SPECIE = { acero: 1, pino: 0.5, ginepro: 0.6, azalea: 0.8 };
 
 // Potatura delle conifere (sezione 4.3), ognuna con la sua tecnica:
 // - pino nero: in primavera e all'inizio dell'estate spuntano le "candele", getti chiari e dritti
@@ -133,7 +134,27 @@ export const POSTI_PARASSITI = 5;      // cuscinetti della chioma dove possono c
 const PROBABILITA_PARASSITI = [0.12, 0.12, 0.06, 0]; // al giorno: primavera, estate, autunno, inverno
 const PROBABILITA_CONIFERE = 0.6;      // le conifere, robuste e sempre ben curate, ne prendono meno
 
-export const PIANTE = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro' };
+// Azalea Satsuki (sezione 5.4): la quarta pianta, da comprare coi Semi. Vuole il terriccio sempre un po'
+// umido (asciuga poco meno dell'acero) e acido (kanuma). A fine primavera fiorisce; all'inizio dell'estate
+// i fiori appassiscono e vanno tolti, uno per uno ("vecchi", come gli aghi del pino): se restano, la pianta
+// spende le forze a fare semi e l'anno dopo fiorisce la metà. Dopo la fioritura mette germogli da potare
+// (d'estate e all'inizio dell'autunno): più tardi si taglierebbero le gemme dei fiori dell'anno dopo.
+export const PIANTE_NEGOZIO = [
+  { id: 'azalea', nome: 'Azalea Satsuki', prezzo: 400,
+    descrizione: 'A fine primavera si copre di fiori rosa. Vuole terriccio acido e sempre un po\' umido; i fiori appassiti si tolgono a mano.' },
+];
+export const POSTO_AZALEA = [3.4, -1.05];      // dove sta sull'isola (la scena la mette lì)
+const POSTI_SFIORITI = 8;                       // ciuffi della chioma dove possono esserci fiori appassiti
+const SFIORITI_PER_FIORITURA = 6;
+// fioritura dell'azalea con il calendario: boccioli dal 2° giorno di primavera, fiori aperti dal 4°,
+// che appassiscono il primo giorno d'estate
+function fiorituraDi({ stagione, giornoStagione: g }) {
+  if (stagione === 0) return { boccioli: g >= 2 && g <= 4 ? Math.min(1, (g - 1) / 2) : 0, fiori: g >= 4 ? Math.min(1, (g - 3) / 2) : 0 };
+  if (stagione === 1 && g === 1) return { boccioli: 0, fiori: 0.5 };
+  return { boccioli: 0, fiori: 0 };
+}
+
+export const PIANTE = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro', azalea: 'Azalea Satsuki' };
 // Prodotti di cura: alcuni specifici per una pianta (più efficaci), altri generali per tutte.
 // tipo: 'concime' (spinta: crescita e ripresa) o 'trattamento' (toglie i parassiti; protezione: giorni senza)
 export const DOSI_PER_CONFEZIONE = 3;
@@ -142,15 +163,17 @@ export const PRODOTTI = [
     descrizione: 'Organico, ricco di ferro: foglie più vivaci e crescita forte.' },
   { id: 'concime-conifere', nome: 'Concime per conifere', tipo: 'concime', piante: ['pino', 'ginepro'], spinta: 1.6, prezzo: 30,
     descrizione: 'A lenta cessione, poco azoto: aghi corti e compatti.' },
-  { id: 'concime-universale', nome: 'Concime universale', tipo: 'concime', piante: ['acero', 'pino', 'ginepro'], spinta: 1.3, prezzo: 20,
+  { id: 'concime-universale', nome: 'Concime universale', tipo: 'concime', piante: ['acero', 'pino', 'ginepro', 'azalea'], spinta: 1.3, prezzo: 20,
     descrizione: 'Va bene per tutti i bonsai, un po\' meno efficace.' },
-  { id: 'sapone-molle', nome: 'Sapone molle', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro'], protezione: 0, prezzo: 20,
+  { id: 'sapone-molle', nome: 'Sapone molle', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro', 'azalea'], protezione: 0, prezzo: 20,
     descrizione: 'Spray delicato: toglie gli afidi.' },
-  { id: 'olio-neem', nome: 'Olio di neem', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro'], protezione: DURATA_PROTEZIONE, prezzo: 35,
+  { id: 'olio-neem', nome: 'Olio di neem', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro', 'azalea'], protezione: DURATA_PROTEZIONE, prezzo: 35,
     descrizione: 'Toglie gli afidi e li tiene lontani per una stagione. Si può usare anche prima.' },
   // terricci per il rinvaso: durata = anni di gioco prima del rinvaso successivo, per specie
-  { id: 'akadama', nome: 'Akadama', tipo: 'terriccio', piante: ['acero', 'pino', 'ginepro'], durata: { acero: 1, pino: 2, ginepro: 2 }, prezzo: 25,
+  { id: 'akadama', nome: 'Akadama', tipo: 'terriccio', piante: ['acero', 'pino', 'ginepro', 'azalea'], durata: { acero: 1, pino: 2, ginepro: 2, azalea: 1 }, prezzo: 25,
     descrizione: 'Argilla giapponese in granuli: drena e trattiene il giusto. Va bene per tutti i bonsai.' },
+  { id: 'kanuma', nome: 'Kanuma', tipo: 'terriccio', piante: ['azalea'], durata: { azalea: 3 }, prezzo: 30,
+    descrizione: 'Pomice giallo-chiara e acida, leggera e piena d\'aria: il terriccio giusto per l\'azalea, che ci sta bene a lungo.' },
   { id: 'miscela-conifere', nome: 'Miscela per conifere', tipo: 'terriccio', piante: ['pino', 'ginepro'], durata: { pino: 3, ginepro: 3 }, prezzo: 35,
     descrizione: 'Akadama, pomice e lapillo: molto drenante, le radici delle conifere ci stanno bene più a lungo.' },
 ];
@@ -167,7 +190,7 @@ const SETE_VASO_STRETTO = 1.25, VIGORE_VASO_STRETTO = 0.8;
 // crescita (circa 3 settimane d'estate sull'acero, il doppio sulle conifere): la forma va mantenuta.
 const RICRESCITA_CIUFFO = 0.05;        // al giorno, con il vigore della pianta
 const stileNuovo = (p) => ({ stile: { id: STILE_INIZIALE[p], sigilli: [] }, tagli: {} });
-const DURATA_RINVASO = { acero: 1, pino: 2, ginepro: 2 };
+const DURATA_RINVASO = { acero: 1, pino: 2, ginepro: 2, azalea: 2 };
 // anno della primavera della finestra di rinvaso aperta adesso, oppure null
 function finestraRinvaso({ anno, stagione, giornoStagione }) {
   if (stagione === 3 && giornoStagione >= 4) return anno + 1;
@@ -229,6 +252,9 @@ function potaturaConifera(p) {
 }
 // la parte di stato che riguarda la cura di una pianta (per l'acero è l'albero stesso)
 const curaDi = (stato, pianta) => pianta === 'acero' ? stato.albero : stato.conifere[pianta];
+// le piante che ci sono nel giardino (l'azalea solo dopo averla comprata), e quelle oltre l'acero
+const presenti = (stato) => Object.keys(PIANTE).filter(p => curaDi(stato, p));
+const altre = (stato) => Object.keys(stato.conifere);
 const oreParassiti = (a, t) => a.parassiti ? (t - a.parassiti.da) / ORA : 0;
 
 export function nuovoStato(ora) {
@@ -395,12 +421,12 @@ export function avanza(stato, ora) {
     const giorni = passo / GIORNO;
     const cal = calendario(stato.inizio, t + passo / 2), { stagione } = cal;
     // vaso stretto: le radici riempiono il vaso, la terra trattiene meno acqua
-    for (const p in PIANTE) { const c = curaDi(stato, p); c.rinvaso.stretto = vasoStretto(c, cal); }
+    for (const p of presenti(stato)) { const c = curaDi(stato, p); c.rinvaso.stretto = vasoStretto(c, cal); }
     const cade = cadeAlle(stato, t + passo / 2), ore = passo / ORA, mt = stato.meteo;
     // la neve si posa e si scioglie, le pozzanghere si formano e si asciugano
     mt.neve = cade === 'neve' ? Math.min(1, (mt.neve ?? 0) + ore * NEVE_SI_POSA) : Math.max(0, (mt.neve ?? 0) - ore * NEVE_SI_SCIOGLIE[stagione]);
     mt.pozze = cade === 'pioggia' ? Math.min(1, (mt.pozze ?? 0) + ore * POZZE_SI_FORMANO) : Math.max(0, (mt.pozze ?? 0) - ore * POZZE_SI_ASCIUGANO[stagione]);
-    for (const p in PIANTE) {
+    for (const p of presenti(stato)) {
       const c = curaDi(stato, p);
       const k = giorni * FATTORE_SETE[stagione] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
       // sotto la neve il terriccio non si asciuga
@@ -422,7 +448,7 @@ export function avanza(stato, ora) {
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
     cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni);
     ricresce(a.tagli, v * RICRESCITA_CIUFFO);
-    for (const p of ['pino', 'ginepro']) {
+    for (const p of altre(stato)) {
       const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t), k = RITMO_CHIOMA[p];
       // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
       const maxC = Math.min(saluteMassima(c.sete), saluteRistagno(c.ristagno));
@@ -491,8 +517,23 @@ function nuovoGiorno(stato, ora) {
     pino.vecchi.push({ id, posto: liberi[(id * 3 + 1) % liberi.length] });
   }
   if (vigore(stagione, ginepro.sete) * fradicio(ginepro) > 0 && stagione <= 1) spuntaGermoglio(ginepro, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
+  // azalea: i fiori appassiscono nei primi due giorni d'estate (metà per giorno); all'inizio dell'autunno
+  // quelli rimasti cadono, e l'anno dopo fiorirà la metà. Dopo la fioritura mette germogli da potare.
+  const az = stato.conifere.azalea;
+  if (az) {
+    if (stagione === 1 && giornoStagione <= 2) {
+      const tutti = Math.round(SFIORITI_PER_FIORITURA * az.fiori * Math.min(1, az.salute + .2));
+      for (let n = giornoStagione === 1 ? Math.ceil(tutti / 2) : Math.floor(tutti / 2); n > 0 && az.vecchi.length < POSTI_SFIORITI; n--) {
+        const liberi = []; for (let p = 0; p < POSTI_SFIORITI; p++) if (!az.vecchi.some(x => x.posto === p)) liberi.push(p);
+        const id = ++az.contatore;
+        az.vecchi.push({ id, posto: liberi[(id * 5 + 2) % liberi.length] });
+      }
+    }
+    if (stagione === 2 && giornoStagione === 1) { az.fiori = az.vecchi.length ? 0.5 : 1; az.vecchi = []; }
+    if (vigore(stagione, az.sete) * fradicio(az) > 0 && (stagione === 1 || (stagione === 2 && giornoStagione <= 3))) spuntaGermoglio(az, LUNGHEZZA_INIZIALE, GERMOGLI_CONIFERE);
+  }
   // parassiti: al massimo un attacco alla volta per pianta; mai con l'olio di neem che fa effetto
-  for (const pianta in PIANTE) {
+  for (const pianta of presenti(stato)) {
     const c = curaDi(stato, pianta);
     if (c.concime && ora >= c.concime.fino) c.concime = null;
     if (c.protezione && ora >= c.protezione.fino) c.protezione = null;
@@ -509,18 +550,21 @@ function scegliSfida(stato, ora) {
   const a = stato.albero;
   const cal = calendario(stato.inizio, ora), { stagione, giornoStagione } = cal;
   // nella finestra del rinvaso, la pianta che ne ha bisogno ha la precedenza (dopo l'acqua dell'acero)
-  const daRinvasare = finestraRinvaso(cal) !== null && Object.keys(PIANTE).find(p => rinvasoDovuto(curaDi(stato, p), cal));
+  const daRinvasare = finestraRinvaso(cal) !== null && presenti(stato).find(p => rinvasoDovuto(curaDi(stato, p), cal));
   if (daRinvasare && a.sete < SETE_PER_ANNAFFIARE && !stato.oggi.acqua) { stato.oggi.sfida = { tipo: 'rinvaso', pianta: daRinvasare, fatta: false }; return; }
   // se l'acero non beve, magari ha davvero sete una conifera (quella più asciutta): per lei la sfida
   // arriva solo quando ha sete, non appena il terriccio si asciuga, così restano anche le altre sfide
-  const conifera = ['pino', 'ginepro'].filter(p => stato.conifere[p].sete >= FASI[1].da)
+  const conifera = altre(stato).filter(p => stato.conifere[p].sete >= FASI[1].da)
     .sort((x, y) => stato.conifere[y].sete - stato.conifere[x].sete)[0];
   if (a.sete < SETE_PER_ANNAFFIARE && conifera && !stato.oggi.acqua) { stato.oggi.sfida = { tipo: 'acqua', pianta: conifera, fatta: false }; return; }
   // se l'acero non ha niente da potare, la potatura del giorno può essere quella di una conifera
+  const az = stato.conifere.azalea;
   const potaConifera = !a.germogli.some(g => g.lunghezza >= POTABILE_DA) && (
-    stato.conifere.pino.vecchi.length ? { pianta: 'pino', tecnica: 'aghi' }
+    az?.vecchi.length ? { pianta: 'azalea', tecnica: 'fiori' }
+    : stato.conifere.pino.vecchi.length ? { pianta: 'pino', tecnica: 'aghi' }
     : stato.conifere.pino.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'pino', tecnica: 'candele' }
-    : stato.conifere.ginepro.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'ginepro', tecnica: 'pizzica' } : null);
+    : stato.conifere.ginepro.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'ginepro', tecnica: 'pizzica' }
+    : az?.germogli.some(g => g.lunghezza >= POTABILE_DA) ? { pianta: 'azalea', tecnica: 'azalea' } : null);
   if (a.sete < SETE_PER_ANNAFFIARE && !stato.oggi.acqua && !(stagione === 3 && giornoStagione % 2 === 0) && !(stagione === 2 && giornoStagione % 2 === 0 && !concimeAttivo(a, ora)) && potaConifera) {
     stato.oggi.sfida = { tipo: 'pota', ...potaConifera, fatta: false }; return;
   }
@@ -626,12 +670,13 @@ export function togliFilo(stato, ora, ramo, pianta = 'acero') {
 }
 
 // Toglie un ciuffo di aghi vecchi dal pino (autunno). esito: 'ok' o 'nessuno'. Conta come potatura.
-export function togliAghi(stato, ora, id) {
+// toglie un ciuffo di aghi vecchi del pino, o (pianta 'azalea') un fiore appassito
+export function togliAghi(stato, ora, id, pianta = 'pino') {
   avanza(stato, ora);
-  const pino = stato.conifere.pino, i = pino.vecchi.findIndex(x => x.id === id);
+  const c = stato.conifere[pianta], i = c ? c.vecchi.findIndex(x => x.id === id) : -1;
   if (i < 0) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
-  pino.vecchi.splice(i, 1);
-  const semi = completaSfida(stato, 'pota', 'pino');
+  c.vecchi.splice(i, 1);
+  const semi = completaSfida(stato, 'pota', pianta);
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
@@ -700,7 +745,7 @@ export function sigillaStile(stato, pianta, percentuale) {
 // esito: 'ok' o 'nessuno' (pianta sconosciuta)
 export function fotografa(stato, ora, pianta) {
   avanza(stato, ora);
-  if (!PIANTE[pianta]) return { esito: 'nessuno', semi: 0, ricordo: false };
+  if (!PIANTE[pianta] || !curaDi(stato, pianta)) return { esito: 'nessuno', semi: 0, ricordo: false };
   const cal = calendario(stato.inizio, ora), chiave = cal.anno + '-' + cal.stagione;
   const ricordo = stato.diario[pianta] !== chiave;
   if (ricordo) { stato.diario[pianta] = chiave; stato.semi += SEMI.foto; }
@@ -781,7 +826,8 @@ export function postoLibero(stato, id, x, z) {
   const rho = Math.hypot(x, z / ISOLA_ZS), dietro = z < 0 && Math.abs(Math.atan2(x, -z / ISOLA_ZS)) < 1;
   if (rho + d.raggio * (dietro ? .5 : .7) > (dietro ? 4.3 : 4.85)) return 'fuori';
   if (!d.sullAcqua && distanza(x, z, LAGHETTO[0], LAGHETTO[1]) < LAGHETTO[2] + d.raggio * .6) return 'acqua';
-  for (const [a, b, r] of INGOMBRI) if (distanza(x, z, a, b) < r + d.raggio * .8) return 'occupato';
+  const ingombri = stato.conifere.azalea ? [...INGOMBRI, [...POSTO_AZALEA, 1]] : INGOMBRI;
+  for (const [a, b, r] of ingombri) if (distanza(x, z, a, b) < r + d.raggio * .8) return 'occupato';
   for (const altra of stato.decorazioni.messe) {
     const p = stato.decorazioni.posti[altra];
     if (altra === id || !p) continue;
@@ -798,6 +844,25 @@ function postoVicino(stato, id, x, z, r) {
     if (postoLibero(stato, id, px, pz) === 'ok') return { x: px, z: pz, r };
   }
   return { x, z, r };
+}
+
+// Compra una pianta nuova (l'azalea) e la mette al suo posto sull'isola: le decorazioni che ci stavano
+// si spostano lì vicino. esito: 'ok', 'pochi', 'gia' o 'nessuno'
+export function compraPianta(stato, ora, id) {
+  avanza(stato, ora);
+  const p = PIANTE_NEGOZIO.find(x => x.id === id);
+  if (!p) return { esito: 'nessuno', mancano: 0 };
+  if (stato.conifere[id]) return { esito: 'gia', mancano: 0 };
+  if (stato.semi < p.prezzo) return { esito: 'pochi', mancano: p.prezzo - stato.semi };
+  stato.semi -= p.prezzo;
+  const nuova = coniferaNuova(id);
+  nuova.rinvaso.primavera = primaveraDi(calendario(stato.inizio, ora));
+  stato.conifere[id] = Object.assign(nuova, { fiori: 1 });
+  for (const d of stato.decorazioni.messe) {
+    const q = stato.decorazioni.posti[d];
+    if (q && postoLibero(stato, d, q.x, q.z) !== 'ok') stato.decorazioni.posti[d] = postoVicino(stato, d, q.x, q.z, q.r);
+  }
+  return { esito: 'ok', mancano: 0 };
 }
 
 // Compra una decorazione e la mette subito nel giardino, al suo posto o vicino se è occupato.
@@ -846,8 +911,8 @@ export function scegliVaso(stato, id) {
 }
 
 
-const DOVE = { pino: 'il pino', ginepro: 'il ginepro' };
-const RINVASA = { acero: 'Rinvasa l\'acero', pino: 'Rinvasa il pino', ginepro: 'Rinvasa il ginepro' };
+const DOVE = { pino: 'il pino', ginepro: 'il ginepro', azalea: 'l\'azalea' };
+const RINVASA = { acero: 'Rinvasa l\'acero', pino: 'Rinvasa il pino', ginepro: 'Rinvasa il ginepro', azalea: 'Rinvasa l\'azalea' };
 const testoSfida = (s) => s.tipo === 'rinvaso' ? RINVASA[s.pianta]
   : s.tipo === 'acqua' && s.pianta && s.pianta !== 'acero' ? 'Annaffia ' + DOVE[s.pianta]
   : s.tipo === 'pota' && s.tecnica ? SFIDE_POTA[s.tecnica] : SFIDE[s.tipo];
@@ -959,9 +1024,12 @@ export function vista(stato) {
     rami: vistaRami(a.rami, PRESA_AL_GIORNO * vigoreDi(a, cal.stagione, stato.aggiornato)),
     filoDaTogliere: a.rami.some(r => r.filo && r.filo.presa >= 1),
     // cura di ogni pianta: concime, parassiti e protezione (l'acero anche qui sotto, per comodità)
-    cura: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
+    // le piante del giardino (l'azalea solo se comprata) e quelle in vendita
+    piante: presenti(stato),
+    pianteNegozio: PIANTE_NEGOZIO.map(p => ({ ...p, tua: !!stato.conifere[p.id] })),
+    cura: Object.fromEntries(presenti(stato).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
     // stile di ogni pianta: quello scelto, i compatibili, i sigilli già presi, i ciuffi tagliati che ricrescono
-    stile: Object.fromEntries(Object.keys(PIANTE).map(p => {
+    stile: Object.fromEntries(presenti(stato).map(p => {
       const c = curaDi(stato, p);
       return [p, { id: c.stile.id, sigilli: [...c.stile.sigilli], tagli: { ...c.tagli }, compatibili: STILI[p].map(s => s.id),
         // stili che si possono scegliere adesso, e fra quanti giorni si sblocca ognuno degli altri
@@ -969,7 +1037,7 @@ export function vista(stato) {
         sblocco: Object.fromEntries(STILI[p].filter(s => !stileAperto(s, cal.anno, c)).map(s => [s.id, giorniAllAnno(stato, s.anno)])) }];
     })),
     // rinvaso di ogni pianta: se serve, se la finestra è aperta, se il vaso è già stretto, quanto manca
-    rinvaso: Object.fromEntries(Object.keys(PIANTE).map(p => {
+    rinvaso: Object.fromEntries(presenti(stato).map(p => {
       const c = curaDi(stato, p), dovuto = rinvasoDovuto(c, cal), finestra = finestraRinvaso(cal) !== null;
       return [p, {
         dovuto, finestra, stretto: vasoStretto(c, cal),
@@ -990,7 +1058,7 @@ export function vista(stato) {
     sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: testoSfida(stato.oggi.sfida) } : null,
     // pino e ginepro: la loro acqua (stessi campi dell'acero qui sopra)
     // pino e ginepro: acqua (stessi campi dell'acero), potatura e rami da legare
-    conifere: Object.fromEntries(['pino', 'ginepro'].map(p => {
+    conifere: Object.fromEntries(altre(stato).map(p => {
       const c = stato.conifere[p];
       const rami = vistaRami(c.rami, PRESA_AL_GIORNO * PRESA_SPECIE[p] * vigoreDi(c, cal.stagione, stato.aggiornato));
       return [p, {
@@ -1000,6 +1068,12 @@ export function vista(stato) {
         vecchi: c.vecchi.map(x => ({ ...x })),
         puoPotare: c.germogli.some(g => g.lunghezza >= POTABILE_DA) || c.vecchi.length > 0,
         rami, filoDaTogliere: rami.some(r => r.pronto),
+        // azalea: boccioli e fiori aperti (0..1, meno se l'anno prima i fiori appassiti sono rimasti,
+        // se la chioma è diradata o se ha sete da giorni) e quanto fiorirà
+        ...(p === 'azalea' ? (() => {
+          const f = fiorituraDi(cal), forza = c.fiori * Math.min(1, c.salute + .2) * (c.sete >= FASI[3].da ? .3 : 1);
+          return { boccioli: f.boccioli * forza, fioritura: f.fiori * forza, forzaFiori: c.fiori };
+        })() : {}),
       }];
     })),
   };

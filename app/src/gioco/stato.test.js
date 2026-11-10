@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1039,4 +1039,67 @@ test('un salvataggio della versione 19 riceve neve e pozzanghere a zero', () => 
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual([s.meteo.neve, s.meteo.pozze], [0, 0]);
+});
+
+test('l\'azalea si compra coi Semi e da allora si cura come le altre piante', () => {
+  const s = nuovoStato(T0);
+  assert.deepEqual(vista(s).piante, ['acero', 'pino', 'ginepro']);
+  assert.equal(compraPianta(s, T0, 'azalea').esito, 'pochi');
+  s.semi = 500;
+  assert.equal(annaffia(s, T0, 'azalea').esito, 'nessuno', 'prima di comprarla non c\'è');
+  assert.equal(compraPianta(s, T0, 'azalea').esito, 'ok');
+  assert.equal(s.semi, 100);
+  assert.equal(compraPianta(s, T0, 'azalea').esito, 'gia');
+  const v = vista(s);
+  assert.deepEqual(v.piante, ['acero', 'pino', 'ginepro', 'azalea']);
+  assert.ok(v.conifere.azalea && v.stile.azalea && v.cura.azalea && v.rinvaso.azalea);
+  assert.equal(v.pianteNegozio[0].tua, true);
+  // beve poco meno dell'acero: dopo due giorni d'estate ha sete, il pino no
+  avanza(s, dopo(9));
+  assert.equal(vista(s).conifere.azalea.haSete, true);
+});
+
+test('l\'azalea fiorisce a fine primavera; i fiori appassiti vanno tolti, se no l\'anno dopo fiorisce la metà', () => {
+  const s = nuovoStato(T0); s.semi = 500;
+  compraPianta(s, T0, 'azalea');
+  // tiene l'azalea annaffiata e sana
+  const cura = (t) => { avanza(s, t); if (vista(s).conifere.azalea.puoAnnaffiare) annaffia(s, t, 'azalea'); };
+  for (let g = 0; g <= 5; g++) cura(dopo(g));
+  assert.ok(vista(s).conifere.azalea.fioritura > .9, 'il 6° giorno di primavera è in fiore');
+  for (let g = 6; g <= 9; g++) cura(dopo(g + .2));
+  const az = vista(s).conifere.azalea;
+  assert.equal(az.fioritura, 0);
+  assert.equal(az.vecchi.length, 6, 'sei fiori appassiti da togliere');
+  assert.equal(az.puoPotare, true);
+  // se ne tolgono cinque: uno resta, e all'autunno la forza dei fiori si dimezza
+  for (const f of az.vecchi.slice(0, 5)) assert.equal(togliAghi(s, dopo(9.3), f.id, 'azalea').esito, 'ok');
+  for (let g = 10; g <= 15; g++) cura(dopo(g + .2));
+  assert.equal(vista(s).conifere.azalea.forzaFiori, 0.5);
+  assert.equal(vista(s).conifere.azalea.vecchi.length, 0);
+  // l'anno dopo, tolti tutti, torna a fiorire in pieno
+  for (let g = 16; g <= 28 + 5; g++) cura(dopo(g + .2));
+  assert.ok(vista(s).conifere.azalea.fioritura < .6);
+  for (let g = 28 + 6; g <= 28 + 9; g++) cura(dopo(g + .2));
+  for (const f of vista(s).conifere.azalea.vecchi) togliAghi(s, dopo(28 + 9.3), f.id, 'azalea');
+  for (let g = 28 + 10; g <= 28 + 15; g++) cura(dopo(g + .2));
+  assert.equal(vista(s).conifere.azalea.forzaFiori, 1);
+});
+
+test('dopo la fioritura l\'azalea mette germogli da potare, e la sfida può chiederlo', () => {
+  const s = nuovoStato(T0); s.semi = 500;
+  compraPianta(s, T0, 'azalea');
+  for (let g = 0; g <= 10; g++) { avanza(s, dopo(g + .2)); if (vista(s).conifere.azalea.puoAnnaffiare) annaffia(s, dopo(g + .2), 'azalea'); }
+  const az = vista(s).conifere.azalea;
+  assert.ok(az.germogli.some(x => x.potabile));
+  assert.equal(pota(s, dopo(10.3), az.germogli.find(x => x.potabile).id, 'azalea').esito, 'ok');
+});
+
+test('una decorazione al posto dell\'azalea si sposta quando la si compra', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  compraDecorazione(s, 'gatto');
+  assert.equal(posaDecorazione(s, 'gatto', 3.4, -1.05, 0), 'ok');
+  compraPianta(s, T0, 'azalea');
+  const g = s.decorazioni.posti.gatto;
+  assert.ok(Math.hypot(g.x - 3.4, g.z + 1.05) > 1.2);
+  assert.equal(posaDecorazione(s, 'gatto', 3.4, -1.05, 0), 'occupato');
 });

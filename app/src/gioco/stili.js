@@ -112,7 +112,25 @@ export const STILI = {
   ],
 };
 
-export const STILE_INIZIALE = { acero: 'moyogi', pino: 'shakan', ginepro: 'moyogi' };
+// l'azalea (sezione 5.4): tronco basso e mosso, chioma fitta di foglie piccole che si copre di fiori
+STILI.azalea = [
+  { id: 'moyogi', nome: 'Moyogi', sottotitolo: 'Eretto informale', premio: 350,
+    descrizione: 'Cuscinetti tondi e pieni, a gradini, che in primavera diventano nuvole di fiori.',
+    sagoma: [E(-.62, .78, .05, .44, .24, .4), E(.62, .95, -.05, .42, .24, .38), E(-.2, 1.25, .1, .42, .24, .36), E(.25, 1.5, 0, .4, .24, .36)],
+    regole: [
+      { testo: 'Rami bassi abbassati col filo', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) },
+      { testo: 'Chioma sana (almeno 80%)', ok: sana },
+    ] },
+  { id: 'hokidachi', nome: 'Hokidachi', sottotitolo: 'A scopa', premio: 400,
+    descrizione: 'Una cupola tonda e compatta: in fioritura sembra un unico grande mazzo di fiori.',
+    sagoma: [E(0, 1.15, 0, .95, .58, .78)],
+    regole: [
+      { testo: 'Rami bassi alzati col filo, verso l\'alto', ok: (v) => ramoSu(0)(v) && ramoSu(1)(v) },
+      { testo: 'Chioma sana (almeno 80%)', ok: sana },
+    ] },
+];
+
+export const STILE_INIZIALE = { acero: 'moyogi', pino: 'shakan', ginepro: 'moyogi', azalea: 'moyogi' };
 export const COMPLETATO_DA = 90;   // percentuale per il sigillo dello stile
 export const stileDi = (pianta, id) => STILI[pianta]?.find(s => s.id === id) ?? null;
 // uno stile si può scegliere dall'anno indicato; quello in corso e quelli già sigillati restano sempre scelti

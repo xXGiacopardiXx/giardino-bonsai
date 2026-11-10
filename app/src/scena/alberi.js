@@ -5,7 +5,7 @@
 // I dettagli non consumano numeri della sequenza col seme.
 import * as THREE from 'three';
 import { creaFilo } from './filo.js';
-import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza } from './strumenti.js';
+import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza, conSeme } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
 // Troppa acqua (game-design.md, sezione 6.3): terriccio fradicio, quasi nero, con un velo d'acqua che luccica
@@ -388,16 +388,112 @@ export function creaAlberi(world) {
     cure.pino.filo.quandoPiega = () => cure.pino.aggiornaPieghe();
   }
 
+  // Azalea Satsuki (sezione 5.4): la quarta pianta, comprata coi Semi. Sta sulla ghiaia a destra, in un
+  // vaso tondo di terracotta scura su una lastra di pietra; tronco basso e mosso, foglie piccole e scure,
+  // e a fine primavera fiori rosa sulle punte. Si costruisce sempre (nascosta finché non si compra), con
+  // un seme suo: la sequenza casuale del resto della scena non cambia.
+  let azalea;
+  conSeme(4242, () => {
+    const t = new THREE.Group(); t.position.set(3.4, 0, -1.05); t.visible = false; world.add(t);
+    mesh(flatGeo(new THREE.CylinderGeometry(.8, .9, .16, 8)), M(0xa29d90), t, 0, .08, 0);
+    mesh(new THREE.CylinderGeometry(.58, .46, .3, 32), M(0x6e4a38), t, 0, .31, 0);
+    mesh(new THREE.CylinderGeometry(.62, .62, .06, 32), M(0x5f3e2f), t, 0, .47, 0);
+    const soilA = mesh(new THREE.CylinderGeometry(.56, .56, .04, 32), toon({ color: SOIL_WET.clone() }), t, 0, .49, 0);
+    for (let i = 0; i < 4; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.07, .11), 1), M(0x6a9a40), t, R(-.35, .35), .5, R(-.3, .3)); b.scale.y = .4; }
+    const tr = new THREE.Group(); tr.position.set(0, .48, 0); t.add(tr);
+    // corteccia dell'azalea: liscia, bruno-rossiccia
+    const legnoA = corteccia(0x7a4e3a, { chiaro: .25, scuro: .3 });
+    tube([[0, -.04, 0], [.12, .25, .02], [-.08, .55, .04], [.06, .85, 0], [.2, 1.18, 0], [.22, 1.4, 0]], .2, .05, legnoA, tr, 24);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2 + .3; tube([[0, .05, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .34, -.03, Math.sin(a) * .34]], .07, .02, legnoA, tr, 6); }
+    const ramiA = [[[-.02, .5, .03], [-.35, .66, .05], [-.6, .74, .05]], [[.05, .7, 0], [.38, .86, -.04], [.6, .92, -.05]], [[-.02, .9, .03], [-.12, 1.1, .08], [-.2, 1.2, .1]], [[.04, .62, .04], [.08, .86, .25], [.1, 1.0, .36]]];
+    const LEGABILI_A = [[0, 0], [1, 1], [2, 2], [3, 4]];
+    const gA = gruppiRami(tr, LEGABILI_A);
+    ramiA.forEach((p, b) => tube(p, .065, .02, legnoA, gA.gruppoRamo[b] ?? tr, 10));
+    const padsA = [[-.62, .78, .05, .42], [.62, .95, -.05, .4], [-.2, 1.25, .1, .4], [.25, 1.5, 0, .38], [.1, 1.05, .38, .3]];
+    // foglie piccole, ovali e lucide, fitte
+    const fa = foliage(tr, padsA, { palette: ['#2b5426', '#36632c', '#417233', '#4e823b', '#5c9044'], density: 92, size: .36, flat: .66, detail: 1,
+      geo: ciuffoFoglie({ n: 11, seme: 23, lobi: 3, incavo: .62, grandezza: .34, nucleo: .5 }) });
+    const rametA = rametti(pad => gA.gruppoPad[pad] ?? tr, padsA, legnoA, 9);
+    trees.azalea = { g: tr, radice: t, tag: new THREE.Vector3(3.4, .48 + 2.5, -1.05), ph: 2.4 };
+    // con la sete le foglie si spengono verso un verde oliva e poi bruno; con troppa acqua impallidiscono
+    const rs = sequenza(77), seccoA = fa.toni.map(() => rs() < .55 ? new THREE.Color(['#7d7a3a', '#8a6e36', '#6e6a34'][Math.floor(rs() * 3)]) : null);
+    const pallidoA = fa.healthy.map((_, i) => fa.periferia[i] < .55 ? new THREE.Color(['#a6ad5a', '#b2b664', '#9ea253'][i % 3]) : null);
+    const ca = new THREE.Color();
+    cure.azalea = assetabile(curabile(fa, tr, new THREE.Vector3(3.4, .51, -1.05), .55, gA.gruppoPad), {
+      t, soil: soilA, raggioAnello: 1.0, annaffiatoio: new THREE.Vector3(-.95, 1.0, .75),
+      colora(v, fl = 0) {
+        for (let i = 0; i < fa.healthy.length; i++) {
+          ca.copy(fa.healthy[i]);
+          if (seccoA[i]) ca.lerp(seccoA[i], v * .85);
+          if (pallidoA[i]) ca.lerp(pallidoA[i], fl * .7);
+          fa.m.setColorAt(i, ca);
+        }
+        fa.m.instanceColor.needsUpdate = true;
+      },
+    });
+    // fiori: un fiore rosa sopra molti ciuffi esterni, un gruppo per cuscinetto (seguono il ramo piegato).
+    // setFioritura(boccioli, fiori): prima piccoli boccioli scuri, poi i fiori si aprono uno dopo l'altro
+    const fioreGeo = new THREE.IcosahedronGeometry(.5, 0).scale(1, .42, 1);
+    const ROSA = ['#f27ea6', '#f592b6', '#ee6f9b', '#f8a9c4', '#fbd3e1'].map(x => new THREE.Color(x)), BOCCIOLO = new THREE.Color('#c2456e');
+    const m4 = new THREE.Matrix4(), pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), rf = sequenza(91);
+    const fiori = padsA.map((pd, pad) => {
+      const scelti = [];
+      fa.pad.forEach((p, i) => { if (p === pad && fa.periferia[i] > .3 && rf() < .8) scelti.push(i); });
+      const im = new THREE.InstancedMesh(fioreGeo, toon({ color: 0xffffff }), scelti.length); im.castShadow = true;
+      const basi = scelti.map((i, k) => {
+        fa.m.getMatrixAt(i, m4); m4.decompose(pos, q, sc);
+        // il fiore sta un poco fuori dal ciuffo, verso l'esterno del cuscinetto e verso l'alto
+        const fuori = pos.clone().sub(new THREE.Vector3(pd[0], pd[1] - .1, pd[2])).normalize().multiplyScalar(sc.x * .35);
+        im.setColorAt(k, ROSA[Math.floor(rf() * ROSA.length)]);
+        return { p: pos.clone().add(fuori).add(new THREE.Vector3(0, sc.x * .25, 0)), s: sc.x * (.8 + rf() * .35), r: rf() * 6, ordine: rf() };
+      });
+      (gA.gruppoPad[pad] ?? tr).add(im);
+      return { im, basi, colori: im.instanceColor.array.slice() };
+    });
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0), ms = new THREE.Matrix4(), qq = new THREE.Quaternion(), e = new THREE.Euler();
+    let chiaveFiori = '';
+    function setFioritura(boccioli, aperti) {
+      const chiave = boccioli.toFixed(2) + ':' + aperti.toFixed(2);
+      if (chiave === chiaveFiori) return; chiaveFiori = chiave;
+      for (const f of fiori) {
+        f.basi.forEach((b, k) => {
+          // i fiori si aprono uno dopo l'altro (ordine), i boccioli sono piccoli e scuri
+          const aperto = Math.min(1, Math.max(0, aperti * 1.4 - b.ordine * .4)), bocciolo = boccioli > b.ordine * .8 ? .35 : 0;
+          const s = Math.max(aperto, aperto > 0 ? 0 : bocciolo);
+          if (s < .02) { f.im.setMatrixAt(k, zero); return; }
+          ms.compose(b.p, qq.setFromEuler(e.set(0, b.r, 0)), sc.setScalar(b.s * s));
+          f.im.setMatrixAt(k, ms);
+          const col = aperto > 0 ? null : BOCCIOLO;
+          f.im.instanceColor.setXYZ(k, col ? col.r : f.colori[k * 3], col ? col.g : f.colori[k * 3 + 1], col ? col.b : f.colori[k * 3 + 2]);
+        });
+        f.im.instanceMatrix.needsUpdate = true; f.im.instanceColor.needsUpdate = true;
+      }
+    }
+    setFioritura(0, 0);
+    Object.assign(cure.azalea, {
+      g: tr, aghi: false, specie: 'azalea', punte: punteDa(rametA, padsA, gA.gruppoPad), scalaGermogli: .8,
+      verde: new THREE.Color(0x4e823b), coloreGermoglio: new THREE.Color(0xb5dd7a),
+      fuoco: new THREE.Vector3(3.4, 1.55, -1.05),
+      filo: creaFilo(LEGABILI_A.map(([b, pad]) => { const [x, y, z, r] = padsA[pad]; return { gruppo: gA.gruppoRamo[b], punti: ramiA[b], r0: .065, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
+      setFioritura,
+    });
+    cure.azalea.filo.quandoPiega = () => cure.azalea.aggiornaPieghe();
+    azalea = { radice: t };
+  });
+
   cure.acero = acero;
   return {
     trees,
     acero,
     // le tre piante viste dalla cura: ciuffi dei cuscinetti, gruppi e terriccio
     cure,
-    // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino' oppure null
+    // l'azalea c'è solo dopo averla comprata
+    setAzalea(si) { azalea.radice.visible = si; },
+    // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino', 'azalea' oppure null
     tocca(raycaster) {
       let meglio = null, d = Infinity;
       for (const k in trees) {
+        if (!trees[k].radice.visible) continue;
         const hit = raycaster.intersectObject(trees[k].radice, true)[0];
         if (hit && hit.distance < d) { d = hit.distance; meglio = k; }
       }
@@ -407,7 +503,7 @@ export function creaAlberi(world) {
     setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
-      cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock);
+      cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock); cure.azalea.filo.aggiorna(clock);
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }
       if (acero.ring.visible) acero.ring.material.opacity = .45 + .3 * Math.sin(clock * 3.2);
       acero.aggiorna(clock);

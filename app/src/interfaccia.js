@@ -10,7 +10,7 @@ const livello = (c) => c.marciume ? 'grave' : c.ristagno > 0 ? 'troppa'
 const livelloAcqua = (c) => c.ristagno > 0 ? 'troppa' : c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
 
 export function creaInterfaccia(screenEl, camera, trees) {
-  const tagEls = { acero: $('tag-acero'), ginepro: $('tag-ginepro'), pino: $('tag-pino') };
+  const tagEls = { acero: $('tag-acero'), ginepro: $('tag-ginepro'), pino: $('tag-pino'), azalea: $('tag-azalea') };
   const pv = new THREE.Vector3();
   const toScreen = (v) => { pv.copy(v).project(camera); return [(pv.x + 1) / 2 * screenEl.clientWidth, (1 - pv.y) / 2 * screenEl.clientHeight, pv.z]; };
 
@@ -112,8 +112,9 @@ export function creaInterfaccia(screenEl, camera, trees) {
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
       $('acero-acqua').parentElement.dataset.livello = livelloAcqua(v);
-      // pino e ginepro: fase della sete e acqua nel terriccio, come l'acero
-      for (const p of ['pino', 'ginepro']) {
+      // pino, ginepro e azalea (se c'è): fase della sete e acqua nel terriccio, come l'acero
+      tagEls.azalea.hidden = !v.conifere.azalea;
+      for (const p of Object.keys(v.conifere)) {
         const c = v.conifere[p];
         $(p + '-fase').textContent = c.nomeFase;
         $(p + '-fase').dataset.livello = livello(c);
@@ -127,7 +128,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
         $('alert').style.display = v.haSete ? '' : 'none';
         $('ok').classList.toggle('show', !v.haSete && v.annaffiatoOggi);
         // Acqua chiede attenzione se ha sete una pianta qualunque
-        $('t-water').classList.toggle('needs', v.haSete || v.conifere.pino.haSete || v.conifere.ginepro.haSete);
+        $('t-water').classList.toggle('needs', v.haSete || Object.values(v.conifere).some(c => c.haSete));
       }
       // Pota chiede attenzione solo se oggi non c'è ancora stata un'azione di cura e la pianta non ha sete
       $('t-prune').classList.toggle('needs', v.puoPotare && !v.curatoOggi && !v.haSete);
@@ -144,6 +145,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
     // le etichette seguono le piante quando si ruota la scena
     aggiornaEtichette() {
       for (const k in tagEls) {
+        if (tagEls[k].hidden) continue;
         const [x, y, z] = toScreen(trees[k].tag), el = tagEls[k];
         const hw2 = el.offsetWidth / 2 + 8, cx = Math.min(screenEl.clientWidth - hw2, Math.max(hw2, x));
         el.style.visibility = z > 1 ? 'hidden' : 'visible';

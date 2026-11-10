@@ -12,6 +12,8 @@ export function rnd() {
   return ((t ^ t >>> 14) >>> 0) / 4294967296;
 }
 export const R = (a, b) => a + (b - a) * rnd();
+// costruisce qualcosa con un seme suo, senza cambiare la sequenza del resto della scena
+export function conSeme(s, fn) { const prima = seed; seed = s; try { return fn(); } finally { seed = prima; } }
 
 // Ombreggiatura "a cartone" in 3 toni
 export const toonGradient = new THREE.DataTexture(new Uint8Array([105, 105, 105, 255, 180, 180, 180, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);

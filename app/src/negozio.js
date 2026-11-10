@@ -29,6 +29,11 @@ const DECO = {
   gatto: `<ellipse cx="30" cy="36" rx="20" ry="10" fill="#e8913a"/><path d="M12 38c2 8 22 10 34 6" stroke="#e8913a" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="47" cy="31" r="9" fill="#e8913a"/><path d="M41 25l1-8 5 5ZM48 23l5-6 1 8Z" fill="#e8913a"/><path d="M44 31h3M49 31h3" stroke="#3b2716" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="50" cy="35" rx="4" ry="2.4" fill="#f7e3c4"/>`,
   ponte: `<path d="M4 44Q32 14 60 44" stroke="#9a6a46" stroke-width="6" fill="none"/><path d="M6 34Q32 6 58 34" stroke="#c8402c" stroke-width="3" fill="none"/><path d="M10 40v-8M21 30v-9M32 26v-8M43 30v-9M54 40v-8" stroke="#c8402c" stroke-width="2.6"/><path d="M2 47h60" stroke="#6cb6c8" stroke-width="3"/>`,
 };
+// le piante in vendita: un'azalea in fiore nel suo vaso tondo
+const PIANTE_DISEGNI = {
+  azalea: `<path d="M16 34h32l-3 12H19Z" fill="#6e4a38"/><rect x="13" y="31" width="38" height="4" rx="2" fill="#5f3e2f"/><path d="M32 31c-1-6 3-8 1-14" stroke="#7a4e3a" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="21" rx="10" ry="6" fill="#3f6e30"/><ellipse cx="42" cy="18" rx="10" ry="6" fill="#467a36"/><ellipse cx="32" cy="11" rx="9" ry="5.5" fill="#4e823b"/><g fill="#f27ea6"><circle cx="18" cy="18" r="2.6"/><circle cx="25" cy="17" r="2.4"/><circle cx="22" cy="23" r="2.2"/><circle cx="38" cy="15" r="2.6"/><circle cx="46" cy="16" r="2.4"/><circle cx="42" cy="21" r="2.2"/><circle cx="29" cy="9" r="2.4"/><circle cx="35" cy="8" r="2.2"/></g><g fill="#fbd3e1"><circle cx="21" cy="20" r="1.4"/><circle cx="44" cy="19" r="1.4"/><circle cx="33" cy="11" r="1.4"/></g>`,
+};
+const disegnoPianta = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${PIANTE_DISEGNI[id] || ''}</svg>`;
 const disegnoDeco = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${DECO[id] || ''}</svg>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;
 
@@ -66,6 +71,7 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'negozio') api.apri('negozio');
     else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
     else if (b.dataset.a === 'deco') azioni.compraDecorazione(b.dataset.id);
+    else if (b.dataset.a === 'pianta') azioni.compraPianta(b.dataset.id);
     else if (b.dataset.a === 'metti') azioni.mettiDecorazione(b.dataset.id, true);
     else if (b.dataset.a === 'sposta') azioni.sposta(b.dataset.id);
     else if (b.dataset.scheda) api.apri('negozio', b.dataset.scheda);
@@ -88,7 +94,7 @@ export function creaNegozio(azioni) {
       lista.scrollTop = 0;
       v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
         : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + ' (3 dosi a confezione)'
-        : scheda === 'giardino' ? 'Decorazioni: mettile dove vuoi nel giardino' : 'Vasi per l\'acero';
+        : scheda === 'giardino' ? 'Piante nuove e decorazioni da mettere dove vuoi' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -106,7 +112,8 @@ export function creaNegozio(azioni) {
       if (modo === 'negozio' && scheda === 'giardino') {
         vai.hidden = true;
         // comprate: si spostano dove si vuole; quelle messe da parte si rimettono
-        lista.innerHTML = vista.decorazioni.map(d => {
+        // prima le piante nuove (finché non sono tue), poi le decorazioni
+        lista.innerHTML = vista.pianteNegozio.filter(p => !p.tua).map(p => `<div class="vaso pianta-nuova" title="${p.descrizione}"><div class="vaso-img">${disegnoPianta(p.id)}</div><span class="vaso-nome">${p.nome}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="pianta" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('') + vista.decorazioni.map(d => {
           const pulsante = d.tua ? `<button class="vaso-b usa" data-a="${d.messa ? 'sposta' : 'metti'}" data-id="${d.id}">${d.messa ? 'Sposta' : 'Metti'}</button>`
             : `<button class="vaso-b compra${vista.semi < d.prezzo ? ' caro' : ''}" data-a="deco" data-id="${d.id}" aria-label="Compra per ${d.prezzo} Semi">${d.prezzo}${SEME}</button>`;
           return `<div class="vaso${d.messa ? ' in-uso' : ''}" title="${d.descrizione}"><div class="vaso-img">${disegnoDeco(d.id)}</div><span class="vaso-nome">${d.nome}</span>${pulsante}</div>`;

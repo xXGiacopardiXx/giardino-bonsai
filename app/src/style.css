@@ -58,6 +58,7 @@ button{touch-action:manipulation}
 .tag.aperta{z-index:3}
 .quest{transition:opacity .25s}
 .menu-aperto .quest{opacity:.25;pointer-events:none}
+.tag[hidden]{display:none}
 .tag{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:1cqw;will-change:transform}
 .plate{background:rgba(255,250,240,.93);border:.45cqw solid var(--ink);border-radius:2.6cqw;padding:1cqw 2.2cqw 1.3cqw;box-shadow:0 .6cqw 0 var(--ink);text-align:center;display:grid;gap:.5cqw;min-width:20cqw}
 .plate .nm{font:600 3.1cqw/1 var(--display)}
@@ -217,6 +218,8 @@ button{touch-action:manipulation}
 .negozio-schede{display:flex;gap:2cqw;margin-top:2.4cqw}
 .negozio-schede[hidden]{display:none}
 .scheda{all:unset;cursor:pointer;flex:1;text-align:center;padding:1.8cqw 0;border-radius:2.8cqw;border:.5cqw solid var(--ink);background:#efe2c6;font:700 3.6cqw/1 var(--display);color:#8a6a48;box-shadow:0 .6cqw 0 var(--ink)}
+/* una pianta nuova in vendita: bordo dorato, perché si noti tra le decorazioni */
+.vaso.pianta-nuova{border-color:#e0a83a;background:linear-gradient(#fff6dc,#fbe6b4)}
 .vaso-b.togli{background:linear-gradient(#f3e8d2,#e2d2b2);color:#8a6a48;text-shadow:none}
 .scheda.on{background:linear-gradient(#ffe08a,#f2b93e);color:#fff;text-shadow:0 .35cqw 0 var(--ink)}
 .prodotto-per{font:600 2.5cqw/1.1 var(--display);color:#2f6a1a}

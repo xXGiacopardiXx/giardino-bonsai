@@ -8,8 +8,9 @@ import { STILI } from './stili.js';
 
 export const NOME_MAESTRO = 'Il maestro Ren';
 const STAGIONI = ['Primavera', 'Estate', 'Autunno', 'Inverno'];
-const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino' };
-const ORDINE = ['acero', 'ginepro', 'pino'];
+const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino', azalea: 'Azalea' };
+// le piante del giardino, nell'ordine delle schede (l'azalea solo se è stata comprata)
+const ordine = (v) => ['acero', 'ginepro', 'pino', 'azalea'].filter(p => v.piante.includes(p));
 
 // riflessione d'apertura di ogni stagione: due testi, alternati negli anni dispari e pari
 const INTRO = [
@@ -48,6 +49,17 @@ const AZIONI = {
     [{ fai: 'Lascialo riposare: il colore bronzeo è normale.', perche: 'Col freddo il ginepro produce pigmenti che lo proteggono dal gelo, come una coperta. In primavera torna verde da solo.' },
       { fai: 'Acqua rara, ma mai terriccio secco del tutto.', perche: 'Resta verde e beve ancora un poco anche d\'inverno.' }],
   ],
+  azalea: [
+    [{ fai: 'Lasciala fiorire, e annaffia appena il terriccio si asciuga.', perche: 'Per aprire i fiori l\'azalea beve tanto, e le sue radici sono fini come capelli: se seccano anche una volta, i boccioli cadono senza aprirsi.' },
+      { fai: 'Niente potatura adesso.', perche: 'I boccioli si sono formati l\'estate scorsa sulle punte dei rami: tagliandole ora toglieresti proprio i fiori.' }],
+    [{ fai: 'Togli i fiori appassiti, uno per uno.', perche: 'Un fiore appassito che resta sulla pianta prova a fare i semi, e i semi costano tantissima forza. Togliendolo, la forza resta ai rami e l\'anno dopo la fioritura sarà piena.' },
+      { fai: 'Pota i germogli nuovi adesso, non più tardi.', perche: 'Subito dopo la fioritura l\'azalea mette rami nuovi, e sulle loro punte, a fine estate, forma i boccioli dell\'anno dopo. Potando ora dai forma senza toccare i fiori futuri.' },
+      { fai: 'Acqua spesso, mai calcarea.', perche: 'L\'azalea vive in terreni acidi: con l\'acqua dura le foglie ingialliscono tra le venature. Nel gioco basta non lasciarla a secco.' }],
+    [{ fai: 'Smetti di potare.', perche: 'Sulle punte dei rami ci sono già i boccioli della prossima primavera: ogni taglio adesso sarebbe un fiore in meno.' },
+      { fai: 'Annaffia un po\' meno.', perche: 'Con il fresco il vaso asciuga piano; l\'azalea vuole il terriccio umido, ma non zuppo.' }],
+    [{ fai: 'Acqua poca, ma mai terriccio secco.', perche: 'L\'azalea Satsuki tiene le foglie anche d\'inverno, e un poco beve sempre.' },
+      { fai: 'Guarda i boccioli che aspettano.', perche: 'Sono già lì, chiusi sulle punte dei rami: il freddo dell\'inverno serve proprio a farli aprire in primavera.' }],
+  ],
   pino: [
     [{ fai: 'Cima le candele quando sono allungate e chiare.', perche: 'Il pino cresce a scatti, dalle candele. Accorciandole la forza si divide tra più gemme: i ciuffi di aghi restano corti e i cuscinetti compatti, invece di rami lunghi e spogli.' },
       { fai: 'Annaffia solo quando il terriccio è quasi asciutto.', perche: 'Le radici del pino vivono insieme a un fungo amico che le aiuta a nutrirsi, e quel fungo ha bisogno di aria: nel terriccio zuppo muore.' }],
@@ -70,6 +82,10 @@ const STA_BENE = {
     'Sopporta bene il caldo: le squame trattengono l\'acqua. Continua a crescere per tutta l\'estate.',
     'Rallenta e fa scorta di forze. Le squame si induriscono per il freddo che arriva.',
     'Riposa, coperto del suo colore bronzeo contro il gelo. Beve poco.'],
+  azalea: ['Prepara la fioritura: i boccioli si gonfiano sulle punte, e a fine primavera si aprono tutti insieme.',
+    'Dopo la fioritura mette rami nuovi, teneri e chiari. Sulle loro punte, a fine estate, nasceranno i boccioli dell\'anno dopo.',
+    'Rallenta e custodisce i boccioli già formati. Le foglie più vecchie, all\'interno, si colorano un poco.',
+    'Riposa con le sue foglie piccole e scure. I boccioli aspettano la primavera.'],
   pino: ['Allunga le candele, le gemme nuove che diventeranno rami. È il suo unico scatto dell\'anno, e ci mette tutta la forza.',
     'Le candele sono diventate aghi nuovi. Ora irrobustisce i rami e beve poco: il caldo non lo spaventa.',
     'Gli aghi più vecchi, all\'interno, ingialliscono: la pianta li sta lasciando andare, è normale.',
@@ -86,6 +102,8 @@ function sente(v, p) {
   if (cura.parassiti?.visibili) return 'Ha gli afidi sui germogli: le succhiano la linfa delle punte tenere, e si sente stanca.';
   if (vaso.stretto) return 'Le radici hanno riempito il vaso e girano in tondo: non trovano più spazio né nutrimento, e la crescita rallenta.';
   if (c.salute < .7) return 'La chioma si è diradata: sta ricostruendo i rametti persi, piano, con le forze che ha.';
+  if (p === 'azalea' && c.fioritura > .5) return 'È in piena fioritura: ha speso mesi a preparare questi fiori, e ora beve tanto per tenerli aperti.';
+  if (p === 'azalea' && c.vecchi.length) return 'I fiori appassiscono: se restano sulla pianta proverà a farne semi, e le costerà tanta forza.';
   if (v.meteo.adesso === 'pioggia') return 'Beve la pioggia dalle radici e la sente sulle foglie: per oggi ha tutta l\'acqua che le serve.';
   if (v.meteo.adesso === 'neve') return 'Dorme sotto la neve, al riparo dal vento gelido. Non ha bisogno di niente.';
   if (v.meteo.piovutoOggi) return 'Oggi ha piovuto: il terriccio è ancora fresco e le radici hanno bevuto.';
@@ -96,19 +114,21 @@ function sente(v, p) {
 const MOMENTI = [
   // si apre la finestra del rinvaso per una o più piante che ne hanno bisogno
   (v) => {
-    const piante = ORDINE.filter(q => v.rinvaso[q].dovuto && v.rinvaso[q].finestra);
+    const piante = ordine(v).filter(q => v.rinvaso[q].dovuto && v.rinvaso[q].finestra);
     return piante.length ? { id: `rinvaso-${v.anno}`, titolo: 'Il rinvaso',
       intro: 'Le gemme si gonfiano: le radici si stanno svegliando. Per pochi giorni, a cavallo della primavera, si apre la finestra del rinvaso.',
       piante: piante.map(p => ({ id: p, nome: NOMI[p], sente: 'Le radici hanno riempito il vaso e girano in tondo: non trovano più spazio né nutrimento.', punti: [
         { fai: 'Rinvasa adesso: tocca la pianta e scegli Rinvasa.', perche: 'Si accorciano le radici più lunghe e si mette terriccio nuovo: la pianta ritrova spazio e cibo. Si fa ora perché le radici, appena sveglie, guariscono subito dai tagli.' },
-        p === 'acero'
+        p === 'azalea'
+          ? { fai: 'Usa il kanuma.', perche: 'È una pomice gialla e acida: tiene l\'aria e un po\' d\'acqua, ed è acida come il terreno dei boschi dove l\'azalea cresce spontanea. Nell\'akadama sta bene solo un anno.' }
+          : p === 'acero'
           ? { fai: 'Usa l\'akadama.', perche: 'È argilla cotta in granuli: trattiene l\'acqua dentro i granuli e lascia passare l\'aria tra uno e l\'altro. È proprio quello che vogliono le radici dell\'acero.' }
           : { fai: 'Usa un terriccio drenante, meglio la miscela per conifere.', perche: 'Asciuga in fretta e lascia tanta aria: le radici delle conifere stanno bene a lungo, e il rinvaso dopo si può aspettare di più.' },
       ] })) } : null;
   },
   // all'inizio di un anno nuovo si sbloccano stili più difficili
   (v) => {
-    const piante = ORDINE.map(p => ({ p, nuovi: STILI[p].filter(s => (s.anno ?? 1) === v.anno && v.stile[p].aperti.includes(s.id)) })).filter(x => x.nuovi.length);
+    const piante = ordine(v).map(p => ({ p, nuovi: STILI[p].filter(s => (s.anno ?? 1) === v.anno && v.stile[p].aperti.includes(s.id)) })).filter(x => x.nuovi.length);
     return piante.length && v.anno > 1 ? { id: `stili-${v.anno}`, titolo: 'Stili nuovi',
       intro: `Le tue piante hanno vissuto ${v.anno - 1 === 1 ? 'un anno' : (v.anno - 1) + ' anni'} con te. Il tronco si è irrobustito, i rami hanno imparato la loro strada: ora possono provare forme più difficili.`,
       piante: piante.map(({ p, nuovi }) => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: nuovi.map(s => ({
@@ -120,11 +140,22 @@ const MOMENTI = [
     const tipo = v.meteo.adesso ?? (v.meteo.piovutoOggi ? 'pioggia' : null);
     const m = tipo && METEO[tipo];
     return m ? { id: tipo, titolo: m.titolo, intro: m.intro,
-      piante: ORDINE.map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: m.punti[p] })) } : null;
+      piante: ordine(v).map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: m.punti[p] })) } : null;
+  },
+  // la prima fioritura dell'azalea (una volta sola): perché i fiori appassiti vanno tolti
+  (v) => {
+    const az = v.conifere.azalea;
+    return az && (az.fioritura > .5 || az.vecchi.length) ? { id: 'fioritura', titolo: 'La fioritura',
+      intro: 'L\'azalea è in fiore. È il suo momento dell\'anno: per mesi ha preparato questi boccioli, e ora li apre tutti insieme.',
+      piante: [{ id: 'azalea', nome: NOMI.azalea, sente: sente(v, 'azalea'), punti: [
+        { fai: 'Goditela, e tienila annaffiata.', perche: 'Fiorire costa tanta acqua: con il terriccio asciutto i fiori durano la metà.' },
+        { fai: 'Quando i fiori appassiscono, toglili uno per uno: tocca l\'azalea e scegli Pota.', perche: 'Ogni fiore appassito prova a fare i semi, e i semi costano tantissima forza. Se restano, l\'anno dopo l\'azalea fiorirà la metà.' },
+        { fai: 'Subito dopo, pota i germogli nuovi.', perche: 'È l\'unico momento giusto: più tardi taglieresti i boccioli della prossima primavera.' },
+      ] }] } : null;
   },
   // la prima volta che le radici marciscono per troppa acqua
   (v) => {
-    const piante = ORDINE.filter(q => (q === 'acero' ? v : v.conifere[q]).marciume);
+    const piante = ordine(v).filter(q => (q === 'acero' ? v : v.conifere[q]).marciume);
     return piante.length ? { id: 'ristagno', titolo: 'Troppa acqua',
       intro: 'Le radici hanno bisogno d\'aria quanto d\'acqua. Nel terriccio, tra un granello e l\'altro, ci sono piccoli spazi: se sono pieni d\'acqua, l\'aria non c\'è più.',
       piante: piante.map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: [
@@ -142,6 +173,7 @@ const METEO = {
       acero: [{ fai: 'Oggi non annaffiare: ci ha pensato la pioggia.', perche: 'Il terriccio è pieno d\'acqua fino alle radici più basse. Acqua in più non servirebbe: uscirebbe dai fori del vaso, o resterebbe a togliere aria alle radici.' },
         { fai: 'Domani guarda di nuovo il terriccio.', perche: 'Con il cielo coperto le foglie traspirano poco e il vaso asciuga più piano del solito: la sete tornerà più tardi.' }],
       ginepro: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Le conifere vogliono il terriccio quasi asciutto prima di bere di nuovo: dopo la pioggia ci vorrà qualche giorno.' }],
+      azalea: [{ fai: 'Oggi niente acqua: la pioggia è perfetta per lei.', perche: 'L\'acqua piovana è leggera e un po\' acida, proprio come piace all\'azalea.' }],
       pino: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Il fungo amico delle radici del pino ha bisogno d\'aria: meglio che il terriccio torni asciutto prima della prossima acqua.' }],
     } },
   neve: { titolo: 'La neve',
@@ -150,6 +182,7 @@ const METEO = {
       acero: [{ fai: 'Lascia la neve sui rami e sul vaso.', perche: 'La neve è una coperta: ripara le radici dal gelo più forte e, sciogliendosi piano, le bagna senza fretta.' },
         { fai: 'Non annaffiare mentre nevica.', perche: 'Sotto la neve il terriccio non si asciuga, e l\'acqua in più potrebbe gelare nel vaso.' }],
       ginepro: [{ fai: 'Non preoccuparti del colore bronzeo.', perche: 'È la sua difesa contro il freddo: con la neve e il gelo il ginepro si protegge da solo.' }],
+      azalea: [{ fai: 'Lascia la neve dov\'è.', perche: 'Ripara i boccioli già formati dal gelo più secco.' }],
       pino: [{ fai: 'Se la neve è tanta, scuotila via dai rami.', perche: 'I cuscinetti di aghi la trattengono: troppo peso potrebbe piegare i rami legati col filo.' }],
     } },
 };
@@ -159,7 +192,7 @@ export function consiglioStagione(stato) {
   const v = vista(stato);
   return {
     id: `stagione-${v.anno}-${v.stagione}`, titolo: STAGIONI[v.stagione], intro: INTRO[v.stagione][(v.anno - 1) % 2],
-    piante: ORDINE.map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: AZIONI[p][v.stagione] })),
+    piante: ordine(v).map(p => ({ id: p, nome: NOMI[p], sente: sente(v, p), punti: AZIONI[p][v.stagione] })),
   };
 }
 

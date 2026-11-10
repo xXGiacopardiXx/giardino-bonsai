@@ -15,7 +15,7 @@ const luce = (() => {
   return new THREE.CanvasTexture(c);
 })();
 // colore delle briciole di chioma che cadono, per specie
-const CHIOMA = { acero: 0x6fa83e, pino: 0x4a6c34, ginepro: 0x38775e };
+const CHIOMA = { acero: 0x6fa83e, pino: 0x4a6c34, ginepro: 0x38775e, azalea: 0x467a36 };
 
 // piante: { acero, pino, ginepro } con g (gruppo del tronco) e potTop
 export function creaStile(scene, piante) {

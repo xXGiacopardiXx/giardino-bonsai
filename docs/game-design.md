@@ -126,7 +126,7 @@ Il rinvaso rinnova il terriccio e accorcia le radici. Si fa nella **finestra giu
 
 ### 5.1 Specie
 
-Specie iniziali previste: **pino nero, ginepro, acero giapponese**. Da sbloccare in seguito: ficus, olmo cinese, glicine, azalea e altre.
+Specie iniziali: **pino nero, ginepro, acero giapponese**. Da comprare coi Semi: **azalea Satsuki** (fatta, sezione 5.4). In seguito: ficus, olmo cinese, glicine e altre.
 
 Ogni specie ha esigenze proprie (acqua, ritmo di crescita, reazione alla potatura), un aspetto proprio nelle stagioni (fioritura, colori autunnali, sempreverde o caduca) e un kit grafico dedicato (foglia, corteccia, colori, fiori).
 
@@ -163,6 +163,22 @@ L'obiettivo di lungo periodo di ogni albero è uno stile classico. La potatura e
   - Nella scelta degli stili quelli chiusi hanno il lucchetto, "Anno N", fra quanti giorni si aprono e il **perché** servono anni, con le parole del maestro (per esempio: il Bunjingi si ottiene togliendo, serve una pianta con un tronco che ha già carattere e la forza di ricacciare dall'alto).
   - All'inizio di un anno nuovo **il maestro** annuncia gli stili che si sono aperti, pianta per pianta, con il perché (sezione 7.4).
   - Lo stile in corso e quelli già sigillati restano sempre scelti, anche se fossero di un anno successivo.
+
+### 5.4 Azalea Satsuki: la quarta pianta
+
+La prima pianta che si compra: **400 Semi**, dal Negozio, scheda Giardino (in cima, con il bordo dorato). Compare sulla ghiaia a destra, dietro al pino, in un vaso tondo di terracotta scura su una lastra di pietra; le decorazioni che erano lì si spostano lì vicino, e lì non se ne possono più posare. Da quel momento ha tutto quello che hanno le altre piante: etichetta, tendina (Acqua, Pota, Filo, Rinvasa, Stile, Cura, Foto), sete, troppa acqua, afidi, concime, rinvaso, filo, stili, foto nel diario, consigli del maestro.
+
+- **Aspetto:** tronco basso e mosso, corteccia bruno-rossiccia, foglie piccole, ovali e scure, fitte.
+- **Acqua:** vuole il terriccio sempre un po' umido: asciuga poco meno dell'acero (`SETE_SPECIE` 0,8), molto più delle conifere.
+- **Fioritura (il ciclo vero dell'azalea):**
+  - dal 2° giorno di primavera spuntano piccoli **boccioli** scuri sulle punte; dal 4° si aprono i **fiori rosa**, uno dopo l'altro, fino a coprire la chioma;
+  - il 1° giorno d'estate appassiscono: nei primi due giorni d'estate compaiono **6 fiori appassiti** (rosa sbiadito e marroni), da togliere uno per uno con **Pota** (brillano, come gli aghi vecchi del pino; toccandoli cadono). Valgono come cura del giorno e per la sfida "Togli i fiori appassiti dell'azalea";
+  - **se restano**, all'inizio dell'autunno cadono da soli ma la pianta ha speso le forze a fare semi: **l'anno dopo fiorisce la metà**. Tolti tutti, la fioritura torna piena;
+  - meno fiori anche con la chioma diradata o con la sete forte.
+- **Potatura:** dopo la fioritura (in estate e nei primi 3 giorni d'autunno) mette germogli da potare con le forbici. Il maestro spiega perché non si pota in altri momenti: in primavera si taglierebbero i fiori, in autunno i boccioli dell'anno dopo.
+- **Terriccio:** nuovo terriccio **Kanuma** (30 Semi, solo per l'azalea), pomice gialla e acida: il rinvaso dura 3 anni. In akadama sta bene solo un anno.
+- **Stili:** Moyogi (cuscinetti tondi a gradini, 350 Semi) e Hokidachi (cupola tonda che in fioritura sembra un mazzo di fiori, 400 Semi).
+- **Il maestro:** una scheda anche per l'azalea in ogni consiglio di stagione; alla prima fioritura un consiglio apposta, col perché dei fiori appassiti da togliere; "come si sente" racconta la fioritura e i fiori che appassiscono.
 
 ## 6. Salute della pianta e trascuratezza
 
@@ -302,7 +318,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 |---|---|
 | Vaso estetico | 80–300 |
 | Decorazione del giardino | 50–200 |
-| Nuova specie | 400–1.000 |
+| Nuova specie (azalea Satsuki: 400) | 400–1.000 |
 | Ampliamento del giardino | 600 → 1.200 → 2.500 (prezzo crescente) |
 | Attrezzi (es. forbici concave per tagli più puliti) | 150–400 |
 

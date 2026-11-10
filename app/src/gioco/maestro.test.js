@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, avanza, annaffia, migra, meteoDelGiorno, VERSIONE } from './stato.js';
+import { nuovoStato as nuovoStatoVero, avanza, annaffia, migra, meteoDelGiorno, compraPianta, VERSIONE } from './stato.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './maestro.js';
 
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -107,4 +107,16 @@ test('alla prima pioggia il maestro spiega perché quel giorno non serve l\'acqu
   assert.equal(c.id, 'pioggia');
   assert.match(c.piante[0].punti[0].fai, /non annaffiare/);
   assert.match(c.piante[0].sente, /pioggia/);
+});
+
+test('con l\'azalea comprata il maestro ha una scheda anche per lei, e spiega la fioritura', () => {
+  const s = nuovoStato(T0); s.semi = 500;
+  compraPianta(s, T0, 'azalea');
+  assert.deepEqual(consiglioStagione(s).piante.map(p => p.id), ['acero', 'ginepro', 'pino', 'azalea']);
+  segnaConsiglio(s, 'stagione-1-0');
+  for (let g = 0; g <= 5; g++) { avanza(s, dopo(g)); annaffia(s, dopo(g), 'azalea'); annaffia(s, dopo(g)); }
+  const c = consiglioMaestro(s);
+  assert.equal(c.id, 'fioritura');
+  assert.match(c.piante[0].punti[1].fai, /appassiscono/);
+  assert.match(c.piante[0].sente, /fioritura/);
 });

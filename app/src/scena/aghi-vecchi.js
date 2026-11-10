@@ -1,6 +1,8 @@
 // Aghi vecchi del pino (sezione 4.3): in autunno alcuni cuscinetti hanno ciuffi di aghi ingialliti
 // da togliere a mano, così luce e aria arrivano dentro la chioma. In modalità Pota brillano piano;
 // toccandoli cadono a terra. La scena segue la vista del motore (conifere.pino.vecchi).
+// Lo stesso vale per i fiori appassiti dell'azalea (sezione 5.4): 8 posti, due per cuscinetto, con fiori
+// marroni e accartocciati (opzioni di creaAghiVecchi).
 // I dettagli usano una sequenza casuale propria: la sequenza col seme della scena non cambia.
 import * as THREE from 'three';
 import { toon, ciuffoAghi, sequenza } from './strumenti.js';
@@ -11,21 +13,24 @@ const ciuffoGeo = ciuffoAghi({ n: 30, lunghezza: 1, larghezza: .06, seme: 61, nu
 const toccoGeo = new THREE.SphereGeometry(.24, 8, 6), toccoMat = new THREE.MeshBasicMaterial({ visible: false });
 const TINTE = [0xc49a3e, 0xb07a34, 0xd2b058, 0x9c6a2e];
 
-// pino: cure.pino di scena/alberi.js (ciuffiDi, gruppoDi)
-export function creaAghiVecchi(pino) {
-  const posti = CUSCINETTI.map((pad, posto) => {
-    const rnd = sequenza(711 + posto * 13);
+// pianta: cure.pino (o cure.azalea) di scena/alberi.js (ciuffiDi, gruppoDi)
+// opzioni: cuscinetti (cuscinetto di ogni posto), geo e tinte dei ciuffi, quanti per posto, grandezza, seme
+export function creaAghiVecchi(pino, { cuscinetti = CUSCINETTI, geo = ciuffoGeo, tinte = TINTE, quanti = 4, grandezza = .55, seme = 711 } = {}) {
+  const posti = cuscinetti.map((pad, posto) => {
+    const rnd = sequenza(seme + posto * 13);
     const g = new THREE.Group(); g.visible = false; pino.gruppoDi(pad).add(g);
-    // 4 ciuffi gialli sopra i ciuffi più esterni del cuscinetto
-    const ciuffi = pino.ciuffiDi(pad).slice().sort((a, b) => (b.pos.y + b.pos.z * .5) - (a.pos.y + a.pos.z * .5)).slice(0, 4);
+    // i ciuffi gialli (o i fiori secchi) sopra i ciuffi più esterni del cuscinetto; due posti dello
+    // stesso cuscinetto prendono ciuffi diversi
+    const doppio = cuscinetti.slice(0, posto).filter(x => x === pad).length;
+    const ciuffi = pino.ciuffiDi(pad).slice().sort((a, b) => (b.pos.y + b.pos.z * .5) - (a.pos.y + a.pos.z * .5)).slice(doppio * quanti, doppio * quanti + quanti);
     const mat = toon({ color: 0xffffff, emissive: 0xfff0a0, emissiveIntensity: 0, side: THREE.DoubleSide });
     const parti = ciuffi.map((c, i) => {
-      const m = new THREE.Mesh(ciuffoGeo, mat.clone()); m.castShadow = true;
-      m.material.color.setHex(TINTE[i % TINTE.length]);
+      const m = new THREE.Mesh(geo, mat.clone()); m.castShadow = true;
+      m.material.color.setHex(tinte[i % tinte.length]);
       m.position.copy(c.pos).add(new THREE.Vector3((rnd() - .5) * c.sc.x * .5, c.sc.y * .35, (rnd() - .5) * c.sc.x * .5));
       m.rotation.set(rnd() * .6, rnd() * 6, rnd() * .6);
-      m.scale.setScalar(c.sc.x * .55);
-      m.userData.base = { pos: m.position.clone(), rot: m.rotation.clone(), s: c.sc.x * .55 };
+      m.scale.setScalar(c.sc.x * grandezza);
+      m.userData.base = { pos: m.position.clone(), rot: m.rotation.clone(), s: c.sc.x * grandezza };
       g.add(m); return m;
     });
     const centro = ciuffi.reduce((v, c) => v.add(c.pos), new THREE.Vector3()).multiplyScalar(1 / Math.max(1, ciuffi.length));
