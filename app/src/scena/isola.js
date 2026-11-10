@@ -42,18 +42,33 @@ export function creaIsola(world, maxAnisotropy) {
     g.strokeStyle = '#d4c7ad'; g.lineWidth = 7; g.stroke();
     g.strokeStyle = '#f7f1e5'; g.lineWidth = 2.4; g.translate(0, -5); g.stroke(); g.translate(0, 5);
   }
-  // cerchi concentrici intorno alle pietre e ai vasi
-  [[0.9, 1.0, 0.45], [-2.3, 0.6, 0.95], [3.3, -2.4, 0.55]].forEach(([x, z, r]) => {
-    const [px, py] = toPx(x, z), sx = 1024 / GRX / 2, sz = 1024 / GRZ / 2;
-    g.fillStyle = '#ebe3d1'; g.beginPath(); g.ellipse(px, py, (r + .85) * sx, (r + .85) * sz, 0, 0, PI * 2); g.fill();
-    for (let k = 1; k <= 6; k++) {
-      const rr = r + k * .13;
-      g.beginPath(); g.ellipse(px, py, rr * sx, rr * sz, 0, 0, PI * 2); g.strokeStyle = '#d4c7ad'; g.lineWidth = 6; g.stroke();
-      g.beginPath(); g.ellipse(px, py - 4, rr * sx, rr * sz, 0, 0, PI * 2); g.strokeStyle = '#f7f1e5'; g.lineWidth = 2; g.stroke();
+  // le righe restano in una copia: i cerchi si ridisegnano quando le cose nella ghiaia si spostano
+  const righe = document.createElement('canvas'); righe.width = righe.height = 1024; righe.getContext('2d').drawImage(gc, 0, 0);
+  // i granelli sopra a tutto, in un foglio a parte (stessi numeri casuali di sempre)
+  const granelli = document.createElement('canvas'); granelli.width = granelli.height = 1024;
+  const gg = granelli.getContext('2d');
+  for (let i = 0; i < 5000; i++) { gg.fillStyle = rnd() < .5 ? 'rgba(150,135,110,.35)' : 'rgba(255,255,255,.5)'; gg.fillRect(rnd() * 1024, rnd() * 1024, 2, 2); }
+  // cerchi concentrici intorno alle pietre e ai vasi che stanno nella ghiaia: cerchi [[x, z, raggio]]
+  let cerchiFatti = '';
+  function setCerchi(cerchi) {
+    const chiave = JSON.stringify(cerchi); if (chiave === cerchiFatti) return; cerchiFatti = chiave;
+    g.drawImage(righe, 0, 0);
+    const sx = 1024 / GRX / 2, sz = 1024 / GRZ / 2;
+    for (const [x, z, r] of cerchi) {
+      if (((x - GX) / GRX) ** 2 + ((z - GZ) / GRZ) ** 2 > 1) continue;
+      const [px, py] = toPx(x, z);
+      g.fillStyle = '#ebe3d1'; g.beginPath(); g.ellipse(px, py, (r + .85) * sx, (r + .85) * sz, 0, 0, PI * 2); g.fill();
+      for (let k = 1; k <= 6; k++) {
+        const rr = r + k * .13;
+        g.beginPath(); g.ellipse(px, py, rr * sx, rr * sz, 0, 0, PI * 2); g.strokeStyle = '#d4c7ad'; g.lineWidth = 6; g.stroke();
+        g.beginPath(); g.ellipse(px, py - 4, rr * sx, rr * sz, 0, 0, PI * 2); g.strokeStyle = '#f7f1e5'; g.lineWidth = 2; g.stroke();
+      }
     }
-  });
-  for (let i = 0; i < 5000; i++) { g.fillStyle = rnd() < .5 ? 'rgba(150,135,110,.35)' : 'rgba(255,255,255,.5)'; g.fillRect(rnd() * 1024, rnd() * 1024, 2, 2); }
+    g.drawImage(granelli, 0, 0);
+    gtex.needsUpdate = true;
+  }
   const gtex = new THREE.CanvasTexture(gc); gtex.anisotropy = maxAnisotropy;
+  setCerchi([[0.9, 1.0, 0.45], [-2.3, 0.6, 0.95], [3.3, -2.4, 0.55]]);
   const gravel = new THREE.Mesh(new THREE.CircleGeometry(1, 80), toon({ map: gtex }));
   gravel.rotation.x = -PI / 2; gravel.scale.set(GRX, GRZ, 1); gravel.position.set(GX, 0.012, GZ); gravel.receiveShadow = true;
   world.add(gravel);
@@ -63,9 +78,10 @@ export function creaIsola(world, maxAnisotropy) {
     const m = mesh(new THREE.DodecahedronGeometry(R(.09, .15), 0), M(rnd() < .5 ? 0xb5afa1 : 0x9f9a8c), world, GX + Math.cos(a) * GRX * 1.01, .05, GZ + Math.sin(a) * GRZ * 1.01);
     m.scale.y = .6; m.rotation.y = R(0, 3);
   }
-  // pietra con muschio nella ghiaia
-  const rk = mesh(new THREE.DodecahedronGeometry(.42, 0), M(0x8e8a7e), world, .9, .16, 1.0); rk.scale.set(1.15, .7, 1); rk.rotation.y = .6;
-  const rk2 = mesh(new THREE.DodecahedronGeometry(.22, 0), M(0x9d998c), world, 1.3, .08, 1.25); rk2.scale.y = .7;
-  const moss = mesh(new THREE.IcosahedronGeometry(.3, 1), M(0x6d9a43), world, .85, .38, .95); moss.scale.set(1, .28, .8);
-  return { prato };
+  // pietra con muschio nella ghiaia: un gruppo solo, così si sposta tutta insieme (sezione 8.4)
+  const sasso = new THREE.Group(); sasso.position.set(.95, 0, 1.05); world.add(sasso);
+  const rk = mesh(new THREE.DodecahedronGeometry(.42, 0), M(0x8e8a7e), sasso, -.05, .16, -.05); rk.scale.set(1.15, .7, 1); rk.rotation.y = .6;
+  const rk2 = mesh(new THREE.DodecahedronGeometry(.22, 0), M(0x9d998c), sasso, .35, .08, .2); rk2.scale.y = .7;
+  const moss = mesh(new THREE.IcosahedronGeometry(.3, 1), M(0x6d9a43), sasso, -.1, .38, -.1); moss.scale.set(1, .28, .8);
+  return { prato, sasso, setCerchi };
 }

@@ -388,7 +388,21 @@ Anche i bonsai si spostano, come le decorazioni, così il giardino si compone a 
 - Anello verde dove si può posare, rosso dove no. Non si posa sopra un'altra pianta, una decorazione, la lanterna o la pietra col muschio, nel laghetto, oltre il bordo del prato né dietro la staccionata. Sulla ghiaia sì.
 - Spostando la pianta si spostano anche l'anello della sete, l'annaffiatoio, l'etichetta, il punto che la telecamera guarda per Pota, Filo, Stile e Foto, i granuli di concime e le radici del vaso stretto.
 - Le posizioni si salvano nella partita (`piantePosti`); una pianta mai spostata sta al suo posto iniziale. Se il posto dell'azalea è già occupato da un'altra pianta quando la si compra, l'azalea va lì vicino.
-- Sotto le piante spostate l'erba non cresce. I cerchi rastrellati nella ghiaia restano dove erano le piante all'inizio (sono disegnati nella ghiaia): da sistemare più avanti.
+- Sotto le piante spostate l'erba non cresce. I cerchi rastrellati nella ghiaia seguono il ginepro (sezione 8.4).
+- Le foglie d'acero cadute in autunno stanno intorno all'acero, anche dopo averlo spostato.
+
+### 8.4 Ogni elemento del giardino dove si vuole
+
+Oltre a piante e decorazioni, si sposta tutto quello che c'è nel giardino fin dall'inizio, così ogni giardino è unico.
+
+- Elementi spostabili: la **lanterna di pietra** (con la sua luce e il cappello di neve), la **pietra col muschio**, il **laghetto delle carpe** (con ninfee, fiore di loto e carpe), i **sei cespugli** (uno rosso) e le **quattro pietre del sentiero**, una per una.
+- Restano fermi solo la cornice dell'isola: la ghiaia, la staccionata di bambù, l'albero dietro e il bambù.
+- Un tocco sull'elemento (fuori dalle piante) apre la stessa modalità Sposta delle decorazioni: nome in alto, **Ruota** e **Fatto**. Niente Togli: gli elementi restano nel giardino. Si trascina col dito o si tocca il prato dove lo si vuole.
+- Anello verde dove si può posare, rosso dove no. Nessuna cosa va sopra un'altra; nel laghetto entra solo il ponticello. I cespugli possono stare proprio sul bordo dell'isola; le altre cose no.
+- **Laghetto e ponticello**: spostando o girando il laghetto, il ponticello che ci sta sopra lo segue (si vede al momento di posarlo).
+- **Ghiaia**: i cerchi rastrellati si ridisegnano intorno a lanterna, pietra col muschio e ginepro quando stanno nella ghiaia; dove non c'è più niente torna la ghiaia a righe.
+- **Erba**: dove all'inizio c'erano laghetto, pino e sentiero l'erba c'è (prima mancava); sotto ogni elemento, dovunque sia, l'erba non cresce.
+- Le posizioni si salvano nella partita (`elementiPosti`); un elemento mai spostato sta al suo posto iniziale.
 
 ## 9. Stile grafico
 

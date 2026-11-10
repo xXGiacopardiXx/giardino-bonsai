@@ -15,6 +15,7 @@ import { creaIsola } from './scena/isola.js';
 import { creaAlberi } from './scena/alberi.js';
 import { creaGiardino } from './scena/giardino.js';
 import { creaDecorazioni } from './scena/decorazioni.js';
+import { creaElementi } from './scena/elementi.js';
 import { creaAtmosfera } from './scena/atmosfera.js';
 import { creaAnnaffiatura } from './scena/annaffiatura.js';
 import { creaGermogli } from './scena/germogli.js';
@@ -34,7 +35,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -79,6 +80,8 @@ function avvia() {
   const atmosfera = creaAtmosfera(scene, { ...cieloScena, nuvole, lanterna: giardino.lanterna, giardino }, { reduce, tuono: (forza) => suoni.tuono(forza) });
   // decorazioni comprate: non usano numeri casuali, l'ordine qui non conta
   const decorazioni = creaDecorazioni(world, { toc: () => suoni.toc() });
+  // lanterna, pietra col muschio, laghetto, cespugli e pietre del sentiero: si spostano anche loro
+  const elementi = creaElementi(world, { ...giardino.spostabili, sasso: isola.sasso });
 
   // Telecamera: si ruota col dito e si zooma col pizzico, senza spostarsi di lato
   const controls = new OrbitControls(camera, canvas);
@@ -175,7 +178,14 @@ function avvia() {
     decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa && d.dove).map(d => ({ id: d.id, ...d.dove })));
     // le piante dove le ha messe il giocatore (sezione 8.3); niente erba sotto piante e decorazioni
     alberi.setPosti(v.piantePosti);
-    giardino.liberaErba([...decorazioni.zone(), ...Object.values(v.piantePosti).map(p => [p.x, p.z, p.raggio * .85])]);
+    // e così gli elementi del giardino (sezione 8.4): le foglie seguono l'acero, i cerchi nella ghiaia
+    // seguono ginepro, lanterna e pietra col muschio; niente erba sotto il laghetto e le altre cose
+    elementi.setPosti(v.elementiPosti);
+    giardino.setAcero(v.piantePosti.acero);
+    const ep = v.elementiPosti, gin = v.piantePosti.ginepro;
+    isola.setCerchi([...ELEMENTI.filter(e => e.cerchi).map(e => [ep[e.id].x, ep[e.id].z, e.cerchi]), [gin.x, gin.z, .95]]);
+    giardino.liberaErba([...decorazioni.zone(), ...Object.values(v.piantePosti).map(p => [p.x, p.z, p.raggio * .85]),
+      ...ELEMENTI.map(e => [ep[e.id].x, ep[e.id].z, e.raggio * (e.acqua ? 1.22 : e.bordo ? .7 : 1.05)])]);
     for (const p in curaScene) {
       const c = v.cura[p];
       if (!c) continue;
@@ -688,20 +698,21 @@ function avvia() {
     else if (a === 'fine') { suoni.tocco(); fotoPianta(null); }
   });
 
-  // --- Decorazioni e piante dove si vuole (sezioni 8.2 e 8.3): toccando una decorazione (o da Sposta nel
-  // negozio, o da Sposta nella tendina di una pianta) si sceglie; col dito la si trascina sul prato, un tocco
-  // sul prato la porta lì, Ruota la gira di un ottavo di giro. L'anello sotto è verde dove si può posare e
-  // rosso dove no (piante, lanterna, laghetto, fuori dal prato, decorazioni). Lasciata in un posto
-  // sbagliato, torna dov'era. Le piante non si tolgono dal giardino: per loro Togli non c'è. ---
+  // --- Tutto dove si vuole (sezioni 8.2, 8.3 e 8.4): toccando una decorazione o un elemento del giardino
+  // (o da Sposta nel negozio, o da Sposta nella tendina di una pianta) si sceglie; col dito lo si trascina
+  // sul prato, un tocco sul prato lo porta lì, Ruota lo gira di un ottavo di giro. L'anello sotto è verde
+  // dove si può posare e rosso dove no (sopra altre cose, nel laghetto, fuori dal prato). Lasciato in un
+  // posto sbagliato, torna dov'era. Togli c'è solo per le decorazioni. ---
   let spostando = null;
   const barraSposta = document.getElementById('sposta'), togliBtn = barraSposta.querySelector('[data-a="togli"]');
   const MOTIVO = { fuori: 'Lì è fuori dal prato.', acqua: 'Nel laghetto ci va solo il ponticello.', occupato: 'Lì c\'è già qualcosa: scegli un posto libero.' };
   const nomeDeco = (id) => vista(stato).decorazioni.find(d => d.id === id).nome;
-  // decorazione o pianta: le piante passano per alberi, le decorazioni per decorazioni
+  // pianta, elemento del giardino o decorazione: ognuno passa per il suo pezzo di scena
   const ePianta = (id) => TUTTE.includes(id);
-  const posizioneSpostata = () => ePianta(spostando) ? alberi.posizioneSposta : decorazioni.posizione;
-  const provaSpostata = (p) => ePianta(spostando) ? alberi.provaPosto(p) : decorazioni.prova(p);
-  // id: decorazione o pianta da spostare, oppure null per finire
+  const elemento = (id) => ELEMENTI.find(e => e.id === id);
+  const posizioneSpostata = () => ePianta(spostando) ? alberi.posizioneSposta : elemento(spostando) ? elementi.posizione : decorazioni.posizione;
+  const provaSpostata = (p) => ePianta(spostando) ? alberi.provaPosto(p) : elemento(spostando) ? elementi.prova(p) : decorazioni.prova(p);
+  // id: decorazione, pianta o elemento da spostare, oppure null per finire
   function sposta(id) {
     if (id === spostando) return;
     if (id) { potatura(null); filatura(null); stilatura(null); fotoPianta(null); annullaScelta(); chiudiMenu(); negozio.chiudi(); }
@@ -709,13 +720,17 @@ function avvia() {
     spostando = id;
     screenEl.classList.toggle('spostando', !!id);
     barraSposta.hidden = !id;
-    decorazioni.seleziona(ePianta(id) ? null : id);
+    const el = elemento(id);
+    decorazioni.seleziona(ePianta(id) || el ? null : id);
     alberi.selezionaSposta(ePianta(id) ? id : null, ePianta(id) ? vista(stato).piantePosti[id].raggio * .95 : 1);
+    elementi.seleziona(el ? id : null, el ? el.raggio * (el.acqua ? 1.15 : 1.1) : 1);
     if (id) {
-      document.getElementById('sposta-titolo').textContent = ePianta(id) ? nomiPiante[id] : nomeDeco(id);
-      togliBtn.hidden = ePianta(id);
+      document.getElementById('sposta-titolo').textContent = ePianta(id) ? nomiPiante[id] : el ? el.nome : nomeDeco(id);
+      togliBtn.hidden = ePianta(id) || !!el;
       suoni.tocco();
       if (!prima) ui.toast(ePianta(id) ? 'Trascina la pianta col dito, con il suo vaso, o tocca il prato dove la vuoi. Ruota per girarla.'
+        : el?.acqua ? 'Trascina il laghetto col dito, carpe comprese, o tocca il prato dove lo vuoi. Ruota per girarlo.'
+        : el ? 'Trascina col dito per spostarlo, o tocca il prato dove lo vuoi. Ruota per girarlo.'
         : 'Trascina col dito per spostarla, o tocca il prato dove la vuoi. Ruota per girarla.', 4500);
     }
   }
@@ -725,7 +740,7 @@ function avvia() {
   // prova a posare la decorazione scelta: se il posto non va, resta dov'era e si dice perché
   function posaQui(x, z, r) {
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
-    const esito = ePianta(spostando) ? posaPianta(stato, spostando, x, z, r) : posaDecorazione(stato, spostando, x, z, r);
+    const esito = ePianta(spostando) ? posaPianta(stato, spostando, x, z, r) : elemento(spostando) ? posaElemento(stato, spostando, x, z, r) : posaDecorazione(stato, spostando, x, z, r);
     provaSpostata(null);
     if (esito === 'ok') { salva(stato); suoni.fruscio(.08); } else ui.toast(MOTIVO[esito] ?? 'Lì non ci sta.', 2500);
     disegna();
@@ -733,7 +748,7 @@ function avvia() {
   barraSposta.addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a || !spostando) return;
     if (a === 'ruota') { const p = posizioneSpostata(); posaQui(p.x, p.z, p.r + Math.PI / 4); }
-    else if (a === 'togli' && !ePianta(spostando)) {
+    else if (a === 'togli' && !ePianta(spostando) && !elemento(spostando)) {
       const id = spostando; sposta(null);
       mettiDecorazione(stato, id, false); salva(stato); disegna(); suoni.tocco();
       ui.toast(`${nomeDeco(id)}: messa da parte. La rimetti da Negozio, scheda Giardino.`, 3500);
@@ -744,8 +759,8 @@ function avvia() {
   screenEl.addEventListener('pointerdown', (e) => {
     if (!spostando || e.target !== canvas || presa || tiro) return;
     punta(e);
-    // si prende la decorazione o la pianta sotto il dito (anche un'altra: diventa quella da spostare)
-    const id = decorazioni.tocca(raycaster) ?? alberi.tocca(raycaster);
+    // si prende la cosa sotto il dito (anche un'altra: diventa quella da spostare)
+    const id = decorazioni.tocca(raycaster) ?? alberi.tocca(raycaster) ?? elementi.tocca(raycaster);
     if (!id || !sulPrato()) return;
     e.stopPropagation();
     controls.enabled = false;
@@ -975,6 +990,8 @@ function avvia() {
       else filatura(quale);
       return;
     }
+    // un tocco su un elemento del giardino (lanterna, laghetto, un cespuglio...) lo sceglie per spostarlo
+    if (!quale) { const el = elementi.tocca(raycaster); if (el) { chiudiMenu(); sposta(el); return; } }
     // un tocco su una pianta apre la sua tendina
     const m = menuPiante[quale];
     const apri = m && m.hidden;
@@ -992,7 +1009,7 @@ function avvia() {
       camera.position.copy(controls.target).addScaledVector(dir, volo.daD + (volo.aD - volo.daD) * k);
     }
     controls.update();
-    alberi.aggiorna(clock); alberi.aggiornaAnello(clock);
+    alberi.aggiorna(clock); alberi.aggiornaAnello(clock); elementi.aggiorna(clock);
     for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
     aghiVecchi.aggiorna(dt, clock); fioriAppassiti.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);

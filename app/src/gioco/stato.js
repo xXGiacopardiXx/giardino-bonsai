@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 21;
+export const VERSIONE = 22;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
@@ -39,6 +39,21 @@ export const DECORAZIONI = [
   { id: 'fontana', nome: 'Fontana di bambù', prezzo: 120, raggio: .7, posto: [-3.55, 1.75, .25], descrizione: 'Il bambù si riempie d\'acqua, si inclina e batte sulla pietra: toc.' },
   { id: 'gatto', nome: 'Gatto che dorme', prezzo: 150, raggio: .45, posto: [3.3, 3.05, -.6], descrizione: 'Un gatto rosso acciambellato al sole, accanto al pino.' },
   { id: 'ponte', nome: 'Ponticello rosso', prezzo: 200, raggio: 1, posto: [-2.3, 3.45, 0], sullAcqua: true, descrizione: 'Un ponte ad arco laccato sopra il laghetto delle carpe.' },
+];
+
+// Elementi del giardino (sezione 8.4): ci sono fin dall'inizio e si spostano come le decorazioni, ma non
+// si tolgono. posto: dove stanno all'inizio ([x, z], coordinate dell'isola); raggio: l'ingombro.
+// grande: pesa come una pianta (lanterna e pietra col muschio); bordo: può stare sul bordo dell'isola
+// (i cespugli); acqua: il laghetto (ci va sopra solo il ponticello); cerchi: i cerchi rastrellati
+// intorno, quando sta nella ghiaia.
+const CESPUGLI = [[-4.25, -1.6, .6], [4.45, .3, .55], [-4.05, 4.6, .5], [3.85, 4.7, .55], [4.25, -3.3, .5], [-.9, 6.1, .45]];
+const SENTIERO = [[1.3, 5.7], [1.0, 4.9], [1.45, 4.15], [1.1, 3.4]];
+export const ELEMENTI = [
+  { id: 'lanterna', nome: 'Lanterna di pietra', raggio: .6, posto: [3.3, -2.4], grande: true, cerchi: .55 },
+  { id: 'sasso', nome: 'Pietra col muschio', raggio: .55, posto: [.95, 1.05], grande: true, cerchi: .45 },
+  { id: 'laghetto', nome: 'Laghetto delle carpe', raggio: 1.2, posto: [-2.3, 3.45], acqua: true },
+  ...CESPUGLI.map(([x, z, r], i) => ({ id: 'cespuglio-' + (i + 1), nome: i === 3 ? 'Cespuglio rosso' : 'Cespuglio', raggio: r, posto: [x, z], bordo: true })),
+  ...SENTIERO.map(([x, z], i) => ({ id: 'sentiero-' + (i + 1), nome: 'Pietra del sentiero', raggio: .33, posto: [x, z] })),
 ];
 
 // Fasi della disidratazione (sezione 6.1). "da" è in giorni di sete, cioè giorni reali
@@ -272,6 +287,8 @@ export function nuovoStato(ora) {
     decorazioni: { possedute: [], messe: [], posti: {} },
     // dove il giocatore ha spostato le piante ({ x, z, r }); quelle mai spostate stanno al loro posto
     piantePosti: {},
+    // dove il giocatore ha spostato gli elementi del giardino (lanterna, laghetto, cespugli...)
+    elementiPosti: {},
     // pino e ginepro: per ora si curano solo con concimi e trattamenti
     conifere: { pino: coniferaNuova('pino'), ginepro: coniferaNuova('ginepro') },
     inventario: { ...INVENTARIO_INIZIALE },
@@ -370,6 +387,8 @@ export function migra(stato) {
   if (stato.versione === 19) { Object.assign(stato.meteo, { neve: 0, pozze: 0 }); stato.versione = 20; }
   // piante spostabili: per ora tutte al loro posto
   if (stato.versione === 20) { stato.piantePosti = {}; stato.versione = 21; }
+  // elementi del giardino spostabili: per ora tutti al loro posto
+  if (stato.versione === 21) { stato.elementiPosti = {}; stato.versione = 22; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -814,42 +833,54 @@ export function compra(stato, id) {
   return { esito: 'ok', mancano: 0 };
 }
 
-// Il prato dell'isola, per decorazioni e piante (coordinate dell'isola, come la scena): le cose che non si
-// spostano (lanterna, pietra col muschio) con il loro ingombro [x, z, raggio], e il laghetto (dove va
-// solo il ponticello). Le piante (sezione 8.3) si spostano anche loro, con vaso e supporto: ognuna ha
-// il suo posto iniziale e il suo ingombro.
+// Il prato dell'isola, per decorazioni, piante ed elementi del giardino (coordinate dell'isola, come la
+// scena). Le piante (sezione 8.3) si spostano con vaso e supporto: ognuna ha il suo posto iniziale e il
+// suo ingombro. Tutto si sposta: dell'isola restano fermi solo la ghiaia, la staccionata e gli alberi
+// dietro.
 const ISOLA_ZS = 1.32;
-const INGOMBRI = [[3.3, -2.4, .6], [.95, 1.05, .55]];
 export const POSTI_PIANTE = { acero: [0, -2.4], ginepro: [-2.3, .6], pino: [2.1, 2.0], azalea: POSTO_AZALEA };
 const RAGGI_PIANTE = { acero: 1.25, ginepro: 1.05, pino: 1.1, azalea: 1 };
 // dove sta una pianta adesso: { x, z, r }
 const postoPianta = (stato, p) => stato.piantePosti?.[p] ?? { x: POSTI_PIANTE[p][0], z: POSTI_PIANTE[p][1], r: 0 };
-// ingombro di una decorazione o di una pianta (null se non esiste)
-const ingombroDi = (id) => PIANTE[id] ? { raggio: RAGGI_PIANTE[id], pianta: true } : DECORAZIONI.find(v => v.id === id) ?? null;
-const LAGHETTO = [-2.3, 3.45, 1.2];
+// dove sta un elemento del giardino adesso: { x, z, r }
+const postoElemento = (stato, id) => { const e = ELEMENTI.find(v => v.id === id); return stato.elementiPosti?.[id] ?? { x: e.posto[0], z: e.posto[1], r: 0 }; };
+// ingombro di una pianta, una decorazione o un elemento del giardino (null se non esiste); grande: le
+// piante, la lanterna e la pietra col muschio, che pesano di più
+const ingombroDi = (id) => PIANTE[id] ? { raggio: RAGGI_PIANTE[id], grande: true } : DECORAZIONI.find(v => v.id === id) ?? ELEMENTI.find(v => v.id === id) ?? null;
+const LAGO = 1.2;
 const distanza = (x, z, a, b) => Math.hypot(x - a, z - b);
+// tutto quello che c'è nel giardino adesso, tranne id: { x, z, ...ingombro }
+function ingombri(stato, id) {
+  const tutti = [];
+  for (const p of presenti(stato)) if (p !== id) tutti.push({ ...postoPianta(stato, p), ...ingombroDi(p) });
+  for (const e of ELEMENTI) if (e.id !== id) tutti.push({ ...postoElemento(stato, e.id), ...e });
+  for (const altra of stato.decorazioni.messe) {
+    const p = stato.decorazioni.posti[altra];
+    if (altra !== id && p) tutti.push({ ...p, ...ingombroDi(altra) });
+  }
+  return tutti;
+}
 
-// Si può posare la decorazione (o la pianta) id in (x, z)? esito: 'ok', 'fuori' (oltre il prato o dietro
-// la staccionata), 'acqua' (nel laghetto), 'occupato' (su una pianta, la lanterna o un'altra decorazione)
+// Si può posare la pianta, la decorazione o l'elemento id in (x, z)? esito: 'ok', 'fuori' (oltre il
+// prato o dietro la staccionata), 'acqua' (nel laghetto), 'occupato' (sopra qualcos'altro)
 export function postoLibero(stato, id, x, z) {
   const d = ingombroDi(id);
   if (!d) return 'nessuno';
-  // distanza dal centro misurata sull'isola ovale; sul retro c'è la staccionata
+  // distanza dal centro misurata sull'isola ovale; sul retro c'è la staccionata; i cespugli possono
+  // stare proprio sul bordo
   const rho = Math.hypot(x, z / ISOLA_ZS), dietro = z < 0 && Math.abs(Math.atan2(x, -z / ISOLA_ZS)) < 1;
-  if (rho + d.raggio * (dietro ? .5 : .7) > (dietro ? 4.3 : 4.85)) return 'fuori';
-  if (!d.sullAcqua && distanza(x, z, LAGHETTO[0], LAGHETTO[1]) < LAGHETTO[2] + d.raggio * .6) return 'acqua';
-  for (const [a, b, r] of INGOMBRI) if (distanza(x, z, a, b) < r + d.raggio * .8) return 'occupato';
-  // le altre piante del giardino, dove sono adesso
-  for (const p of presenti(stato)) {
-    if (p === id) continue;
-    const q = postoPianta(stato, p);
-    if (distanza(x, z, q.x, q.z) < (d.pianta ? (RAGGI_PIANTE[p] + d.raggio) * .82 : RAGGI_PIANTE[p] + d.raggio * .8)) return 'occupato';
-  }
-  for (const altra of stato.decorazioni.messe) {
-    const p = stato.decorazioni.posti[altra];
-    if (altra === id || !p) continue;
-    const r = DECORAZIONI.find(v => v.id === altra).raggio;
-    if (distanza(x, z, p.x, p.z) < (d.pianta ? d.raggio + r * .8 : (d.raggio + r) * .85)) return 'occupato';
+  if (rho + d.raggio * (dietro ? .5 : d.bordo ? 0 : .7) > (dietro ? 4.3 : d.bordo ? 5.4 : 4.85)) return 'fuori';
+  for (const q of ingombri(stato, id)) {
+    const dist = distanza(x, z, q.x, q.z);
+    // il laghetto: dentro ci va solo il ponticello (e il laghetto non va sopra le cose)
+    if (q.acqua || d.acqua) {
+      if (q.sullAcqua || d.sullAcqua) continue;
+      if (dist < LAGO + (q.acqua ? d.raggio : q.raggio) * .6) return d.acqua ? 'occupato' : 'acqua';
+      continue;
+    }
+    const soglia = d.grande && q.grande ? (d.raggio + q.raggio) * .82
+      : d.grande ? d.raggio + q.raggio * .8 : q.grande ? q.raggio + d.raggio * .8 : (d.raggio + q.raggio) * .85;
+    if (dist < soglia) return 'occupato';
   }
   return 'ok';
 }
@@ -926,6 +957,24 @@ export function posaPianta(stato, id, x, z, r) {
   if (esito !== 'ok') return esito;
   stato.piantePosti ??= {};
   stato.piantePosti[id] = { x: +x.toFixed(3), z: +z.toFixed(3), r: +(((r % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)).toFixed(4) };
+  return 'ok';
+}
+
+// Sposta e gira un elemento del giardino (sezione 8.4). Il laghetto porta con sé il ponticello, se ci sta
+// sopra. esito: 'ok', 'nessuno' o quello di postoLibero
+export function posaElemento(stato, id, x, z, r) {
+  if (!ELEMENTI.some(e => e.id === id)) return 'nessuno';
+  const esito = postoLibero(stato, id, x, z);
+  if (esito !== 'ok') return esito;
+  const prima = postoElemento(stato, id), dove = { x: +x.toFixed(3), z: +z.toFixed(3), r: +(((r % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)).toFixed(4) };
+  const ponte = stato.decorazioni.messe.includes('ponte') && stato.decorazioni.posti.ponte;
+  if (id === 'laghetto' && ponte && distanza(ponte.x, ponte.z, prima.x, prima.z) < LAGO) {
+    // il ponte gira col laghetto intorno al suo centro
+    const dr = dove.r - prima.r, dx = ponte.x - prima.x, dz = ponte.z - prima.z, c = Math.cos(dr), s = Math.sin(dr);
+    stato.decorazioni.posti.ponte = { x: +(dove.x + dx * c + dz * s).toFixed(3), z: +(dove.z - dx * s + dz * c).toFixed(3), r: +(ponte.r + dr).toFixed(4) };
+  }
+  stato.elementiPosti ??= {};
+  stato.elementiPosti[id] = dove;
   return 'ok';
 }
 
@@ -1064,6 +1113,8 @@ export function vista(stato) {
     piante: presenti(stato),
     // dove sta ogni pianta del giardino ({ x, z, r }) e quanto ingombra
     piantePosti: Object.fromEntries(presenti(stato).map(p => [p, { ...postoPianta(stato, p), raggio: RAGGI_PIANTE[p] }])),
+    // dove sta ogni elemento del giardino ({ x, z, r }) e quanto ingombra
+    elementiPosti: Object.fromEntries(ELEMENTI.map(e => [e.id, { ...postoElemento(stato, e.id), raggio: e.raggio }])),
     pianteNegozio: PIANTE_NEGOZIO.map(p => ({ ...p, tua: !!stato.conifere[p.id] })),
     cura: Object.fromEntries(presenti(stato).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
     // stile di ogni pianta: quello scelto, i compatibili, i sigilli già presi, i ciuffi tagliati che ricrescono

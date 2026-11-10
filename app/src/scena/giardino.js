@@ -1,32 +1,36 @@
 // Il resto del giardino: laghetto con le carpe koi, lanterna, staccionata di bambù,
 // alberi di sfondo, cespugli, pietre del sentiero, prato e foglie che cadono.
 import * as THREE from 'three';
-import { PI, R, rnd, M, toon, flatGeo, mesh, tube, foliage, fogliaAcero } from './strumenti.js';
+import { PI, R, rnd, conSeme, M, toon, flatGeo, mesh, tube, foliage, fogliaAcero } from './strumenti.js';
 import { ZS, GX, GZ, GRX, GRZ } from './isola.js';
 
 export function creaGiardino(world, { reduce, prato }) {
-  // Laghetto
+  // gli elementi del giardino che il giocatore può spostare (sezione 8.4), per id come nel motore
+  const spostabili = {};
+  // Laghetto: tutto in un gruppo, carpe comprese, così si sposta insieme
   const koi = [];
   {
-    const cx = -2.3, cz = 3.45;
-    const basin = mesh(new THREE.CylinderGeometry(1.3, 1.3, .04, 48), M(0x587a64), world, cx, .005, cz, false); basin.scale.z = .85; basin.receiveShadow = true;
+    const stagno = new THREE.Group(); stagno.position.set(-2.3, 0, 3.45); world.add(stagno);
+    spostabili.laghetto = stagno;
+    const cx = 0, cz = 0;
+    const basin = mesh(new THREE.CylinderGeometry(1.3, 1.3, .04, 48), M(0x587a64), stagno, cx, .005, cz, false); basin.scale.z = .85; basin.receiveShadow = true;
     const water = new THREE.Mesh(new THREE.CircleGeometry(1.18, 48), new THREE.MeshPhongMaterial({ color: 0x6cb6c8, shininess: 90, specular: 0xffffff }));
-    water.rotation.x = -PI / 2; water.scale.y = .85; water.position.set(cx, .03, cz); water.receiveShadow = true; world.add(water);
+    water.rotation.x = -PI / 2; water.scale.y = .85; water.position.set(cx, .03, cz); water.receiveShadow = true; stagno.add(water);
     const shine = new THREE.Mesh(new THREE.RingGeometry(.55, .62, 40, 1, .4, 1.6), new THREE.MeshBasicMaterial({ color: 0xd6f2f6, transparent: true, opacity: .7 }));
-    shine.rotation.x = -PI / 2; shine.position.set(cx, .034, cz); world.add(shine);
+    shine.rotation.x = -PI / 2; shine.position.set(cx, .034, cz); stagno.add(shine);
     for (let i = 0; i < 16; i++) {
       const a = i / 16 * PI * 2 + R(-.1, .1);
-      const m = mesh(new THREE.DodecahedronGeometry(R(.15, .27), 0), M(rnd() < .5 ? 0xa9a597 : 0x928e81), world, cx + Math.cos(a) * 1.28, .06, cz + Math.sin(a) * 1.28 * .85);
+      const m = mesh(new THREE.DodecahedronGeometry(R(.15, .27), 0), M(rnd() < .5 ? 0xa9a597 : 0x928e81), stagno, cx + Math.cos(a) * 1.28, .06, cz + Math.sin(a) * 1.28 * .85);
       m.scale.y = .55; m.rotation.y = R(0, 3);
     }
     // ninfee e un fiore di loto
-    [[.35, -.3], [-.5, .15], [.1, .42]].forEach(([x, z]) => { const p = mesh(new THREE.CylinderGeometry(.17, .17, .012, 18, 1, false, 0, 5.5), M(0x5c9645), world, cx + x, .04, cz + z, false); p.rotation.y = R(0, 6); });
-    const lot = new THREE.Group(); lot.position.set(cx + .35, .06, cz - .3); world.add(lot);
+    [[.35, -.3], [-.5, .15], [.1, .42]].forEach(([x, z]) => { const p = mesh(new THREE.CylinderGeometry(.17, .17, .012, 18, 1, false, 0, 5.5), M(0x5c9645), stagno, cx + x, .04, cz + z, false); p.rotation.y = R(0, 6); });
+    const lot = new THREE.Group(); lot.position.set(cx + .35, .06, cz - .3); stagno.add(lot);
     for (let i = 0; i < 6; i++) { const pe = mesh(new THREE.SphereGeometry(.05, 8, 6), M(0xf4a9c0), lot, Math.cos(i) * .045, .02, Math.sin(i) * .045, false); pe.scale.set(.7, 1.4, .7); }
     mesh(new THREE.SphereGeometry(.03, 8, 6), M(0xffe27a), lot, 0, .05, 0, false);
     // due carpe koi che girano in tondo
     [[.55, .5, 0xf07a2e], [.75, -.36, 0xf5f0e6]].forEach(([r, sp, col], i) => {
-      const k = new THREE.Group(); world.add(k);
+      const k = new THREE.Group(); stagno.add(k);
       const b = mesh(new THREE.SphereGeometry(1, 12, 8), M(col), k, 0, 0, 0, false); b.scale.set(.19, .045, .07);
       const s = mesh(new THREE.SphereGeometry(1, 10, 8), M(i ? 0xf07a2e : 0xffffff), k, .06, .02, 0, false); s.scale.set(.07, .03, .05);
       const tl = mesh(new THREE.ConeGeometry(.06, .12, 6), M(col), k, -.22, 0, 0, false); tl.rotation.z = PI / 2; tl.scale.z = .3;
@@ -38,6 +42,7 @@ export function creaGiardino(world, { reduce, prato }) {
   let lanterna;
   {
     const L = new THREE.Group(); L.position.set(3.3, 0, -2.4); world.add(L);
+    spostabili.lanterna = L;
     const st = 0xaba79a, st2 = 0x918d81;
     mesh(flatGeo(new THREE.CylinderGeometry(.34, .4, .16, 6)), M(st2), L, 0, .08, 0);
     mesh(flatGeo(new THREE.CylinderGeometry(.1, .13, .6, 6)), M(st), L, 0, .46, 0);
@@ -106,6 +111,7 @@ export function creaGiardino(world, { reduce, prato }) {
   const cespugli = [];
   function bush(x, z, r, pal, h = .3) {
     const gp = new THREE.Group(); gp.position.set(x, 0, z); world.add(gp);
+    spostabili['cespuglio-' + (cespugli.length + 1)] = gp;
     // i cespugli si ricordano i loro colori, per la neve
     cespugli[cespugli.length] = foliage(gp, [[0, h, 0, r], [r * .5, h * .7, r * .3, r * .65], [-r * .5, h * .6, -r * .2, r * .6]], { palette: pal, density: 40, size: .36, flat: .85, detail: 1 });
   }
@@ -117,8 +123,11 @@ export function creaGiardino(world, { reduce, prato }) {
   bush(4.25, -3.3, .5, verde);
   bush(-.9, 6.1, .45, verde);
 
-  // Pietre del sentiero
-  [[1.3, 5.7], [1.0, 4.9], [1.45, 4.15], [1.1, 3.4]].forEach(([x, z]) => { const s = mesh(flatGeo(new THREE.CylinderGeometry(.33, .36, .09, 8)), M(0xb5b0a2), world, x, .03, z); s.rotation.y = R(0, 3); s.scale.z = .8; });
+  // Pietre del sentiero, ognuna nel suo gruppo per spostarla
+  [[1.3, 5.7], [1.0, 4.9], [1.45, 4.15], [1.1, 3.4]].forEach(([x, z], i) => {
+    const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g); spostabili['sentiero-' + (i + 1)] = g;
+    const s = mesh(flatGeo(new THREE.CylinderGeometry(.33, .36, .09, 8)), M(0xb5b0a2), g, 0, .03, 0); s.rotation.y = R(0, 3); s.scale.z = .8;
+  });
 
   // Prato: fili d'erba e fiorellini, tranne dove ci sono ghiaia, laghetto, pino e sentiero
   const inEll = (x, z, cx, cz, rx, rz) => ((x - cx) / rx) ** 2 + ((z - cz) / rz) ** 2 < 1;
@@ -126,7 +135,8 @@ export function creaGiardino(world, { reduce, prato }) {
   let erba, fiori = [];
   {
     const N = 1300, geo = new THREE.ConeGeometry(.05, .24, 4); geo.translate(0, .12, 0);
-    const im = new THREE.InstancedMesh(geo, toon({ color: 0xffffff }), N); im.receiveShadow = true;
+    // posto in più per l'erba dove all'inizio c'erano laghetto, pino e sentiero, che si possono spostare
+    const EXTRA = 420, im = new THREE.InstancedMesh(geo, toon({ color: 0xffffff }), N + EXTRA); im.receiveShadow = true;
     const d = new THREE.Object3D(), pal = ['#5f8d35', '#6f9f3c', '#80b046', '#93c052', '#a5cb5f'];
     let n = 0, guard = 0;
     while (n < N && guard++ < 20000) {
@@ -136,6 +146,24 @@ export function creaGiardino(world, { reduce, prato }) {
       const s = R(.7, 1.5); d.scale.set(s, s * R(.8, 1.4), s);
       d.updateMatrix(); im.setMatrixAt(n, d.matrix); im.setColorAt(n, new THREE.Color(pal[Math.floor(rnd() * pal.length)])); n++;
     }
+    // l'erba dei posti che all'inizio sono occupati, con un seme suo: la sequenza casuale del resto non cambia
+    const prima = (x, z) => inEll(x, z, -2.3, 3.45, 1.55, 1.35) || (Math.abs(x - 2.1) < 1.0 && Math.abs(z - 2.0) < .72) || inEll(x, z, 1.2, 4.5, .6, 1.6);
+    const nellaGhiaia = (x, z) => inEll(x, z, GX, GZ, GRX * 1.06, GRZ * 1.06);
+    conSeme(5151, () => {
+      let messi = 0, prove = 0;
+      while (messi < EXTRA && prove++ < 6000) {
+        const x = R(-3.9, 3.2), z = R(1.2, 6.2);
+        if (!prima(x, z) || nellaGhiaia(x, z) || !inEll(x, z, 0, 0, 5.1, 5.1 * ZS)) continue;
+        // circa la stessa fittezza del resto del prato
+        if (rnd() > .62) continue;
+        d.position.set(x, 0, z); d.rotation.set(R(-.25, .25), R(0, 6), R(-.25, .25));
+        const s = R(.7, 1.5); d.scale.set(s, s * R(.8, 1.4), s);
+        d.updateMatrix(); im.setMatrixAt(n, d.matrix); im.setColorAt(n, new THREE.Color(pal[Math.floor(rnd() * pal.length)])); n++; messi++;
+      }
+      [[-2.9, 3.1], [-1.6, 3.9], [1.5, 5.2], [.85, 3.9], [-2.2, 4.3]].forEach(([x, z], i) => {
+        fiori.push(mesh(new THREE.SphereGeometry(.045, 6, 5), M(new THREE.Color(['#ffffff', '#ffe27a', '#f6b3c8', '#fff3c4'][i % 4]).getHex()), world, x, .2, z, false));
+      });
+    });
     im.count = n; world.add(im);
     erba = { im, originali: im.instanceMatrix.array.slice(), colori: im.instanceColor.array.slice() };
     const fl = ['#ffffff', '#ffe27a', '#f6b3c8', '#fff3c4'];
@@ -149,24 +177,26 @@ export function creaGiardino(world, { reduce, prato }) {
   // Foglie d'acero a terra e foglie che cadono: hanno la forma della foglia d'acero, coi colori del suo autunno
   const leafGeo = fogliaAcero().scale(.085, .085, .085);
   const leafCols = ['#ad1f1c', '#cc2c22', '#e3462a', '#f0702c', '#f79c38'];
-  let foglieATerra;
+  // le foglie stanno intorno all'acero, anche quando lo si sposta (setAcero)
+  let foglieATerra, centroAcero = { x: 0, z: -2.4 };
+  const sottoAcero = new THREE.Group(); sottoAcero.position.set(0, 0, -2.4); world.add(sottoAcero);
   {
     const N = 80, im = new THREE.InstancedMesh(leafGeo, toon({ color: 0xffffff, side: THREE.DoubleSide }), N); im.receiveShadow = true;
     const d = new THREE.Object3D();
     for (let i = 0; i < N; i++) {
       const a = R(0, PI * 2), r = Math.sqrt(rnd()) * 2.6;
-      const x = Math.cos(a) * r * 1.1, z = -2.4 + Math.sin(a) * r * .8;
+      const x = Math.cos(a) * r * 1.1, z = Math.sin(a) * r * .8;
       // quelle che cadono sul tavolo restano all'altezza del piano
-      d.position.set(x, (Math.abs(x) < 1.05 && Math.abs(z + 2.4) < .65) ? .82 : .02, z);
+      d.position.set(x, (Math.abs(x) < 1.05 && Math.abs(z) < .65) ? .82 : .02, z);
       d.rotation.set(0, R(0, 6), 0); d.updateMatrix(); im.setMatrixAt(i, d.matrix); im.setColorAt(i, new THREE.Color(leafCols[i % 5]));
     }
-    world.add(im);
+    sottoAcero.add(im);
     foglieATerra = im;
   }
   const falling = [];
   if (!reduce) for (let i = 0; i < 12; i++) {
     const m = new THREE.Mesh(leafGeo, toon({ color: leafCols[i % 5], side: THREE.DoubleSide })); world.add(m);
-    const L = { m, ph: 0, sp: .3, reset() { m.position.set(R(-1.1, 1.1), R(2.6, 3.4), -2.4 + R(-.7, .7)); this.ph = R(0, 6); this.sp = R(.25, .45); } };
+    const L = { m, ph: 0, sp: .3, reset() { m.position.set(centroAcero.x + R(-1.1, 1.1), R(2.6, 3.4), centroAcero.z + R(-.7, .7)); this.ph = R(0, 6); this.sp = R(.25, .45); } };
     L.reset(); m.position.y = R(.3, 3.2); falling.push(L);
   }
 
@@ -191,7 +221,10 @@ export function creaGiardino(world, { reduce, prato }) {
   return {
     lanterna,
     setNeve,
-    // niente erba né fiorellini dove ci sono le decorazioni (zone: [x, z, raggio])
+    // gli elementi spostabili ({ id: gruppo }) e il posto dell'acero, per le sue foglie ({ x, z, r })
+    spostabili,
+    setAcero(p) { sottoAcero.position.set(p.x, 0, p.z); sottoAcero.rotation.y = p.r; centroAcero = p; },
+    // niente erba né fiorellini dove ci sono decorazioni, piante ed elementi (zone: [x, z, raggio])
     liberaErba(zone) {
       const chiave = JSON.stringify(zone); if (chiave === zoneLibere) return; zoneLibere = chiave;
       const dentro = (x, z) => zone.some(([zx, zz, r]) => (x - zx) ** 2 + (z - zz) ** 2 < r * r);
