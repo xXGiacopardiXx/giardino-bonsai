@@ -7,9 +7,11 @@ export const ZS = 1.32; // l'isola è un po' allungata in profondità
 export const GX = 0.2, GZ = -0.6, GRX = 3.5, GRZ = 3.3;
 
 export function creaIsola(world, maxAnisotropy) {
+  // il blocco dell'isola (prato, terra, roccia, radici): si allarga con gli ampliamenti del giardino (setRaggio)
+  const zoccolo = new THREE.Group(); world.add(zoccolo);
   function layer(rt, rb, h, seg, col, y) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), M(col));
-    m.position.y = y; m.scale.z = ZS; m.receiveShadow = true; world.add(m); return m;
+    m.position.y = y; m.scale.z = ZS; m.receiveShadow = true; zoccolo.add(m); return m;
   }
   // il prato in cima ha un materiale suo: d'inverno la neve lo imbianca (giardino.setNeve)
   const prato = layer(5.3, 5.22, 0.36, 72, 0x8cbc50, -0.18); prato.material = prato.material.clone();
@@ -20,15 +22,15 @@ export function creaIsola(world, maxAnisotropy) {
   // rocce sporgenti sotto l'isola
   for (let i = 0; i < 12; i++) {
     const a = R(0, PI * 2), r = R(3.4, 4.3);
-    const m = mesh(flatGeo(new THREE.DodecahedronGeometry(R(.35, .7), 0)), M(rnd() < .5 ? 0x8f8676 : 0x7a7264), world, Math.cos(a) * r, R(-3.2, -1.6), Math.sin(a) * r * ZS, false);
+    const m = mesh(flatGeo(new THREE.DodecahedronGeometry(R(.35, .7), 0)), M(rnd() < .5 ? 0x8f8676 : 0x7a7264), zoccolo, Math.cos(a) * r, R(-3.2, -1.6), Math.sin(a) * r * ZS, false);
     m.rotation.set(R(0, 3), R(0, 3), 0);
   }
   // radici e rampicanti che pendono dal bordo
   for (let i = 0; i < 10; i++) {
     const a = R(0, PI * 2);
     const x = Math.cos(a) * 5.18, z = Math.sin(a) * 5.18 * ZS, L = R(.7, 1.7);
-    tube([[x, -.2, z], [x * 1.02, -.2 - L * .4, z * 1.02], [x, -.2 - L, z]], .035, .02, 0x5f8f3a, world, 8);
-    for (let k = 0; k < 3; k++) mesh(new THREE.IcosahedronGeometry(R(.07, .11), 0), M(0x6f9f43), world, x * 1.02, -.3 - L * R(.15, .95), z * 1.02, false);
+    tube([[x, -.2, z], [x * 1.02, -.2 - L * .4, z * 1.02], [x, -.2 - L, z]], .035, .02, 0x5f8f3a, zoccolo, 8);
+    for (let k = 0; k < 3; k++) mesh(new THREE.IcosahedronGeometry(R(.07, .11), 0), M(0x6f9f43), zoccolo, x * 1.02, -.3 - L * R(.15, .95), z * 1.02, false);
   }
 
   // ghiaia rastrellata: texture disegnata su un canvas
@@ -83,5 +85,7 @@ export function creaIsola(world, maxAnisotropy) {
   const rk = mesh(new THREE.DodecahedronGeometry(.42, 0), M(0x8e8a7e), sasso, -.05, .16, -.05); rk.scale.set(1.15, .7, 1); rk.rotation.y = .6;
   const rk2 = mesh(new THREE.DodecahedronGeometry(.22, 0), M(0x9d998c), sasso, .35, .08, .2); rk2.scale.y = .7;
   const moss = mesh(new THREE.IcosahedronGeometry(.3, 1), M(0x6d9a43), sasso, -.1, .38, -.1); moss.scale.set(1, .28, .8);
-  return { prato, sasso, setCerchi };
+  // raggio del prato (all'inizio RAGGIO, 5.3): il blocco si allarga tutto intorno
+  const setRaggio = (r) => zoccolo.scale.set(r / 5.3, 1, r / 5.3);
+  return { prato, sasso, setCerchi, setRaggio };
 }

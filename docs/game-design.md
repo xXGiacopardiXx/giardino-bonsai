@@ -322,8 +322,8 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Vaso estetico | 80–300 |
 | Decorazione del giardino | 50–200 |
 | Nuova specie (azalea Satsuki: 400) | 400–1.000 |
-| Ampliamento del giardino | 600 → 1.200 → 2.500 (prezzo crescente) |
-| Attrezzi (es. forbici concave per tagli più puliti) | 150–400 |
+| Ampliamento del giardino (sezione 8.5) | 600 → 1.200 → 2.500 (prezzo crescente) |
+| Attrezzi (bastoncino di bambù, tronchesino per filo, forbici concave) | 150–250 |
 
 **Attrezzi nell'app** (negozio, scheda Cura, categoria Attrezzi): si comprano una volta e servono per sempre. Aiutano a curare meglio e a capire la pianta, non fanno saltare l'attesa.
 
@@ -355,7 +355,7 @@ Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po'
 
 - Il giardino è un'**isola fluttuante** in stile diorama, con ghiaia rastrellata, prato, laghetto, lanterna, staccionata di bambù.
 - Contiene più bonsai su supporti (tavolo in legno, lastra di pietra, base in legno) e decorazioni.
-- Le decorazioni si comprano con i Semi; lo spazio si amplia a pagamento in Semi.
+- Le decorazioni si comprano con i Semi; lo spazio si amplia a pagamento in Semi (sezione 8.5).
 
 ### 8.1 Diario fotografico
 
@@ -414,6 +414,13 @@ Oltre a piante e decorazioni, si sposta tutto quello che c'è nel giardino fin d
 - **Ghiaia**: i cerchi rastrellati si ridisegnano intorno a lanterna, pietra col muschio e ginepro quando stanno nella ghiaia; dove non c'è più niente torna la ghiaia a righe.
 - **Erba**: dove all'inizio c'erano laghetto, pino e sentiero l'erba c'è (prima mancava); sotto ogni elemento, dovunque sia, l'erba non cresce.
 - Le posizioni si salvano nella partita (`elementiPosti`); un elemento mai spostato sta al suo posto iniziale.
+### 8.5 Ampliamento del giardino
+
+- **Com'è:** il prato dell'isola si allarga tutto intorno, come in un diorama che cresce: niente isolette staccate né schermate nuove, il giardino resta uno solo. Tre ampliamenti a prezzo crescente, nella scheda Giardino del negozio (per primo, "Prato più grande, 1 di 3"): 600, 1.200 e 2.500 Semi.
+- **Quanto:** a ogni passo il raggio dell'isola cresce di 0,6 (da 5,3 a 5,9, 6,5 e 7,1): alla fine il prato è grande quasi il doppio. Cresce tutto il blocco dell'isola (prato, terra, roccia, radici che pendono) e sull'anello nuovo spunta l'erba coi fiorellini. Ghiaia, staccionata, albero dietro e bambù restano dove sono; dietro la staccionata non si guadagna posto.
+- **A cosa serve:** più posto per piante e decorazioni, che si sistemano con Sposta. Le cose già messe restano dove sono.
+- **Telecamera:** si allontana un po' per inquadrare tutta l'isola (meno di quanto cresce l'isola); col pizzico si torna vicini.
+- Comprato un ampliamento, il negozio si chiude, la telecamera mostra l'isola intera e un messaggio lo dice.
 
 ## 9. Stile grafico
 
@@ -553,7 +560,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.
@@ -563,6 +570,6 @@ Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un arti
 - Nome definitivo del gioco.
 - Nome definitivo della moneta (provvisorio: Semi).
 - Bilanciamento numerico dell'economia.
-- Quante piante può avere il giardino iniziale e quanto costa ogni ampliamento.
+- Quante piante può avere il giardino iniziale. (Ampliamenti decisi: tre, a 600, 1.200 e 2.500 Semi, sezione 8.5.)
 - Come si calcola la percentuale di stile (confronto della forma con un modello dello stile).
 - Ora delle notifiche: fissa o scelta dal giocatore.

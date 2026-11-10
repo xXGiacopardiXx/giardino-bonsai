@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 23;
+export const VERSIONE = 24;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 30 };
@@ -44,7 +44,20 @@ export const ATTREZZI = [
   { id: 'forbici', nome: 'Forbici concave', prezzo: 250, effetto: 'Gemme più rapide',
     descrizione: 'Lasciano un taglio pulito e un po\' incavato che si chiude presto: dopo la potatura le gemme dell\'acero crescono più in fretta.' },
 ];
-const FORBICI_GEMME = 1.4;             // con le forbici concave le gemme crescono così più in fretta
+// Ampliamento del giardino (sezione 8.5): il prato dell'isola si allarga tutto intorno, in tre passi a
+// prezzo crescente, e c'è più posto per piante e decorazioni. crescita: di quanto si allarga il raggio
+// dell'isola (che all'inizio è RAGGIO_ISOLA); dietro la staccionata non cambia niente.
+export const RAGGIO_ISOLA = 5.3;
+export const AMPLIAMENTI = [
+  { prezzo: 600, crescita: .6 },
+  { prezzo: 1200, crescita: .6 },
+  { prezzo: 2500, crescita: .6 },
+];
+// di quanto è cresciuto il raggio dell'isola con n ampliamenti
+const crescitaIsola = (n) => AMPLIAMENTI.slice(0, n).reduce((t, a) => t + a.crescita, 0);
+const ampliamentiDi = (stato) => stato.giardino?.ampliamenti ?? 0;
+
+const FORBICI_GEMME = 1.4;            // con le forbici concave le gemme crescono così più in fretta
 const TRONCHESINO_SEGNO = 0.2;         // col tronchesino il premio del filo vale anche con un segno leggero
 const ha = (stato, id) => (stato.attrezzi ?? []).includes(id);
 
@@ -324,6 +337,8 @@ export function nuovoStato(ora) {
     settimana: null,
     // attrezzi comprati
     attrezzi: [],
+    // quante volte si è allargato il prato dell'isola
+    giardino: { ampliamenti: 0 },
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // decorazioni comprate e quelle messe nel giardino
     // decorazioni comprate, quelle messe nel giardino e dove sono ({ x, z, r })
@@ -436,6 +451,8 @@ export function migra(stato) {
   if (stato.versione === 21) { stato.elementiPosti = {}; stato.elementiTolti = []; stato.versione = 22; }
   // giorni di riposo, sfida della settimana e attrezzi: niente ancora
   if (stato.versione === 22) { stato.serie.riposi = 0; stato.settimana = null; stato.attrezzi = []; stato.versione = 23; }
+  // ampliamenti del giardino: l'isola com'era
+  if (stato.versione === 23) { stato.giardino = { ampliamenti: 0 }; stato.versione = 24; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -929,6 +946,16 @@ export function usaProdotto(stato, ora, pianta, id) {
   return { esito: 'ok', semi, inTempo, presto, tolti, bonusSerie: registraCura(stato, ora) };
 }
 
+// Allarga il prato dell'isola (il prossimo dei tre ampliamenti). esito: 'ok', 'pochi' o 'finiti'
+export function compraAmpliamento(stato) {
+  const n = ampliamentiDi(stato), a = AMPLIAMENTI[n];
+  if (!a) return { esito: 'finiti', mancano: 0 };
+  if (stato.semi < a.prezzo) return { esito: 'pochi', mancano: a.prezzo - stato.semi };
+  stato.semi -= a.prezzo;
+  stato.giardino = { ...stato.giardino, ampliamenti: n + 1 };
+  return { esito: 'ok', mancano: 0, ampliamenti: n + 1 };
+}
+
 // Compra un attrezzo (una volta sola, dura per sempre). esito: 'ok', 'pochi', 'gia' o 'nessuno'
 export function compraAttrezzo(stato, id) {
   const a = ATTREZZI.find(x => x.id === id);
@@ -990,8 +1017,9 @@ export function postoLibero(stato, id, x, z) {
   if (!d) return 'nessuno';
   // distanza dal centro misurata sull'isola ovale; sul retro c'è la staccionata; i cespugli possono
   // stare proprio sul bordo
+  // col prato allargato (ampliamenti) c'è più posto tutto intorno, tranne dietro la staccionata
   const rho = Math.hypot(x, z / ISOLA_ZS), dietro = z < 0 && Math.abs(Math.atan2(x, -z / ISOLA_ZS)) < 1;
-  if (rho + d.raggio * (dietro ? .5 : d.bordo ? 0 : .7) > (dietro ? 4.3 : d.bordo ? 5.4 : 4.85)) return 'fuori';
+  if (rho + d.raggio * (dietro ? .5 : d.bordo ? 0 : .7) > (dietro ? 4.3 : (d.bordo ? 5.4 : 4.85) + crescitaIsola(ampliamentiDi(stato)))) return 'fuori';
   for (const q of ingombri(stato, id)) {
     const dist = distanza(x, z, q.x, q.z);
     // il laghetto: dentro ci va solo il ponticello (e il laghetto non va sopra le cose)
@@ -1236,8 +1264,12 @@ export function vista(stato) {
     settimana: stato.settimana ? { tipo: stato.settimana.tipo, obiettivo: stato.settimana.obiettivo, fatti: stato.settimana.fatti,
       fatta: stato.settimana.fatta, testo: SFIDE_SETTIMANA[stato.settimana.tipo](stato.settimana.obiettivo), premio: SEMI.settimana,
       giorniRimasti: 8 - cal.giornoStagione } : null,
+    // ampliamenti del giardino: quanti fatti, il raggio dell'isola adesso e il prossimo in vendita (o null)
+    ampliamenti: ampliamentiDi(stato),
+    raggioIsola: RAGGIO_ISOLA + crescitaIsola(ampliamentiDi(stato)),
+    prossimoAmpliamento: AMPLIAMENTI[ampliamentiDi(stato)] ? { ...AMPLIAMENTI[ampliamentiDi(stato)], numero: ampliamentiDi(stato) + 1, di: AMPLIAMENTI.length } : null,
     // attrezzi del negozio, con quelli già tuoi
-    attrezzi: ATTREZZI.map(x => ({ ...x, tuo: ha(stato, x.id) })),
+    attrezzi:ATTREZZI.map(x => ({ ...x, tuo: ha(stato, x.id) })),
     // col bastoncino di bambù: fra quanti giorni (con decimali) ogni pianta vorrà acqua (0 = adesso)
     bastoncino: ha(stato, 'bastoncino') ? Object.fromEntries(presenti(stato).map(p => [p, giorniAllAcqua(curaDi(stato, p), p, cal.stagione)])) : null,
     sete: a.sete,

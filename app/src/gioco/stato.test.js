@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, compraAmpliamento, AMPLIAMENTI, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1341,4 +1341,29 @@ test('col tronchesino il filo tolto un po\' in ritardo vale ancora il premio', (
   };
   assert.equal(prova(false), 0);
   assert.equal(prova(true), SEMI.filo);
+});
+
+test('il prato si allarga in tre passi a prezzo crescente, e ci sta più roba', () => {
+  const s = nuovoStato(T0);
+  assert.equal(postoLibero(s, 'panchina', -4.9, 0.5), 'fuori');
+  assert.equal(compraAmpliamento(s).esito, 'pochi');
+  s.semi = 10000;
+  assert.equal(compraAmpliamento(s).esito, 'ok');
+  assert.equal(s.semi, 10000 - AMPLIAMENTI[0].prezzo);
+  assert.equal(vista(s).ampliamenti, 1);
+  assert.equal(postoLibero(s, 'panchina', -4.9, 0.5), 'ok', 'dove prima finiva il prato');
+  assert.equal(postoLibero(s, 'panchina', 0, -5.9), 'fuori', 'dietro la staccionata non cambia');
+  assert.equal(vista(s).prossimoAmpliamento.prezzo, AMPLIAMENTI[1].prezzo);
+  compraAmpliamento(s); compraAmpliamento(s);
+  assert.equal(vista(s).prossimoAmpliamento, null);
+  assert.ok(Math.abs(vista(s).raggioIsola - 7.1) < 1e-9);
+  assert.equal(compraAmpliamento(s).esito, 'finiti');
+});
+
+test('un salvataggio della versione 23 riceve il giardino com era', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 23; delete vecchio.giardino;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(vista(s).ampliamenti, 0);
 });

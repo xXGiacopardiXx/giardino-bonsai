@@ -132,7 +132,7 @@ export function creaGiardino(world, { reduce, prato }) {
   // Prato: fili d'erba e fiorellini, tranne dove ci sono ghiaia, laghetto, pino e sentiero
   const inEll = (x, z, cx, cz, rx, rz) => ((x - cx) / rx) ** 2 + ((z - cz) / rz) ** 2 < 1;
   const blocked = (x, z) => inEll(x, z, GX, GZ, GRX * 1.06, GRZ * 1.06) || inEll(x, z, -2.3, 3.45, 1.55, 1.35) || (Math.abs(x - 2.1) < 1.0 && Math.abs(z - 2.0) < .72) || inEll(x, z, 1.2, 4.5, .6, 1.6);
-  let erba, fiori = [];
+  let erba, erbaBordo, fiori = [];
   {
     const N = 1300, geo = new THREE.ConeGeometry(.05, .24, 4); geo.translate(0, .12, 0);
     // posto in più per l'erba dove all'inizio c'erano laghetto, pino e sentiero, che si possono spostare
@@ -172,6 +172,26 @@ export function creaGiardino(world, { reduce, prato }) {
       if (!inEll(x, z, 0, 0, 4.9, 4.9 * ZS) || blocked(x, z)) continue;
       fiori.push(mesh(new THREE.SphereGeometry(.045, 6, 5), M(new THREE.Color(fl[i % 4]).getHex()), world, x, .2, z, false));
     }
+    // l'erba del prato in più (ampliamenti del giardino, sezione 8.5): un anello intorno al prato, con un seme
+    // suo; si vede solo fin dove arriva il prato adesso (setRaggio). rho: distanza dal centro sull'isola ovale
+    conSeme(6363, () => {
+      const N2 = 1900, im2 = new THREE.InstancedMesh(geo, im.material, N2); im2.receiveShadow = true;
+      const rho = [];
+      let k = 0, prove = 0;
+      while (k < N2 && prove++ < 20000) {
+        const a = R(0, PI * 2), r = Math.sqrt(R(4.95 ** 2, 7.05 ** 2));
+        const x = Math.cos(a) * r, z = Math.sin(a) * r * ZS;
+        d.position.set(x, 0, z); d.rotation.set(R(-.25, .25), R(0, 6), R(-.25, .25));
+        const s = R(.7, 1.5); d.scale.set(s, s * R(.8, 1.4), s);
+        d.updateMatrix(); im2.setMatrixAt(k, d.matrix); im2.setColorAt(k, new THREE.Color(pal[Math.floor(rnd() * pal.length)])); rho.push(r); k++;
+      }
+      for (let i = 0; i < 40; i++) {
+        const a = R(0, PI * 2), r = R(5.1, 6.9), f = mesh(new THREE.SphereGeometry(.045, 6, 5), M(new THREE.Color(fl[i % 4]).getHex()), world, Math.cos(a) * r, .2, Math.sin(a) * r * ZS, false);
+        f.userData.rho = r; fiori.push(f);
+      }
+      im2.count = k; world.add(im2);
+      erbaBordo = { im: im2, rho, originali: im2.instanceMatrix.array.slice(), colori: im2.instanceColor.array.slice() };
+    });
   }
 
   // Foglie d'acero a terra e foglie che cadono: hanno la forma della foglia d'acero, coi colori del suo autunno
@@ -200,7 +220,20 @@ export function creaGiardino(world, { reduce, prato }) {
     L.reset(); m.position.y = R(.3, 3.2); falling.push(L);
   }
 
-  let zoneLibere = "";
+  let zoneLibere = "", zoneErba = [], raggioPrato = 5.3;
+  // toglie l'erba (e i fiorellini) sotto le cose del giardino e oltre il bordo del prato
+  function ridisegnaErba() {
+    const dentro = (x, z) => zoneErba.some(([zx, zz, r]) => (x - zx) ** 2 + (z - zz) ** 2 < r * r);
+    for (const e of [erba, erbaBordo]) {
+      const a = e.im.instanceMatrix.array, o = e.originali;
+      for (let i = 0; i < e.im.count; i++) {
+        const k = i * 16, via = (e.rho && e.rho[i] > raggioPrato - .2) || dentro(o[k + 12], o[k + 14]);
+        for (let j = 0; j < 16; j++) a[k + j] = via ? 0 : o[k + j];
+      }
+      e.im.instanceMatrix.needsUpdate = true;
+    }
+    fiori.forEach(f => { f.userData.sotto = (f.userData.rho ?? 0) > raggioPrato - .4 || dentro(f.position.x, f.position.z); f.visible = !f.userData.sotto && neveMessa < .3; });
+  }
   // neve a terra (0..1): prato, erba e cespugli si imbiancano, i fiorellini spariscono, la lanterna ha il cappello
   const BIANCO = new THREE.Color(0xeef2f5), PRATO = prato?.material.color.clone(), cTmp = new THREE.Color();
   let neveMessa = -1;
@@ -208,9 +241,11 @@ export function creaGiardino(world, { reduce, prato }) {
     if (Math.abs(k - neveMessa) < .01) return;
     neveMessa = k;
     if (prato) prato.material.color.copy(PRATO).lerp(BIANCO, k * .92);
-    const c = erba.im.instanceColor.array, o = erba.colori;
-    for (let i = 0; i < c.length; i++) c[i] = o[i] + ((i % 3 === 2 ? .96 : .93) - o[i]) * k * .8;
-    erba.im.instanceColor.needsUpdate = true;
+    for (const e of [erba, erbaBordo]) {
+      const c = e.im.instanceColor.array, o = e.colori;
+      for (let i = 0; i < c.length; i++) c[i] = o[i] + ((i % 3 === 2 ? .96 : .93) - o[i]) * k * .8;
+      e.im.instanceColor.needsUpdate = true;
+    }
     for (const f of cespugli) {
       for (let i = 0; i < f.healthy.length; i++) f.m.setColorAt(i, cTmp.copy(f.healthy[i]).lerp(BIANCO, k * (.25 + .5 * (f.periferia[i] ?? .5))));
       f.m.instanceColor.needsUpdate = true;
@@ -227,15 +262,10 @@ export function creaGiardino(world, { reduce, prato }) {
     // niente erba né fiorellini dove ci sono decorazioni, piante ed elementi (zone: [x, z, raggio])
     liberaErba(zone) {
       const chiave = JSON.stringify(zone); if (chiave === zoneLibere) return; zoneLibere = chiave;
-      const dentro = (x, z) => zone.some(([zx, zz, r]) => (x - zx) ** 2 + (z - zz) ** 2 < r * r);
-      const a = erba.im.instanceMatrix.array, o = erba.originali;
-      for (let i = 0; i < erba.im.count; i++) {
-        const k = i * 16, via = dentro(o[k + 12], o[k + 14]);
-        for (let j = 0; j < 16; j++) a[k + j] = via ? 0 : o[k + j];
-      }
-      erba.im.instanceMatrix.needsUpdate = true;
-      fiori.forEach(f => { f.userData.sotto = dentro(f.position.x, f.position.z); f.visible = !f.userData.sotto && neveMessa < .3; });
+      zoneErba = zone; ridisegnaErba();
     },
+    // raggio del prato adesso (ampliamenti del giardino): l'erba dell'anello in più arriva fin lì
+    setRaggio(r) { if (r === raggioPrato) return; raggioPrato = r; ridisegnaErba(); },
     // le foglie d'acero cadono da metà autunno all'inizio dell'inverno e restano a terra ancora un po'
     // (p: punto dell'anno, 0 = inizio primavera, 2 = autunno, 3 = inverno)
     setStagione(p) {

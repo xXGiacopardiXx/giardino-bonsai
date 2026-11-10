@@ -49,6 +49,11 @@ const ATTREZZI_DISEGNI = {
   forbici: `<ellipse cx="17" cy="38" rx="10" ry="8" fill="none" stroke="#3a3f42" stroke-width="4.4"/><ellipse cx="47" cy="38" rx="10" ry="8" fill="none" stroke="#3a3f42" stroke-width="4.4"/><path d="M24 32 37 8M40 32 27 8" stroke="#8e979b" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="21" r="2.6" fill="#5c6468"/>`,
 };
 const disegnoAttrezzo = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${ATTREZZI_DISEGNI[id] || ''}</svg>`;
+// il prato più grande: l'isola vista di lato, con l'anello di prato nuovo (più largo a ogni passo)
+const disegnoPrato = (n) => {
+  const rx = 18 + n * 4;
+  return `<svg viewBox="0 0 64 50" aria-hidden="true"><path d="M${32 - rx} 26Q32 50 ${32 + rx} 26Z" fill="#9a643f"/><path d="M${32 - rx * .7} 30Q32 54 ${32 + rx * .7} 30Z" fill="#877e6e"/><ellipse cx="32" cy="26" rx="${rx}" ry="${rx * .38}" fill="#a5d36a"/><ellipse cx="32" cy="26" rx="18" ry="6.8" fill="#8cbc50"/><ellipse cx="34" cy="25" rx="7" ry="2.6" fill="#ebe3d1"/><path d="M29 24c0-4 1-6 0-9" stroke="#6b5444" stroke-width="2" fill="none"/><circle cx="29" cy="14" r="4" fill="#e3462a"/><path d="M${32 + rx - 4} 22l3-3 3 3M${32 + rx - 1} 19v6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+};
 const disegnoPianta = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${PIANTE_DISEGNI[id] || ''}</svg>`;
 const disegnoDeco = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${DECO[id] || ''}</svg>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;
@@ -87,6 +92,7 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'negozio') api.apri('negozio');
     else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
     else if (b.dataset.a === 'attrezzo') azioni.compraAttrezzo(b.dataset.id);
+    else if (b.dataset.a === 'ampliamento') azioni.compraAmpliamento();
     else if (b.dataset.a === 'deco') azioni.compraDecorazione(b.dataset.id);
     else if (b.dataset.a === 'pianta') azioni.compraPianta(b.dataset.id);
     else if (b.dataset.a === 'metti') azioni.mettiDecorazione(b.dataset.id, true);
@@ -138,7 +144,10 @@ export function creaNegozio(azioni) {
         vai.hidden = true;
         // comprate: si spostano dove si vuole; quelle messe da parte si rimettono
         // prima le piante nuove (finché non sono tue), poi le decorazioni
-        lista.innerHTML = vista.pianteNegozio.filter(p => !p.tua).map(p => `<div class="vaso pianta-nuova" title="${p.descrizione}"><div class="vaso-img">${disegnoPianta(p.id)}</div><span class="vaso-nome">${p.nome}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="pianta" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('') + vista.decorazioni.map(d => {
+        // per primo il prato più grande (sezione 8.5), finché ci sono ampliamenti da fare
+        const a = vista.prossimoAmpliamento;
+        const prato = a ? `<div class="vaso" title="Il prato si allarga tutto intorno: più posto per piante e decorazioni."><div class="vaso-img">${disegnoPrato(a.numero)}</div><span class="vaso-nome">Prato più grande</span><span class="prodotto-per">${a.numero} di ${a.di}</span><button class="vaso-b compra${vista.semi < a.prezzo ? ' caro' : ''}" data-a="ampliamento" aria-label="Compra per ${a.prezzo} Semi">${a.prezzo}${SEME}</button></div>` : '';
+        lista.innerHTML = prato + vista.pianteNegozio.filter(p => !p.tua).map(p => `<div class="vaso pianta-nuova" title="${p.descrizione}"><div class="vaso-img">${disegnoPianta(p.id)}</div><span class="vaso-nome">${p.nome}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="pianta" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('') + vista.decorazioni.map(d => {
           const pulsante = d.tua ? `<button class="vaso-b usa" data-a="${d.messa ? 'sposta' : 'metti'}" data-id="${d.id}">${d.messa ? 'Sposta' : 'Metti'}</button>`
             : `<button class="vaso-b compra${vista.semi < d.prezzo ? ' caro' : ''}" data-a="deco" data-id="${d.id}" aria-label="Compra per ${d.prezzo} Semi">${d.prezzo}${SEME}</button>`;
           return `<div class="vaso${d.messa ? ' in-uso' : ''}" title="${d.descrizione}"><div class="vaso-img">${disegnoDeco(d.id)}</div><span class="vaso-nome">${d.nome}</span>${pulsante}</div>`;

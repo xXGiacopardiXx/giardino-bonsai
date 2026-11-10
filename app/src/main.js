@@ -35,7 +35,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -89,11 +89,14 @@ function avvia() {
   const target = new THREE.Vector3(.1, 1.5, .5); controls.target.copy(target);
   // potando, filando: la pianta su cui si sta lavorando ('acero', 'pino', 'ginepro', 'azalea'), oppure null
   let baseDist = 30, potando = null, filando = null, fotografando = null;
+  // quanto è grande l'isola rispetto all'inizio (ampliamenti del giardino, sezione 8.5)
+  let ampiezza = 1;
   // inquadra tutta l'isola qualunque sia la forma dello schermo
   function fit() {
     const w = screenEl.clientWidth, h = screenEl.clientHeight; if (!w || !h) return;
     renderer.setSize(w, h, false); camera.aspect = w / h;
-    const a = w / h, hw = Math.min(4.4, 4.4 * Math.max(a, .42) / .46);
+    // col prato allargato (ampliamenti) la telecamera si allontana un po', per vedere tutta l'isola
+    const a = w / h, hw = Math.min(4.4, 4.4 * Math.max(a, .42) / .46) * (1 + (ampiezza - 1) * .8);
     baseDist = Math.min(44, Math.max(16, hw / (Math.tan(camera.fov / 2 * Math.PI / 180) * Math.min(a, 1))));
     camera.updateProjectionMatrix();
     // durante la potatura ci si può avvicinare di più, per toccare i germogli
@@ -103,10 +106,12 @@ function avvia() {
   fit();
   camera.position.copy(target).add(new THREE.Vector3(Math.sin(.95) * Math.sin(.22), Math.cos(.95), Math.sin(.95) * Math.cos(.22)).multiplyScalar(baseDist));
   controls.update();
-  new ResizeObserver(() => {
+  // rifà l'inquadratura tenendo la stessa distanza relativa (schermo che cambia, isola che si allarga)
+  function rinquadra() {
     const d = camera.position.distanceTo(controls.target) / (baseDist || 1);
     fit(); camera.position.sub(controls.target).setLength(d * baseDist).add(controls.target);
-  }).observe(screenEl);
+  }
+  new ResizeObserver(rinquadra).observe(screenEl);
 
   const ui = creaInterfaccia(screenEl, camera, alberi.trees);
   // La pianta del motore è l'acero, unica specie da curare nell'MVP (game-design.md, sezione 14.1)
@@ -182,6 +187,9 @@ function avvia() {
     // seguono ginepro, lanterna e pietra col muschio; niente erba sotto il laghetto e le altre cose
     elementi.setPosti(v.elementiPosti);
     giardino.setAcero(v.piantePosti.acero);
+    // il prato allargato: blocco dell'isola, erba del bordo e inquadratura
+    isola.setRaggio(v.raggioIsola); giardino.setRaggio(v.raggioIsola);
+    if (v.raggioIsola / 5.3 !== ampiezza) { ampiezza = v.raggioIsola / 5.3; rinquadra(); }
     const ep = v.elementiPosti, gin = v.piantePosti.ginepro;
     const nelGiardino = ELEMENTI.filter(e => !ep[e.id].tolto);
     isola.setCerchi([...nelGiardino.filter(e => e.cerchi).map(e => [ep[e.id].x, ep[e.id].z, e.cerchi]), [gin.x, gin.z, .95]]);
@@ -521,6 +529,16 @@ function avvia() {
       if (esito.esito !== 'ok') return;
       salva(stato); negozio.chiudi(); disegna(); suoni.magia();
       sposta(id);
+    },
+    // ampliamento del giardino (sezione 8.5): il prato si allarga, la telecamera si allontana per mostrarlo
+    compraAmpliamento() {
+      const esito = compraAmpliamento(stato);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con le sfide e la serie.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); negozio.chiudi(); disegna(); suoni.magia();
+      vola(target.clone(), baseDist * 1.05);
+      ui.toast(esito.ampliamenti < 3 ? 'Il prato si è allargato tutto intorno: c\'è più posto per piante e decorazioni. Con Sposta puoi sistemarle dove vuoi.'
+        : 'Il prato è al massimo: un giardino grande e tutto tuo. Con Sposta puoi sistemare ogni cosa dove vuoi.', 5000);
     },
     // attrezzi (sezione 7.3): si comprano una volta e servono per sempre
     compraAttrezzo(id) {
