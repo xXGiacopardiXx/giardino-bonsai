@@ -324,6 +324,14 @@ function avvia() {
     applica: (giorni) => { stato.debug.spostamento += giorni * GIORNO; aggiornaStato(); },
     azzera: () => { cancella(); svuotaDiario(); mostraUltima(null); stato = nuovoStato(Date.now()); aggiornaStato(); guida.avvia(); },
     guida: () => guida.avvia(),
+    // per provare l'azalea senza aspettare i Semi: la si riceve gratis (i Semi restano quelli di prima)
+    azalea: () => {
+      if (stato.conifere.azalea) { ui.toast('L\'azalea è già nel tuo giardino.'); return; }
+      const semi = stato.semi; stato.semi += 400;
+      if (compraPianta(stato, ora(), 'azalea').esito !== 'ok') { stato.semi = semi; return; }
+      stato.semi = semi; salva(stato); disegna(); suoni.magia();
+      ui.toast('Ecco l\'azalea, in regalo! Toccala per curarla.', 4000);
+    },
   });
 
   disegna();

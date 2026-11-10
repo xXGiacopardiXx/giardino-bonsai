@@ -178,6 +178,7 @@ La prima pianta che si compra: **400 Semi**, dal Negozio, scheda Giardino (in ci
 - **Potatura:** dopo la fioritura (in estate e nei primi 3 giorni d'autunno) mette germogli da potare con le forbici. Il maestro spiega perché non si pota in altri momenti: in primavera si taglierebbero i fiori, in autunno i boccioli dell'anno dopo.
 - **Terriccio:** nuovo terriccio **Kanuma** (30 Semi, solo per l'azalea), pomice gialla e acida: il rinvaso dura 3 anni. In akadama sta bene solo un anno.
 - **Stili:** Moyogi (cuscinetti tondi a gradini, 350 Semi) e Hokidachi (cupola tonda che in fioritura sembra un mazzo di fiori, 400 Semi).
+- **Per provarla:** nel pannello di prova (3 tocchi sulla stagione) c'è "Azalea in regalo", che la mette nel giardino senza spendere Semi.
 - **Il maestro:** una scheda anche per l'azalea in ogni consiglio di stagione; alla prima fioritura un consiglio apposta, col perché dei fiori appassiti da togliere; "come si sente" racconta la fioritura e i fiori che appassiscono.
 
 ## 6. Salute della pianta e trascuratezza
