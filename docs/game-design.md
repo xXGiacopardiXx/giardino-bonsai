@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 09/11/2026
+Ultimo aggiornamento: 10/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -56,9 +56,12 @@ Il giardino segue **l'ora vera del telefono** e ha un suo **meteo**, che come l'
 - **Meteo:** ogni giorno del calendario del telefono può essere sereno o, per qualche ora (da 2 a 5, tra le 6 e le 19), di **pioggia** o, in inverno, di **neve**. Si decide con un caso prevedibile, diverso per ogni partita. Giorni di pioggia: 30% in primavera e autunno, 15% d'estate; neve: 25% d'inverno.
 - **La pioggia annaffia davvero** tutte le piante (in un'ora il vaso è bagnato), senza troppa acqua: i vasi hanno i fori. Non conta per la serie né per i Semi, perché non è un'azione del giocatore; se la sfida del giorno era annaffiare una pianta che ha già bevuto la pioggia, la sfida cambia. Annaffiare subito dopo vale come annaffiare col terriccio umido (sezione 6.3).
 - **La neve copre i vasi:** finché nevica il terriccio non si asciuga.
-- **Come si vede:** pioggia a trattini inclinati e cielo grigio; neve a fiocchi che ondeggiano e cielo bianco-azzurro; di notte il cielo coperto è più scuro. Accanto al nome della stagione un'icona: sole, luna, pioggia o neve.
+- **Neve a terra:** si posa in qualche ora (piena dopo circa 3 ore di neve) e si scioglie piano, in un paio di giorni d'inverno. Nella scena il prato, l'erba e i cespugli si imbiancano (i cespugli di più sulle punte esterne), i fiorellini spariscono e la lanterna ha un cappello di neve.
+- **Pozzanghere:** sotto la pioggia si formano sulla ghiaia e accanto al sentiero, luccicano, e si asciugano in una decina d'ore (cinque d'estate).
+- **Temporali:** d'estate il 40% dei giorni di pioggia è un temporale: pioggia più fitta, ogni 6–16 secondi un lampo (due bagliori ravvicinati) e qualche istante dopo il tuono, più o meno lontano. Per le piante è una pioggia come le altre.
+- **Come si vede:** pioggia a trattini inclinati e cielo grigio; neve a fiocchi che ondeggiano e cielo bianco-azzurro; di notte il cielo coperto è più scuro. Accanto al nome della stagione un'icona: sole, luna, pioggia, temporale o neve.
 - **Avvisi:** la prima pioggia e la prima neve le spiega il maestro (sezione 7.4: perché quel giorno l'acqua non serve, perché la neve protegge le radici); dopo, una scritta breve una volta al giorno ("Piove: la pioggia annaffia tutte le piante", "Oggi ha piovuto: le piante hanno già bevuto").
-- Più avanti: la neve che imbianca il prato e i rami, le pozzanghere, un temporale d'estate.
+- Più avanti: la neve anche sulle chiome dei bonsai e sulle decorazioni, il laghetto ghiacciato, cerchi d'acqua nelle pozzanghere.
 
 ## 4. Azioni di cura
 

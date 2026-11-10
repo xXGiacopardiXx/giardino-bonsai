@@ -11,7 +11,8 @@ export function creaIsola(world, maxAnisotropy) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), M(col));
     m.position.y = y; m.scale.z = ZS; m.receiveShadow = true; world.add(m); return m;
   }
-  layer(5.3, 5.22, 0.36, 72, 0x8cbc50, -0.18);
+  // il prato in cima ha un materiale suo: d'inverno la neve lo imbianca (giardino.setNeve)
+  const prato = layer(5.3, 5.22, 0.36, 72, 0x8cbc50, -0.18); prato.material = prato.material.clone();
   layer(5.18, 4.5, 1.0, 72, 0x9a643f, -0.86);
   layer(4.5, 1.5, 2.8, 48, 0x877e6e, -2.76);
   layer(1.5, 0.25, 1.3, 24, 0x716a5c, -4.8);
@@ -66,4 +67,5 @@ export function creaIsola(world, maxAnisotropy) {
   const rk = mesh(new THREE.DodecahedronGeometry(.42, 0), M(0x8e8a7e), world, .9, .16, 1.0); rk.scale.set(1.15, .7, 1); rk.rotation.y = .6;
   const rk2 = mesh(new THREE.DodecahedronGeometry(.22, 0), M(0x9d998c), world, 1.3, .08, 1.25); rk2.scale.y = .7;
   const moss = mesh(new THREE.IcosahedronGeometry(.3, 1), M(0x6d9a43), world, .85, .38, .95); moss.scale.set(1, .28, .8);
+  return { prato };
 }

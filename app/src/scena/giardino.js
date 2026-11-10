@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { PI, R, rnd, M, toon, flatGeo, mesh, tube, foliage, fogliaAcero } from './strumenti.js';
 import { ZS, GX, GZ, GRX, GRZ } from './isola.js';
 
-export function creaGiardino(world, { reduce }) {
+export function creaGiardino(world, { reduce, prato }) {
   // Laghetto
   const koi = [];
   {
@@ -47,7 +47,9 @@ export function creaGiardino(world, { reduce }) {
     mesh(flatGeo(new THREE.ConeGeometry(.5, .28, 6)), M(st2), L, 0, 1.3, 0);
     mesh(new THREE.SphereGeometry(.08, 10, 8), M(st), L, 0, 1.48, 0);
     const pl = new THREE.PointLight(0xffc56b, .55 * PI, 3.2, 1); pl.position.y = 1.0; L.add(pl);
-    lanterna = { lamp, luce: pl };
+    // cappello di neve sul tetto della lanterna, che cresce con la neve
+    const cappello = new THREE.Mesh(new THREE.ConeGeometry(.53, .2, 6), toon({ color: 0xf4f7fa })); cappello.position.y = 1.4; cappello.visible = false; L.add(cappello);
+    lanterna = { lamp, luce: pl, cappello };
     for (let i = 0; i < 5; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.12, .2), 1), M(0x6a9a40), L, R(-.45, .45), .03, R(-.45, .45)); b.scale.y = .35; }
   }
 
@@ -101,9 +103,11 @@ export function creaGiardino(world, { reduce }) {
   }
 
   // Cespugli
+  const cespugli = [];
   function bush(x, z, r, pal, h = .3) {
     const gp = new THREE.Group(); gp.position.set(x, 0, z); world.add(gp);
-    foliage(gp, [[0, h, 0, r], [r * .5, h * .7, r * .3, r * .65], [-r * .5, h * .6, -r * .2, r * .6]], { palette: pal, density: 40, size: .36, flat: .85, detail: 1 });
+    // i cespugli si ricordano i loro colori, per la neve
+    cespugli[cespugli.length] = foliage(gp, [[0, h, 0, r], [r * .5, h * .7, r * .3, r * .65], [-r * .5, h * .6, -r * .2, r * .6]], { palette: pal, density: 40, size: .36, flat: .85, detail: 1 });
   }
   const verde = ['#3f6f3c', '#4c7f45', '#5d9150', '#73a35e'];
   bush(-4.25, -1.6, .6, verde);
@@ -133,7 +137,7 @@ export function creaGiardino(world, { reduce }) {
       d.updateMatrix(); im.setMatrixAt(n, d.matrix); im.setColorAt(n, new THREE.Color(pal[Math.floor(rnd() * pal.length)])); n++;
     }
     im.count = n; world.add(im);
-    erba = { im, originali: im.instanceMatrix.array.slice() };
+    erba = { im, originali: im.instanceMatrix.array.slice(), colori: im.instanceColor.array.slice() };
     const fl = ['#ffffff', '#ffe27a', '#f6b3c8', '#fff3c4'];
     for (let i = 0; i < 70; i++) {
       const x = R(-5, 5), z = R(-6.6, 6.6);
@@ -167,8 +171,26 @@ export function creaGiardino(world, { reduce }) {
   }
 
   let zoneLibere = "";
+  // neve a terra (0..1): prato, erba e cespugli si imbiancano, i fiorellini spariscono, la lanterna ha il cappello
+  const BIANCO = new THREE.Color(0xeef2f5), PRATO = prato?.material.color.clone(), cTmp = new THREE.Color();
+  let neveMessa = -1;
+  function setNeve(k) {
+    if (Math.abs(k - neveMessa) < .01) return;
+    neveMessa = k;
+    if (prato) prato.material.color.copy(PRATO).lerp(BIANCO, k * .92);
+    const c = erba.im.instanceColor.array, o = erba.colori;
+    for (let i = 0; i < c.length; i++) c[i] = o[i] + ((i % 3 === 2 ? .96 : .93) - o[i]) * k * .8;
+    erba.im.instanceColor.needsUpdate = true;
+    for (const f of cespugli) {
+      for (let i = 0; i < f.healthy.length; i++) f.m.setColorAt(i, cTmp.copy(f.healthy[i]).lerp(BIANCO, k * (.25 + .5 * (f.periferia[i] ?? .5))));
+      f.m.instanceColor.needsUpdate = true;
+    }
+    fiori.forEach(f => { f.visible = !f.userData.sotto && k < .3; });
+    lanterna.cappello.visible = k > .03; lanterna.cappello.scale.set(1, .3 + .7 * k, 1);
+  }
   return {
     lanterna,
+    setNeve,
     // niente erba né fiorellini dove ci sono le decorazioni (zone: [x, z, raggio])
     liberaErba(zone) {
       const chiave = JSON.stringify(zone); if (chiave === zoneLibere) return; zoneLibere = chiave;
@@ -179,7 +201,7 @@ export function creaGiardino(world, { reduce }) {
         for (let j = 0; j < 16; j++) a[k + j] = via ? 0 : o[k + j];
       }
       erba.im.instanceMatrix.needsUpdate = true;
-      fiori.forEach(f => { f.visible = !dentro(f.position.x, f.position.z); });
+      fiori.forEach(f => { f.userData.sotto = dentro(f.position.x, f.position.z); f.visible = !f.userData.sotto && neveMessa < .3; });
     },
     // le foglie d'acero cadono da metà autunno all'inizio dell'inverno e restano a terra ancora un po'
     // (p: punto dell'anno, 0 = inizio primavera, 2 = autunno, 3 = inverno)

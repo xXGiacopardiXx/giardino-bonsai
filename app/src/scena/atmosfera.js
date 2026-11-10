@@ -1,6 +1,7 @@
 // Ora del giorno e meteo (game-design.md, sezione 3.4): il giardino segue l'ora vera del telefono
 // (alba, giorno, tramonto, notte con la lanterna accesa) e il meteo del motore (pioggia, neve).
-// D'estate, di notte, le lucciole. Cielo, nebbia, sole, luce del cielo e nuvole passano piano da un
+// D'estate, di notte, le lucciole; d'estate a volte il temporale, con lampi e tuoni lontani.
+// La neve si posa sul prato (giardino.setNeve) e dopo la pioggia restano pozzanghere che luccicano. Cielo, nebbia, sole, luce del cielo e nuvole passano piano da un
 // aspetto all'altro. Le intensità sono moltiplicate per PI, come nel resto della scena.
 // Pioggia, neve e lucciole usano Math.random solo mentre girano: la sequenza con seme fisso non cambia.
 import * as THREE from 'three';
@@ -61,8 +62,20 @@ function pallina() {
   return new THREE.CanvasTexture(c);
 }
 
-// cielo: { sun, hemi, cielo: { ctx, tex } } da creaCielo; nuvole: { mat }; lanterna: { lamp, luce }
-export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna }, { reduce }) {
+// pozzanghere sulla ghiaia e accanto al sentiero: [x, z, raggio]
+const POZZE = [[1.65, -.35, .5], [-1.05, 1.95, .38], [2.55, -1.55, .32], [-1.15, -.35, .42], [.45, 4.05, .3], [-.2, .55, .28]];
+
+// cielo: { sun, hemi, cielo: { ctx, tex } } da creaCielo; nuvole: { mat }; lanterna: { lamp, luce }; giardino: { setNeve }
+// tuono(forza): il suono del tuono, qualche istante dopo il lampo
+export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giardino }, { reduce, tuono }) {
+  // pozzanghere: dischi lucidi e un po' trasparenti, che compaiono con la pioggia e si asciugano piano
+  const matPozza = new THREE.MeshPhongMaterial({ color: 0x86aec2, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
+  const pozze = POZZE.map(([x, z, r]) => {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(r, 28), matPozza);
+    m.rotation.x = -PI / 2; m.scale.y = .7; m.position.set(x, .024, z); m.renderOrder = 1; m.visible = false; scene.add(m);
+    return m;
+  });
+  let lampo = 0, prossimoLampo = 4, neveScena = -1;
   const tex = pallina();
   // pioggia: gocce come trattini che cadono un po' inclinati
   const N_GOCCE = 700, gocce = new Float32Array(N_GOCCE * 6);
@@ -92,6 +105,7 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna }, { r
   lucciole.frustumCulled = false; lucciole.visible = false; scene.add(lucciole);
 
   const lampGiorno = lanterna.lamp.material.color.clone(), lampNotte = C(0xffe9b0);
+  let extra = { temporale: false, neve: 0, pozze: 0 };
   let ora = 12, cade = null, stagione = 0, attuale = null, tempo = 0, quantoPioggia = 0, quantoNeve = 0, quanteLucciole = 0;
 
   // disegna la sfumatura del cielo con i 4 colori
@@ -117,7 +131,8 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna }, { r
 
   return {
     // h: ora del giorno (0..24, ora vera del telefono); cosaCade: 'pioggia', 'neve' o null; stag: stagione del gioco
-    imposta(h, cosaCade, stag) { ora = h; cade = cosaCade; stagione = stag; },
+    // e: { temporale, neve (a terra, 0..1), pozze (0..1) } dalla vista del motore
+    imposta(h, cosaCade, stag, e = {}) { ora = h; cade = cosaCade; stagione = stag; extra = { temporale: !!e.temporale, neve: e.neve ?? 0, pozze: e.pozze ?? 0 }; },
     // quanto è notte adesso (0..1)
     get notte() { return attuale?.notte ?? 0; },
     aggiorna(dt) {
@@ -126,12 +141,32 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna }, { r
       const meta = aspettoAlle(ora, cade);
       attuale = attuale ? mescola(attuale, meta, Math.min(1, dt * 1.2)) : meta;
       applica(attuale);
+      // temporale: ogni tanto un lampo illumina tutto, e qualche istante dopo brontola il tuono
+      if (cade === 'pioggia' && extra.temporale && !reduce) {
+        prossimoLampo -= dt;
+        if (prossimoLampo <= 0) {
+          lampo = 1; prossimoLampo = 6 + Math.random() * 10;
+          const lontano = Math.random();
+          setTimeout(() => tuono?.(1 - lontano * .5), 500 + lontano * 2200);
+        }
+      }
+      if (lampo > 0) {
+        // due bagliori ravvicinati, come un lampo vero
+        const t = 1 - lampo, f = t < .12 ? 1 : t < .22 ? .25 : t < .32 ? .85 : Math.max(0, 1 - (t - .32) / .68) * .5;
+        hemi.intensity += f * 1.6 * PI; sun.intensity += f * .8 * PI;
+        lampo = Math.max(0, lampo - dt / .55);
+      }
+      // la neve a terra si posa piano anche nella scena; le pozzanghere luccicano
+      neveScena = neveScena < 0 ? extra.neve : neveScena + (extra.neve - neveScena) * Math.min(1, dt * .5);
+      giardino?.setNeve(neveScena);
+      matPozza.opacity = .62 * extra.pozze * (1 - neveScena);
+      pozze.forEach(m => { m.visible = matPozza.opacity > .02; });
       const k = Math.min(1, dt * .8);
       quantoPioggia += ((cade === 'pioggia' ? 1 : 0) - quantoPioggia) * k;
       quantoNeve += ((cade === 'neve' ? 1 : 0) - quantoNeve) * k;
       quanteLucciole += ((stagione === 1 && !cade && attuale.notte > .6 ? 1 : 0) - quanteLucciole) * k;
       // pioggia
-      pioggia.visible = quantoPioggia > .02; pioggia.material.opacity = .5 * quantoPioggia;
+      pioggia.visible = quantoPioggia > .02; pioggia.material.opacity = (extra.temporale ? .7 : .5) * quantoPioggia;
       if (pioggia.visible && !reduce) {
         for (let i = 0; i < N_GOCCE; i++) {
           const j = i * 6; gocce[j + 1] -= 13 * dt; gocce[j + 4] -= 13 * dt; gocce[j] -= .9 * dt; gocce[j + 3] -= .9 * dt;

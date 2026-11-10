@@ -71,12 +71,12 @@ function avvia() {
 
   // L'ordine conta: ogni parte consuma numeri casuali dalla stessa sequenza
   const cieloScena = creaCielo(scene);
-  creaIsola(world, renderer.capabilities.getMaxAnisotropy());
+  const isola = creaIsola(world, renderer.capabilities.getMaxAnisotropy());
   const alberi = creaAlberi(world);
-  const giardino = creaGiardino(world, { reduce });
+  const giardino = creaGiardino(world, { reduce, prato: isola.prato });
   const nuvole = creaNuvole(scene);
   // ora del giorno (quella vera del telefono) e meteo del motore: cielo, luci, lanterna, pioggia, neve, lucciole
-  const atmosfera = creaAtmosfera(scene, { ...cieloScena, nuvole, lanterna: giardino.lanterna }, { reduce });
+  const atmosfera = creaAtmosfera(scene, { ...cieloScena, nuvole, lanterna: giardino.lanterna, giardino }, { reduce, tuono: (forza) => suoni.tuono(forza) });
   // decorazioni comprate: non usano numeri casuali, l'ordine qui non conta
   const decorazioni = creaDecorazioni(world, { toc: () => suoni.toc() });
 
@@ -178,7 +178,7 @@ function avvia() {
     document.getElementById('t-care').classList.toggle('needs', Object.values(v.cura).some(c => c.parassiti?.visibili));
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     // meteo e ora del giorno (sezione 3.4): la scena, l'icona accanto alla stagione e un avviso se ha piovuto
-    meteoAdesso = { cade: v.meteo.adesso, stagione: v.stagione, ora: ora() + giorniAnteprima * GIORNO }; meteoPreso = Date.now();
+    meteoAdesso = { cade: v.meteo.adesso, stagione: v.stagione, ora: ora() + giorniAnteprima * GIORNO, temporale: !!v.meteo.temporale, neve: v.meteo.neve, pozze: v.meteo.pozze }; meteoPreso = Date.now();
     mostraMeteo(v, giorniAnteprima);
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
@@ -217,19 +217,21 @@ function avvia() {
     sole: ['Sereno', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#ffd25a" stroke="#3b2716" stroke-width="1.6"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="#3b2716" stroke-width="1.8" stroke-linecap="round"/></svg>'],
     luna: ['Notte serena', '<svg viewBox="0 0 24 24"><path d="M15.5 3.5a8.5 8.5 0 1 0 5 13.6A7 7 0 0 1 15.5 3.5Z" fill="#f4e7b0" stroke="#3b2716" stroke-width="1.6" stroke-linejoin="round"/><circle cx="19" cy="6" r="1" fill="#3b2716"/></svg>'],
     pioggia: ['Piove', '<svg viewBox="0 0 24 24"><path d="M7 15.5a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.4 3.3 3.3 0 0 1-.2 6.6Z" fill="#dfe7ee" stroke="#3b2716" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 18l-1 2.6M12.5 18l-1 2.6M16.5 18l-1 2.6" stroke="#3f92d6" stroke-width="1.8" stroke-linecap="round"/></svg>'],
+    temporale: ['Temporale', '<svg viewBox="0 0 24 24"><path d="M7 14.5a4 4 0 0 1-.4-8 5.5 5.5 0 0 1 10.6 1.4 3.3 3.3 0 0 1-.2 6.6Z" fill="#b9c3cc" stroke="#3b2716" stroke-width="1.6" stroke-linejoin="round"/><path d="M12.5 13l-2.5 4.5h3l-2 4.5 5-6h-3l2-3Z" fill="#ffd25a" stroke="#3b2716" stroke-width="1.2" stroke-linejoin="round"/></svg>'],
     neve: ['Nevica', '<svg viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" stroke="#3b2716" stroke-width="2.6" stroke-linecap="round"/><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" stroke="#e8f3ff" stroke-width="1.2" stroke-linecap="round"/></svg>'],
   };
   let iconaMeteo = '';
   function mostraMeteo(v, anteprima) {
     const h = new Date(meteoAdesso.ora).getHours();
-    const icona = v.meteo.adesso ?? (h >= 20 || h < 6 ? 'luna' : 'sole');
+    const icona = v.meteo.adesso === 'pioggia' && v.meteo.temporale ? 'temporale' : v.meteo.adesso ?? (h >= 20 || h < 6 ? 'luna' : 'sole');
     if (icona !== iconaMeteo) { iconaMeteo = icona; meteoIc.innerHTML = ICONE_METEO[icona][1]; meteoIc.setAttribute('aria-label', ICONE_METEO[icona][0]); }
     // la prima pioggia e la prima neve le spiega il maestro; poi basta una scritta, una volta al giorno
     if (anteprima > 0 || !stato.maestro.visti.includes('pioggia')) return;
     const chiave = v.meteo.adesso ? v.meteo.adesso + ':' + stato.oggi.giorno : v.meteo.piovutoOggi ? 'piovuto:' + stato.oggi.giorno : null;
     if (!chiave || avvisiMeteo.has(chiave)) return;
     avvisiMeteo.add(chiave);
-    const testo = v.meteo.adesso === 'pioggia' ? 'Piove: la pioggia annaffia tutte le piante. Oggi l\'acqua non serve.'
+    const testo = v.meteo.adesso === 'pioggia' && v.meteo.temporale ? 'Temporale: la pioggia annaffia tutte le piante. Oggi l\'acqua non serve.'
+      : v.meteo.adesso === 'pioggia' ? 'Piove: la pioggia annaffia tutte le piante. Oggi l\'acqua non serve.'
       : v.meteo.adesso === 'neve' ? 'Nevica: sotto la neve il terriccio non si asciuga.'
       : 'Oggi ha piovuto: le piante hanno già bevuto.';
     setTimeout(() => ui.toast(testo, 4000), 900);
@@ -949,7 +951,7 @@ function avvia() {
     stileScena.aggiorna(dt);
     // l'ora del giorno cambia anche a gioco aperto: si ricalcola dall'ora del telefono
     const h = new Date(meteoAdesso.ora + (Date.now() - meteoPreso)).getHours() + new Date(meteoAdesso.ora + (Date.now() - meteoPreso)).getMinutes() / 60;
-    atmosfera.imposta(h, meteoAdesso.cade, meteoAdesso.stagione);
+    atmosfera.imposta(h, meteoAdesso.cade, meteoAdesso.stagione, meteoAdesso);
     atmosfera.aggiorna(dt);
     giardino.aggiorna(dt, clock);
     if (!reduce) nuvole.aggiorna(dt);

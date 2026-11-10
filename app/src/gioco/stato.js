@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 19;
+export const VERSIONE = 20;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
@@ -189,13 +189,20 @@ const SALUTE_CON_PARASSITI = 0.5;      // i parassiti da soli non la diradano ol
 // davvero tutte le piante, senza troppa acqua (i vasi hanno i fori); la neve copre i vasi: finché nevica il
 // terriccio non si asciuga. Il meteo segue i giorni e le ore reali, come l'acqua.
 const PIOGGIA_STAGIONE = [0.3, 0.15, 0.3, 0.25]; // probabilità di un giorno di pioggia (in inverno: neve)
+const TEMPORALI = 0.4;                           // d'estate, quanti giorni di pioggia sono temporali
+// neve a terra (0..1): si posa in qualche ora e si scioglie in un paio di giorni d'inverno, subito dopo;
+// pozzanghere (0..1): si formano sotto la pioggia e si asciugano in mezza giornata (prima d'estate)
+const NEVE_SI_POSA = 0.3, NEVE_SI_SCIOGLIE = [0.25, 0.25, 0.25, 0.02];
+const POZZE_SI_FORMANO = 0.6, POZZE_SI_ASCIUGANO = [0.1, 0.2, 0.1, 0.1];
 const PIOGGIA_ALL_ORA = 4;                       // giorni di sete che la pioggia toglie in un'ora: in un'ora il vaso è bagnato
 export function meteoDelGiorno(stato, t) {
   if (!stato.meteo?.attivo) return { tipo: 'sereno', da: 0, a: 0 };
   const seme = stato.inizio + ':meteo:' + giornoLocale(t), { stagione } = calendario(stato.inizio, t);
   if (caso(seme) >= PIOGGIA_STAGIONE[stagione]) return { tipo: 'sereno', da: 0, a: 0 };
   const da = 6 + Math.floor(caso(seme + ':da') * 13);
-  return { tipo: stagione === 3 ? 'neve' : 'pioggia', da, a: Math.min(24, da + 2 + Math.floor(caso(seme + ':durata') * 4)) };
+  return { tipo: stagione === 3 ? 'neve' : 'pioggia', da, a: Math.min(24, da + 2 + Math.floor(caso(seme + ':durata') * 4)),
+    // d'estate la pioggia può arrivare con lampi e tuoni (annaffia come la pioggia)
+    temporale: stagione === 1 && caso(seme + ':temporale') < TEMPORALI };
 }
 const oraDelGiorno = (t) => { const d = new Date(t); return d.getHours() + d.getMinutes() / 60; };
 // cosa sta cadendo all'ora t: 'pioggia', 'neve' o null
@@ -245,7 +252,7 @@ export function nuovoStato(ora) {
     // consigli del maestro già letti (gioco/maestro.js)
     maestro: { visti: [] },
     // meteo (sezione 3.4): attivo (i test lo spengono per avere la sete prevedibile) e l'ultima pioggia
-    meteo: { attivo: true, ultimaPioggia: null },
+    meteo: { attivo: true, ultimaPioggia: null, neve: 0, pozze: 0 },
     // diario fotografico: per ogni pianta la stagione dell'ultima foto premiata ("anno-stagione")
     diario: {},
     // si comincia annaffiando, perché la pianta ha già sete
@@ -331,6 +338,8 @@ export function migra(stato) {
   if (stato.versione === 17) { stato.maestro = { visti: [] }; stato.versione = 18; }
   // meteo: da adesso può piovere e nevicare
   if (stato.versione === 18) { stato.meteo = { attivo: true, ultimaPioggia: null }; stato.versione = 19; }
+  // neve a terra e pozzanghere: per ora niente
+  if (stato.versione === 19) { Object.assign(stato.meteo, { neve: 0, pozze: 0 }); stato.versione = 20; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -387,7 +396,10 @@ export function avanza(stato, ora) {
     const cal = calendario(stato.inizio, t + passo / 2), { stagione } = cal;
     // vaso stretto: le radici riempiono il vaso, la terra trattiene meno acqua
     for (const p in PIANTE) { const c = curaDi(stato, p); c.rinvaso.stretto = vasoStretto(c, cal); }
-    const cade = cadeAlle(stato, t + passo / 2);
+    const cade = cadeAlle(stato, t + passo / 2), ore = passo / ORA, mt = stato.meteo;
+    // la neve si posa e si scioglie, le pozzanghere si formano e si asciugano
+    mt.neve = cade === 'neve' ? Math.min(1, (mt.neve ?? 0) + ore * NEVE_SI_POSA) : Math.max(0, (mt.neve ?? 0) - ore * NEVE_SI_SCIOGLIE[stagione]);
+    mt.pozze = cade === 'pioggia' ? Math.min(1, (mt.pozze ?? 0) + ore * POZZE_SI_FORMANO) : Math.max(0, (mt.pozze ?? 0) - ore * POZZE_SI_ASCIUGANO[stagione]);
     for (const p in PIANTE) {
       const c = curaDi(stato, p);
       const k = giorni * FATTORE_SETE[stagione] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
@@ -916,7 +928,9 @@ export function vista(stato) {
     nomeStagione: STAGIONI[cal.stagione],
     // meteo di oggi (tipo, ore da/a), cosa cade adesso e se oggi ha già piovuto sulle piante
     meteo: { ...meteoDelGiorno(stato, stato.aggiornato), adesso: cadeAlle(stato, stato.aggiornato),
-      piovutoOggi: !!stato.meteo?.ultimaPioggia && giornoLocale(stato.meteo.ultimaPioggia) === giornoLocale(stato.aggiornato) },
+      piovutoOggi: !!stato.meteo?.ultimaPioggia && giornoLocale(stato.meteo.ultimaPioggia) === giornoLocale(stato.aggiornato),
+      // neve a terra e pozzanghere (0..1), per la scena
+      neve: stato.meteo?.neve ?? 0, pozze: stato.meteo?.pozze ?? 0 },
     semi: stato.semi,
     vaso: stato.vasi.scelto,
     // catalogo del negozio con lo stato di ogni vaso

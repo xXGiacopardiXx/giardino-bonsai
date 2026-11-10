@@ -998,5 +998,45 @@ test('un salvataggio della versione 18 riceve il meteo', () => {
   vecchio.versione = 18; delete vecchio.meteo;
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
-  assert.deepEqual(s.meteo, { attivo: true, ultimaPioggia: null });
+  assert.equal(s.meteo.attivo, true);
+  assert.equal(s.meteo.ultimaPioggia, null);
+});
+
+test('la neve si posa in qualche ora e si scioglie piano; le pozzanghere si asciugano in mezza giornata', () => {
+  const s = nuovoStatoVero(T0);
+  const { t, m } = giornoDi(s, 'neve', 21);
+  avanza(s, alle(t, m.da + 1));
+  const poca = vista(s).meteo.neve;
+  assert.ok(poca > 0.2 && poca < 0.4, `dopo un'ora: ${poca}`);
+  avanza(s, alle(t, m.a));
+  assert.ok(vista(s).meteo.neve > 0.55);
+  // il giorno dopo (se non nevica ancora) c'è ancora neve, ma meno
+  const dopoNeve = vista(s).meteo.neve;
+  avanza(s, alle(t, m.a) + 12 * 3600 * 1000);
+  const v = vista(s).meteo;
+  if (!v.adesso) assert.ok(v.neve < dopoNeve && v.neve > 0.2);
+  const p = giornoDi(s, 'pioggia', 30);
+  avanza(s, alle(p.t, p.m.a));
+  assert.ok(vista(s).meteo.pozze > 0.9);
+  avanza(s, alle(p.t, p.m.a) + 5 * 3600 * 1000); // prima che possa ripiovere (mai prima delle 6)
+  assert.ok(vista(s).meteo.pozze < 0.6);
+});
+
+test('d\'estate alcune piogge sono temporali, nelle altre stagioni mai', () => {
+  const s = nuovoStatoVero(T0);
+  let estate = 0, temporali = 0;
+  for (let g = 0; g < 28 * 10; g++) {
+    const m = meteoDelGiorno(s, dopo(g + .5)), stagione = Math.floor(g / 7) % 4;
+    if (m.temporale) assert.equal(stagione, 1);
+    if (stagione === 1 && m.tipo === 'pioggia') { estate++; if (m.temporale) temporali++; }
+  }
+  assert.ok(temporali > 0 && temporali < estate, `${temporali} temporali su ${estate}`);
+});
+
+test('un salvataggio della versione 19 riceve neve e pozzanghere a zero', () => {
+  const vecchio = nuovoStatoVero(T0);
+  vecchio.versione = 19; delete vecchio.meteo.neve; delete vecchio.meteo.pozze;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual([s.meteo.neve, s.meteo.pozze], [0, 0]);
 });

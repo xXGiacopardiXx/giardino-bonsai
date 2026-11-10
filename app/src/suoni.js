@@ -184,6 +184,13 @@ export function toc() {
   soffio({ durata: .03, tipo: 'bandpass', freq: 1400, q: 3, volume: .05, attacco: .002 });
 }
 
+// tuono lontano: un brontolio basso che rotola e si spegne (forza 0..1)
+export function tuono(forza = 1) {
+  if (!pronto()) return;
+  soffio({ durata: 3.2, tipo: 'lowpass', freq: 220, freqFine: 55, q: .8, volume: .22 * forza, attacco: .25 });
+  soffio({ t: .4, durata: 2.2, tipo: 'lowpass', freq: 140, freqFine: 45, q: 1.2, volume: .16 * forza, attacco: .4 });
+}
+
 // tocco su un pulsante: un piccolo "pop" di legno
 export function tocco() {
   if (!pronto()) return;
