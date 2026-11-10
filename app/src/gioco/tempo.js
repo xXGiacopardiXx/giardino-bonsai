@@ -33,3 +33,9 @@ export function giorniTra(a, b) {
   const utc = (g) => { const [y, m, d] = g.split('-').map(Number); return Date.UTC(y, m - 1, d); };
   return Math.round((utc(b) - utc(a)) / GIORNO);
 }
+
+// Il giorno locale n giorni dopo (o prima, con n negativo) di quello dato, es. giornoDopo("2026-10-26", -1) = "2026-10-25"
+export function giornoDopo(g, n) {
+  const [y, m, d] = g.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}

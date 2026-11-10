@@ -1,5 +1,6 @@
 // Interfaccia sopra la scena 3D: etichette delle piante, messaggi, Semi, serie, stagione, sfida del giorno.
 import * as THREE from 'three';
+import * as suoni from './suoni.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -54,7 +55,11 @@ export function creaInterfaccia(screenEl, camera, trees) {
   let semiMostrati = null, semiAnimati = false;
   // i Semi guadagnati salgono dalla pianta al contatore, che cresce a poco a poco
   function guadagnaSemi(n, totale, daPianta) {
-    const [x, y] = toScreen(trees[daPianta].tag); floatText('+' + n, x, y - 20);
+    const [x, y] = toScreen(trees[daPianta].tag); semiDa(n, totale, x, y - 20);
+  }
+  // ...o da un punto dello schermo (x, y), per esempio dal banner di una sfida
+  function semiDa(n, totale, x, y) {
+    floatText('+' + n, x, y);
     const r = seedsEl.getBoundingClientRect(), s = screenEl.getBoundingClientRect();
     setTimeout(() => floatText('+' + n, r.left - s.left + r.width / 2, r.top - s.top + r.height + 8), 300);
     const from = semiMostrati ?? totale - n, t0 = performance.now();
@@ -66,9 +71,57 @@ export function creaInterfaccia(screenEl, camera, trees) {
     })(t0);
   }
 
-  const settimanaEl = $('settimana'), questEl = $('quest');
-  let primoAggiornamento = true, sfidaChiusa = false;
-  questEl.addEventListener('animationend', () => { if (questEl.classList.contains('via')) questEl.style.display = 'none'; });
+  const settimanaEl = $('settimana'), questEl = $('quest'), settEl = $('quest-sett'), riposoEl = $('riposo');
+  let primoAggiornamento = true, sfidaChiusa = false, ultima = null;
+  for (const el of [questEl, settEl]) el.addEventListener('animationend', () => {
+    if (!el.classList.contains('via')) return;
+    el.style.display = 'none';
+    // uscito il banner del giorno, al suo posto arriva quello della settimana
+    if (el === questEl && ultima) mostraSettimana(ultima);
+  });
+  // Sfida della settimana (sezione 7.1): sta al posto di quella del giorno quando quella è fatta, così il
+  // giardino resta libero. Avanza a poco a poco; completata, i Semi partono dal banner, che poi esce.
+  let settFatta = null, settAnimata = false;
+  function mostraSettimana(v) {
+    const w = v.settimana;
+    if (!w) { settEl.style.display = 'none'; return; }
+    $('qs-testo').textContent = w.testo;
+    $('qs-premio').textContent = '+' + w.premio;
+    $('qs-fill').style.width = Math.round(Math.min(1, w.fatti / w.obiettivo) * 100) + '%';
+    const resto = w.giorniRimasti === 1 ? 'ultimo giorno' : `ancora ${w.giorniRimasti} giorni`;
+    $('qs-txt').textContent = `${Math.min(w.fatti, w.obiettivo)}/${w.obiettivo} · ${resto}`;
+    const libero = questEl.style.display === 'none';
+    if (!w.fatta) {
+      settFatta = null; settAnimata = false;
+      settEl.classList.remove('done', 'via');
+      settEl.style.display = libero ? '' : 'none';
+      return;
+    }
+    // completata: se lo era già all'apertura non si mostra; se è appena successo, festa appena c'è posto
+    if (settFatta === null) settFatta = primoAggiornamento ? 'vecchia' : 'nuova';
+    if (settFatta === 'vecchia') { settEl.style.display = 'none'; return; }
+    if (settAnimata || !libero) return;
+    settAnimata = true;
+    settEl.style.display = ''; settEl.classList.add('done');
+    setTimeout(() => {
+      const r = settEl.getBoundingClientRect(), s = screenEl.getBoundingClientRect();
+      semiDa(w.premio, ultima.semi, r.left - s.left + r.width * .8, r.top - s.top);
+      suoni.magia();
+    }, 700);
+    setTimeout(() => settEl.classList.add('via'), 2400);
+  }
+  // un tocco sulla serie spiega come funziona, col giorno di riposo (sezione 7.2)
+  $('serie').parentElement.addEventListener('click', () => {
+    if (!ultima) return;
+    toast(ultima.riposi ? `${ultima.serie} giorni di fila. Hai un giorno di riposo: se salti un giorno, la serie resta com'è.`
+      : `${ultima.serie} giorni di fila. Ogni 7 giorni arriva un giorno di riposo, che salva la serie se salti un giorno.`, 4500);
+  });
+  // col bastoncino di bambù l'etichetta dice fra quanto annaffiare (giorni con decimali)
+  const fraQuanto = (g) => g * 24 < 20 ? `Acqua fra ${Math.max(1, Math.round(g * 24))} ${Math.round(g * 24) <= 1 ? 'ora' : 'ore'}`
+    : Math.round(g) <= 1 ? 'Acqua domani' : `Acqua fra ${Math.round(g)} giorni`;
+  const conBastoncino = (el, c, giorni) => {
+    if (giorni > 0 && c.fase === 0 && !c.ristagno && !c.parassiti?.visibili) { el.textContent = fraQuanto(giorni); el.dataset.livello = 'bene'; }
+  };
   return {
     toast,
     chiedi,
@@ -82,6 +135,10 @@ export function creaInterfaccia(screenEl, camera, trees) {
       // durante l'annaffiatura il contatore aspetta l'animazione dei Semi guadagnati
       if (!semiAnimati && !annaffiando) { semiMostrati = v.semi; seedsEl.textContent = fmt(v.semi); }
       $('serie').textContent = v.serie;
+      ultima = v;
+      // giorno di riposo pronto: la luna accanto alla serie (saltella il giorno che arriva)
+      riposoEl.hidden = !v.riposi;
+      riposoEl.classList.toggle('nuovo', !!v.riposoNuovo);
 
       // la sfida del giorno cambia: acqua, potatura o filo (gioco/stato.js, SFIDE)
       if (v.sfida) questEl.querySelector('.qd').textContent = v.sfida.testo;
@@ -100,6 +157,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
           setTimeout(() => { if (sfidaChiusa) questEl.classList.add('via'); }, 1800);
         }
       }
+      mostraSettimana(v);
       primoAggiornamento = false;
 
       const salute = Math.round(v.salute * 100) + '%';
@@ -108,6 +166,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
       $('acero-fase').dataset.livello = livello(v);
       // gli afidi evidenti si segnalano sull'etichetta (quelli appena arrivati si scoprono solo da vicino)
       if (v.parassiti?.visibili && v.fase < 4) { $('acero-fase').textContent = 'Ha gli afidi'; $('acero-fase').dataset.livello = 'stress'; }
+      if (v.bastoncino) conBastoncino($('acero-fase'), v, v.bastoncino.acero);
       $('acero-salute').textContent = salute;
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
@@ -118,6 +177,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
         const c = v.conifere[p];
         $(p + '-fase').textContent = c.nomeFase;
         $(p + '-fase').dataset.livello = livello(c);
+        if (v.bastoncino) conBastoncino($(p + '-fase'), { ...c, parassiti: v.cura[p]?.parassiti }, v.bastoncino[p]);
         $(p + '-acqua').style.width = Math.round(c.acqua * 100) + '%';
         $(p + '-acqua').parentElement.dataset.livello = livelloAcqua(c);
         // chioma: come quella dell'acero, con la percentuale

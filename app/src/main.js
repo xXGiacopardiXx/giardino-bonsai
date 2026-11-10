@@ -35,7 +35,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -262,7 +262,17 @@ function avvia() {
     setTimeout(() => ui.toast(testo, 4000), 900);
   }
 
-  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); maestroParla(); }
+  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); avvisaRiposo(); maestroParla(); }
+  // serie di 7 giorni: i Semi del bonus e, se è arrivato, il giorno di riposo (sezione 7.2)
+  function testoSerie(bonus) {
+    return `${stato.serie.giorni} giorni di fila: +${bonus} Semi` + (vista(stato).riposoNuovo ? ' e un giorno di riposo, che salva la serie se salti un giorno.' : '!');
+  }
+  // il giorno di riposo ha coperto un giorno saltato: lo si dice con calma, una volta sola
+  function avvisaRiposo(ritardo = 0) {
+    if (!leggiAvvisoRiposo(stato)) return;
+    salva(stato);
+    setTimeout(() => ui.toast(`Ieri il giardino ha riposato: il giorno di riposo ha salvato la serie di ${stato.serie.giorni} giorni.`, 4500), ritardo);
+  }
 
   // --- Acqua: ogni pianta ha la sua sete (sezione 6.1.4). Acqua nella barra annaffia la pianta
   // che ne ha bisogno; se sono più d'una, si tocca quella da annaffiare. Dalla tendina di una pianta
@@ -292,7 +302,7 @@ function avvia() {
       const { semi, bonusSerie } = esiti[p];
       if (semi) { ui.guadagnaSemi(semi, stato.semi - bonusSerie, p); suoni.semi(); }
       if (bonusSerie) setTimeout(() => { ui.guadagnaSemi(bonusSerie, stato.semi, p); suoni.semi(); }, 900);
-      ui.toast(bonusSerie ? `${stato.serie.giorni} giorni di fila: +${bonusSerie} Semi!` : DOPO[p], 4000);
+      ui.toast(bonusSerie ? testoSerie(bonusSerie) : DOPO[p], 4000);
       disegna();
       if (p === 'acero') guida.evento('annaffiato');
     },
@@ -396,6 +406,7 @@ function avvia() {
 
   // ritorno dopo una lunga assenza: nessun rimprovero (game-design.md, sezione 6.2)
   if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere.', 4500);
+  avvisaRiposo(vista(stato).lungaAssenza ? 4800 : 600);
 
   // l'app può restare aperta a lungo: il tempo si aggiorna ogni 30 secondi e al ritorno sull'app
   setInterval(aggiornaStato, 30000);
@@ -426,7 +437,7 @@ function avvia() {
       salva(stato); cure.chiudi();
       if (prodotto.tipo === 'concime') {
         curaScene[pianta].concima(); suoni.concime(); disegna(); premia(esito, pianta);
-        ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+        ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
           : `Concime dato! Per una stagione ${pianta === 'acero' ? 'l\'acero crescerà di più e ' : 'la pianta '}resisterà meglio ai parassiti.`, 4000);
         return;
       }
@@ -510,6 +521,15 @@ function avvia() {
       if (esito.esito !== 'ok') return;
       salva(stato); negozio.chiudi(); disegna(); suoni.magia();
       sposta(id);
+    },
+    // attrezzi (sezione 7.3): si comprano una volta e servono per sempre
+    compraAttrezzo(id) {
+      const esito = compraAttrezzo(stato, id);
+      if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
+      if (esito.esito !== 'ok') return;
+      salva(stato); disegna(); suoni.magia();
+      const a = vista(stato).attrezzi.find(x => x.id === id);
+      ui.toast(`${a.nome}: è tuo per sempre. ${a.descrizione}`, 5500);
     },
     mettiDecorazione(id, si) {
       if (!mettiDecorazione(stato, id, si)) return;
@@ -814,7 +834,7 @@ function avvia() {
     ui.forbici(e.clientX - r.left, e.clientY - r.top); suoni.forbici(); setTimeout(() => suoni.fruscio(.1), 200);
     stileScena.taglia(p, indici.map(i => ciuffi[i]));
     salva(stato); disegna();
-    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, p); suoni.semi(); ui.toast(`${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`); }
+    if (esito.bonusSerie) { ui.guadagnaSemi(esito.bonusSerie, stato.semi, p); suoni.semi(); ui.toast(testoSerie(esito.bonusSerie)); }
   }
 
   // --- Filo: un pallino di rame sulla punta di ogni ramo; trascinandolo su o giù il ramo si piega e il filo
@@ -907,7 +927,7 @@ function avvia() {
     filoDi(p).avvolgi(i); suoni.filo();
     const r = ramiDi(vista(stato), p)[i];
     if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
-    ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+    ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
       : r.giorniAllaPresa ? `Filo avvolto! Crescendo, il ramo prenderà questa forma in circa ${giorni(r.giorniAllaPresa)}.`
       : 'Filo avvolto! Il ramo crescerà di nuovo quando la pianta starà meglio: intanto il filo lo tiene.', 3800);
   }
@@ -951,7 +971,7 @@ function avvia() {
       daTogliere.togli(vecchio); suoni.fruscio(.16);
       salva(stato); disegna();
       if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
-      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+      ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
         : p === 'azalea' ? 'Fiore appassito tolto: la forza resta ai rami, e l\'anno prossimo fiorirà in pieno.'
         : 'Aghi vecchi tolti: luce e aria arrivano dentro la chioma.');
     } else {
@@ -967,7 +987,7 @@ function avvia() {
       if (p === 'acero') guida.evento('potato');
       salva(stato); disegna();
       if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
-      ui.toast(esito.bonusSerie ? `${stato.serie.giorni} giorni di fila: +${esito.bonusSerie} Semi!`
+      ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
         : p !== 'acero' ? DOPO_TAGLIO[p]
         : esito.gemme ? 'Taglio pulito! Sotto il taglio spunteranno due gemme.' : 'Taglio pulito. Questa punta è già bella fitta.');
     }

@@ -6,7 +6,7 @@
 import { iconaProdotto, perChi } from './icone-cura.js';
 
 // categorie della scheda Cura: tipo del prodotto (PRODOTTI nel motore), nome del pulsante, riga sotto
-const CATEGORIE = [['concime', 'Concimi', 'Concimi: la pianta cresce di più per una stagione'], ['trattamento', 'Contro gli afidi', 'Trattamenti contro gli afidi'], ['terriccio', 'Terricci', 'Terricci per il rinvaso']];
+const CATEGORIE = [['concime', 'Concimi', 'Concimi: la pianta cresce di più per una stagione'], ['trattamento', 'Contro gli afidi', 'Trattamenti contro gli afidi'], ['terriccio', 'Terricci', 'Terricci per il rinvaso'], ['attrezzo', 'Attrezzi', 'Attrezzi: si comprano una volta e servono per sempre']];
 
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
@@ -42,11 +42,18 @@ const disegnoElemento = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${E
 const PIANTE_DISEGNI = {
   azalea: `<path d="M16 34h32l-3 12H19Z" fill="#6e4a38"/><rect x="13" y="31" width="38" height="4" rx="2" fill="#5f3e2f"/><path d="M32 31c-1-6 3-8 1-14" stroke="#7a4e3a" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="21" rx="10" ry="6" fill="#3f6e30"/><ellipse cx="42" cy="18" rx="10" ry="6" fill="#467a36"/><ellipse cx="32" cy="11" rx="9" ry="5.5" fill="#4e823b"/><g fill="#f27ea6"><circle cx="18" cy="18" r="2.6"/><circle cx="25" cy="17" r="2.4"/><circle cx="22" cy="23" r="2.2"/><circle cx="38" cy="15" r="2.6"/><circle cx="46" cy="16" r="2.4"/><circle cx="42" cy="21" r="2.2"/><circle cx="29" cy="9" r="2.4"/><circle cx="35" cy="8" r="2.2"/></g><g fill="#fbd3e1"><circle cx="21" cy="20" r="1.4"/><circle cx="44" cy="19" r="1.4"/><circle cx="33" cy="11" r="1.4"/></g>`,
 };
+// gli attrezzi (sezione 7.3): bastoncino di bambù nel terriccio, tronchesino per filo, forbici concave
+const ATTREZZI_DISEGNI = {
+  bastoncino: `<ellipse cx="32" cy="43" rx="20" ry="5" fill="#6b4a33"/><g transform="rotate(12 32 40)"><rect x="29.5" y="4" width="5" height="36" rx="2.4" fill="#d9b86a"/><rect x="29.5" y="28" width="5" height="12" rx="2.4" fill="#8c6a32"/><path d="M28 12.5h8M28 22h8" stroke="#a8873f" stroke-width="1.6"/></g>`,
+  tronchesino: `<path d="M30 25 15 44M34 25l15 19" stroke="#c8402c" stroke-width="7" stroke-linecap="round"/><path d="M32 27 26 6l6 3 6-3Z" fill="#8e979b"/><circle cx="32" cy="25" r="3.4" fill="#5c6468"/>`,
+  forbici: `<ellipse cx="17" cy="38" rx="10" ry="8" fill="none" stroke="#3a3f42" stroke-width="4.4"/><ellipse cx="47" cy="38" rx="10" ry="8" fill="none" stroke="#3a3f42" stroke-width="4.4"/><path d="M24 32 37 8M40 32 27 8" stroke="#8e979b" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="21" r="2.6" fill="#5c6468"/>`,
+};
+const disegnoAttrezzo = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${ATTREZZI_DISEGNI[id] || ''}</svg>`;
 const disegnoPianta = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${PIANTE_DISEGNI[id] || ''}</svg>`;
 const disegnoDeco = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${DECO[id] || ''}</svg>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;
 
-// azioni: compra(id), usa(id), compraProdotto(id)
+// azioni: compra(id), usa(id), compraProdotto(id), compraAttrezzo(id) e quelle del giardino
 export function creaNegozio(azioni) {
   const el = document.createElement('section');
   el.className = 'negozio'; el.hidden = true;
@@ -79,6 +86,7 @@ export function creaNegozio(azioni) {
     else if (b.dataset.a === 'usa') azioni.usa(b.dataset.id);
     else if (b.dataset.a === 'negozio') api.apri('negozio');
     else if (b.dataset.a === 'prodotto') azioni.compraProdotto(b.dataset.id);
+    else if (b.dataset.a === 'attrezzo') azioni.compraAttrezzo(b.dataset.id);
     else if (b.dataset.a === 'deco') azioni.compraDecorazione(b.dataset.id);
     else if (b.dataset.a === 'pianta') azioni.compraPianta(b.dataset.id);
     else if (b.dataset.a === 'metti') azioni.mettiDecorazione(b.dataset.id, true);
@@ -103,7 +111,7 @@ export function creaNegozio(azioni) {
       el.querySelectorAll('.categoria').forEach(b => b.classList.toggle('on', b.dataset.cat === categoria));
       lista.scrollTop = 0;
       v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
-        : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + ' (3 dosi a confezione)'
+        : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + (categoria === 'attrezzo' ? '' : ' (3 dosi a confezione)')
         : scheda === 'giardino' ? 'Piante nuove, decorazioni e cose messe da parte' : 'Vasi per l\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
@@ -113,6 +121,13 @@ export function creaNegozio(azioni) {
       ultimaVista = vista;
       if (el.hidden) return;
       semiEl.textContent = vista.semi;
+      // attrezzi: si comprano una volta; quelli già tuoi restano in vista con "Già tuo"
+      if (modo === 'negozio' && scheda === 'cura' && categoria === 'attrezzo') {
+        vai.hidden = true;
+        lista.innerHTML = vista.attrezzi.map(a => `<div class="vaso prodotto${a.tuo ? ' in-uso' : ''}" title="${a.descrizione}"><div class="vaso-img">${disegnoAttrezzo(a.id)}</div><span class="vaso-nome">${a.nome}</span><span class="prodotto-per">${a.effetto}</span>${a.tuo ? '<span class="vaso-stato tuo">Già tuo</span>'
+          : `<button class="vaso-b compra${vista.semi < a.prezzo ? ' caro' : ''}" data-a="attrezzo" data-id="${a.id}" aria-label="Compra per ${a.prezzo} Semi">${a.prezzo}${SEME}</button>`}</div>`).join('');
+        return;
+      }
       if (modo === 'negozio' && scheda === 'cura') {
         vai.hidden = true;
         // schede compatte come quelle dei vasi: le dosi che hai stanno nell'angolo del disegno

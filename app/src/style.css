@@ -35,12 +35,23 @@ button{touch-action:manipulation}
 .streak .ic{width:10cqw;height:10cqw}
 .streak b{font-size:3.9cqw}
 .streak span{font-size:3.1cqw;font-weight:500}
+/* giorno di riposo pronto: una piccola luna accanto alla serie */
+.streak .riposo{display:grid;place-items:center;width:6cqw;height:6cqw;margin-left:.4cqw}
+.streak .riposo[hidden]{display:none}
+.streak .riposo svg{width:100%;height:100%}
+.streak .riposo.nuovo{animation:riposo 1.2s ease-in-out 3}
+@keyframes riposo{50%{transform:scale(1.35) rotate(-12deg)}}
 
 .quest{align-self:flex-start;width:42cqw;padding:2cqw 2.6cqw 2.4cqw;border-radius:3.6cqw;background:rgba(255,250,240,.94);border:.55cqw solid var(--ink);box-shadow:0 .8cqw 0 var(--ink);box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:.8cqw 1.6cqw;align-items:center;pointer-events:auto}
 .quest .qt{grid-column:1/-1;font:600 2.7cqw/1 var(--display);color:#8a6a48;letter-spacing:.02em}
 .quest .qd{font:600 3.5cqw/1.1 var(--display)}
 .quest .qr{display:flex;align-items:center;gap:.6cqw;font:700 3.4cqw/1 var(--display);color:#b9781c}
 .quest .qr svg{width:4cqw;height:4cqw}
+/* sfida della settimana: al posto di quella del giorno quando è fatta, un po' più piccola, con la barra azzurra */
+.quest.settimana{padding:1.6cqw 2.4cqw 2cqw;background:rgba(240,248,255,.94)}
+.quest.settimana .qt{font-size:2.5cqw;color:#4a6f8a}
+.quest.settimana .qd{font-size:3.1cqw}
+.quest.settimana .qbar i{background:linear-gradient(#8fd3f5,#3f92d6)}
 .qbar{grid-column:1/-1;height:2.6cqw;border-radius:99px;background:#eadbbd;border:.4cqw solid var(--ink);overflow:hidden;position:relative}
 .qbar i{position:absolute;inset:0;width:0;background:linear-gradient(#9be36a,#5fae2f);transition:width .6s ease}
 .qbar span{position:absolute;inset:0;display:grid;place-items:center;font:700 2.1cqw/1 var(--display);color:var(--ink)}

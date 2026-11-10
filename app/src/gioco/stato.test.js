@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1197,4 +1197,148 @@ test('un elemento del giardino si toglie e si rimette gratis, dove era o lì vic
   assert.ok(Math.hypot(l.x - p.x, l.z - p.z) > 1);
   assert.equal(s.semi, semi, 'gratis');
   assert.equal(mettiElemento(s, 'nessuno', false), false);
+});
+
+test('ogni 7 giorni di fila arriva un giorno di riposo, uno alla volta', () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g < 6; g++) { s.albero.sete = 1; annaffia(s, dopo(g)); }
+  assert.equal(vista(s).riposi, 0);
+  s.albero.sete = 1; annaffia(s, dopo(6));
+  assert.equal(vista(s).riposi, 1);
+  assert.equal(vista(s).riposoNuovo, true);
+  for (let g = 7; g < 14; g++) { s.albero.sete = 1; annaffia(s, dopo(g)); }
+  assert.equal(vista(s).riposi, 1, 'se ne tiene uno solo');
+});
+
+test('il giorno di riposo copre un giorno saltato: la serie non si dimezza', () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g < 7; g++) { s.albero.sete = 1; annaffia(s, dopo(g)); }
+  avanza(s, dopo(8)); // salta il giorno 7
+  assert.equal(s.serie.giorni, 7);
+  assert.equal(s.serie.riposi, 0);
+  assert.equal(leggiAvvisoRiposo(s), true);
+  assert.equal(leggiAvvisoRiposo(s), false, 'l\'avviso arriva una volta sola');
+  s.albero.sete = 1; annaffia(s, dopo(8));
+  assert.equal(s.serie.giorni, 8, 'la serie continua');
+  // senza più riposi, un altro giorno saltato la dimezza
+  avanza(s, dopo(10));
+  assert.equal(s.serie.giorni, 4);
+});
+
+test('il giorno di riposo non copre due giorni saltati', () => {
+  const s = nuovoStato(T0);
+  for (let g = 0; g < 7; g++) { s.albero.sete = 1; annaffia(s, dopo(g)); }
+  avanza(s, dopo(9));
+  assert.equal(s.serie.giorni, 3);
+  assert.equal(s.serie.riposi, 1, 'resta per la prossima volta');
+});
+
+test('la sfida della settimana: si sceglie a ogni stagione e dà Semi quando è completa', () => {
+  const s = nuovoStato(T0);
+  avanza(s, T0);
+  const v = vista(s).settimana;
+  assert.equal(v.tipo, 'cure', 'la prima primavera: curare il giardino');
+  assert.equal(v.obiettivo, 5);
+  assert.equal(v.testo, 'Cura il giardino 5 giorni');
+  let semi = s.semi;
+  for (let g = 0; g < 4; g++) { s.albero.sete = 1; annaffia(s, dopo(g)); }
+  assert.equal(vista(s).settimana.fatti, 4);
+  assert.equal(vista(s).settimana.fatta, false);
+  semi = s.semi;
+  s.albero.sete = 1; const r = annaffia(s, dopo(4));
+  assert.equal(vista(s).settimana.fatta, true);
+  assert.equal(s.semi, semi + r.semi + r.bonusSerie + SEMI.settimana, 'i Semi della settimana, oltre a quelli del giorno');
+  // in estate la sfida cambia
+  avanza(s, dopo(7.2));
+  assert.equal(vista(s).settimana.tipo, 'pota');
+  assert.equal(vista(s).settimana.fatti, 0);
+});
+
+test('la sfida della settimana chiede solo quello che si fa in tempo', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(5)); // primo accesso al sesto giorno di primavera: restano 2 giorni
+  assert.equal(vista(s).settimana.obiettivo, 2);
+  assert.equal(vista(s).settimana.giorniRimasti, 2);
+});
+
+test('la sfida della settimana delle foto vuole piante diverse', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(7 + 28 + 28)); // estate del terzo anno: le foto
+  assert.equal(vista(s).settimana.tipo, 'foto');
+  fotografa(s, dopo(63.1), 'acero'); fotografa(s, dopo(63.2), 'acero');
+  assert.equal(vista(s).settimana.fatti, 1);
+  fotografa(s, dopo(63.3), 'pino'); fotografa(s, dopo(63.4), 'ginepro');
+  assert.equal(vista(s).settimana.fatta, true);
+});
+
+test('d\'inverno, se una pianta va rinvasata e c\'è il terriccio, la sfida della settimana è il rinvaso', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(21.1)); // inverno del primo anno: l'acero va rinvasato ogni anno
+  assert.equal(vista(s).settimana.tipo, 'rinvaso');
+  const t = dopo(24.1); // quarto giorno d'inverno: la finestra è aperta
+  assert.equal(rinvasa(s, t, 'acero', 'akadama').esito, 'ok');
+  assert.equal(vista(s).settimana.fatta, true);
+  // senza terriccio, la sfida è un'altra
+  const senza = nuovoStato(T0); senza.inventario.akadama = 0;
+  avanza(senza, dopo(21.1));
+  assert.equal(vista(senza).settimana.tipo, 'filo');
+});
+
+test('un salvataggio della versione 22 riceve riposi, sfida della settimana e attrezzi', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 22; delete vecchio.settimana; delete vecchio.attrezzi; delete vecchio.serie.riposi;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(s.serie.riposi, 0);
+  assert.deepEqual(s.attrezzi, []);
+  avanza(s, T0);
+  assert.ok(vista(s).settimana);
+});
+
+test('gli attrezzi si comprano una volta sola', () => {
+  const s = nuovoStato(T0);
+  assert.equal(compraAttrezzo(s, 'forbici').esito, 'pochi');
+  s.semi = 1000;
+  assert.equal(compraAttrezzo(s, 'forbici').esito, 'ok');
+  assert.equal(s.semi, 750);
+  assert.equal(compraAttrezzo(s, 'forbici').esito, 'gia');
+  assert.equal(compraAttrezzo(s, 'martello').esito, 'nessuno');
+  assert.equal(vista(s).attrezzi.find(a => a.id === 'forbici').tuo, true);
+});
+
+test('il bastoncino di bambù dice fra quanto annaffiare ogni pianta', () => {
+  const s = nuovoStato(T0);
+  assert.equal(vista(s).bastoncino, null, 'senza bastoncino niente');
+  s.semi = 1000; compraAttrezzo(s, 'bastoncino');
+  annaffia(s, T0);
+  const b = vista(s).bastoncino;
+  // l'acero in primavera asciuga 0.8 al giorno: dalla sete 0 alla soglia 0.5 ci vogliono 0.625 giorni
+  assert.ok(Math.abs(b.acero - 0.625) < 1e-6);
+  assert.ok(b.pino > b.acero, 'il pino beve più piano');
+  s.albero.sete = 1;
+  assert.equal(vista(s).bastoncino.acero, 0);
+});
+
+test('con le forbici concave le gemme crescono più in fretta', () => {
+  const prova = (forbici) => {
+    const s = nuovoStato(T0); s.semi = 1000;
+    if (forbici) compraAttrezzo(s, 'forbici');
+    annaffia(s, T0);
+    pota(s, T0 + ORA, s.albero.germogli.find(g => g.lunghezza >= 0.25).id);
+    avanza(s, T0 + 12 * ORA);
+    return s.albero.gemme[0].crescita;
+  };
+  assert.ok(prova(true) > prova(false) * 1.3);
+});
+
+test('col tronchesino il filo tolto un po\' in ritardo vale ancora il premio', () => {
+  const prova = (tronchesino) => {
+    const s = nuovoStato(T0); s.semi = 1000;
+    if (tronchesino) compraAttrezzo(s, 'tronchesino');
+    mettiFilo(s, T0, 0, -1);
+    s.albero.rami[0].filo.presa = 1; s.albero.rami[0].segno = 0.1;
+    return togliFilo(s, T0 + ORA, 0).semi;
+  };
+  assert.equal(prova(false), 0);
+  assert.equal(prova(true), SEMI.filo);
 });

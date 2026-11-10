@@ -292,12 +292,13 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 - **Settimanali:** per esempio rinvasare nella stagione giusta, eliminare i parassiti in tempo.
 - **Di lungo periodo:** completare uno stile.
 - La potatura **non completa sfide da sola**: è lo strumento per raggiungere lo stile. Unica eccezione, la sfida del giorno "Pota un germoglio": è una cimatura leggera dei germogli nuovi, che non fa male alla pianta.
+- **Sfida della settimana nell'app (sempre fattibile):** la settimana è una stagione di gioco. La prima volta che si apre il gioco in una stagione si sceglie un obiettivo da raggiungere a poco a poco, tra quelli possibili in quella stagione: primavera "Cura il giardino N giorni", "Cima N candele del pino" o "Pota N germogli dell'acero"; estate potatura dell'acero, "Pizzica N punte del ginepro" o "Fotografa N piante per il diario" (piante diverse); autunno "Togli N ciuffi di aghi vecchi", foto o giorni di cura; inverno "Metti il filo a N rami" o giorni di cura, e al loro posto "Rinvasa una pianta in tempo" se una pianta va rinvasata e c'è un terriccio adatto nell'inventario. Il primo anno arrivano le più semplici, poi si alternano. L'obiettivo tiene conto dei giorni che restano nella stagione (chi arriva il sesto giorno ha un obiettivo più piccolo). "Elimina i parassiti in tempo" resta fuori: gli afidi arrivano a caso e la sfida potrebbe essere impossibile. Il banner della settimana sta al posto di quello del giorno quando quello è fatto (così il giardino resta libero), con la barra azzurra e i giorni che restano; completata dà 30 Semi, che partono dal banner.
 - **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", e in autunno, a giorni alterni e se non ha già il concime, "Concima l'acero": le azioni tipiche della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 5 Semi.
 
 ### 7.2 Serie di giorni consecutivi
 
 - Conta un'azione di cura al giorno. Nell'MVP vale l'acqua oppure la potatura; per questo ogni giorno spunta almeno un germoglio da cimare, anche quando l'acqua non serve.
-- **Giorno di riposo:** guadagnabile, protegge la serie una volta a settimana.
+- **Giorno di riposo:** guadagnabile, protegge la serie una volta a settimana. Nell'app: ogni 7 giorni di fila se ne guadagna uno (insieme ai 50 Semi), e se ne tiene uno solo alla volta. Se si salta un giorno, il giorno di riposo lo copre da solo e la serie resta com'è (non cresce per quel giorno); se si saltano due giorni o più non basta, la serie si dimezza e il riposo resta per la volta dopo. Quando c'è, una piccola luna sta accanto alla serie (saltella il giorno in cui arriva); toccando la serie un messaggio spiega come funziona. Quando il riposo ha coperto un giorno, all'apertura lo si dice con calma: "Ieri il giardino ha riposato".
 - Se la serie si interrompe **si dimezza** invece di azzerarsi (40 diventa 20).
 
 ### 7.3 Moneta: i Semi
@@ -307,6 +308,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Come si guadagna | Semi |
 |---|---|
 | Sfida del giorno (acqua, potatura o filo) | 5 |
+| Sfida della settimana | 30 |
 | Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
@@ -322,6 +324,14 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Nuova specie (azalea Satsuki: 400) | 400–1.000 |
 | Ampliamento del giardino | 600 → 1.200 → 2.500 (prezzo crescente) |
 | Attrezzi (es. forbici concave per tagli più puliti) | 150–400 |
+
+**Attrezzi nell'app** (negozio, scheda Cura, categoria Attrezzi): si comprano una volta e servono per sempre. Aiutano a curare meglio e a capire la pianta, non fanno saltare l'attesa.
+
+| Attrezzo | Semi | Cosa fa |
+|---|---|---|
+| Bastoncino di bambù | 150 | Infilato nel terriccio resta scuro finché è umido (il trucco vero dei bonsaisti): sull'etichetta di ogni pianta che sta bene, al posto di "Sta bene", compare fra quanto annaffiarla ("Acqua fra 15 ore", "Acqua domani", "Acqua fra 3 giorni"), con il tempo sereno. Aiuta a non dare troppa acqua. |
+| Tronchesino per filo | 200 | Il filo si taglia a pezzetti invece di svolgerlo: i segni sulla corteccia spariscono il doppio più in fretta, e il filo tolto con un po' di ritardo (segno leggero) vale ancora il premio. |
+| Forbici concave | 250 | Taglio pulito che si chiude presto: dopo la potatura le gemme dell'acero crescono il 40% più in fretta. |
 
 **Regola di bilanciamento:** un giocatore costante deve potersi permettere una cosa piccola ogni 2–3 giorni e una grande ogni 3–4 settimane.
 
@@ -543,7 +553,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

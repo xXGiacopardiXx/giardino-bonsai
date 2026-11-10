@@ -55,13 +55,19 @@
       </div>
       <div class="pill streak">
         <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 0-2-1-5 0-7Z" fill="#ff8a2a" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13c1.2 1.4 2 2.4 2 3.4a2 2 0 0 1-4 0c0-1 .8-2 2-3.4Z" fill="#ffe07a"/></svg></span>
-        <b id="serie">0</b><span>giorni di fila</span>
+        <b id="serie">0</b><span>giorni di fila</span><span class="riposo" id="riposo" role="img" aria-label="Un giorno di riposo pronto" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 3.5a8.5 8.5 0 1 0 5 13.4A7 7 0 0 1 15.5 3.5Z" fill="#ffe07a" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 7.5h3.5L15 11.5h3.5" stroke="#3b2716" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
       <div class="quest" id="quest">
         <span class="qt">Sfida del giorno</span>
         <span class="qd">Annaffia l'acero</span>
         <span class="qr">+5<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg></span>
         <span class="qbar"><i id="qfill"></i><span id="qtxt">0/1</span></span>
+      </div>
+      <div class="quest settimana" id="quest-sett" style="display:none">
+        <span class="qt">Sfida della settimana</span>
+        <span class="qd" id="qs-testo"></span>
+        <span class="qr"><span id="qs-premio">+30</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg></span>
+        <span class="qbar"><i id="qs-fill"></i><span id="qs-txt">0/1</span></span>
       </div>
     </div>
 

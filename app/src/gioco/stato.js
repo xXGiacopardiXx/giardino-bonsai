@@ -2,13 +2,51 @@
 // Tutte le funzioni ricevono l'ora come parametro, così si possono provare con i test
 // e con il cursore dei giorni senza aspettare davvero.
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
-import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra } from './tempo.js';
+import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 22;
+export const VERSIONE = 23;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5 };
+export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 30 };
+
+// Giorno di riposo (sezione 7.2): ogni 7 giorni di fila se ne guadagna uno (se ne tiene uno solo alla
+// volta, così protegge la serie al massimo una volta a settimana). Se si salta un giorno, il giorno di
+// riposo lo copre da solo: la serie non si dimezza.
+export const RIPOSI_MASSIMI = 1;
+
+// Sfida della settimana (sezione 7.1): ogni stagione di gioco (una settimana vera) un obiettivo da
+// raggiungere a poco a poco, scelto tra quelli sempre possibili in quella stagione. Si sceglie la prima
+// volta che si apre il gioco nella stagione, con un obiettivo che si fa in tempo a raggiungere nei giorni
+// che restano. Completata, dà SEMI.settimana. n: l'obiettivo (singolare e plurale per i testi).
+const SFIDE_SETTIMANA = {
+  cure: (n) => n === 1 ? 'Cura il giardino anche oggi' : `Cura il giardino ${n} giorni`,
+  pota: (n) => n === 1 ? 'Pota un germoglio dell\'acero' : `Pota ${n} germogli dell'acero`,
+  candele: (n) => n === 1 ? 'Cima una candela del pino' : `Cima ${n} candele del pino`,
+  pizzica: (n) => n === 1 ? 'Pizzica una punta del ginepro' : `Pizzica ${n} punte del ginepro`,
+  aghi: (n) => n === 1 ? 'Togli un ciuffo di aghi vecchi' : `Togli ${n} ciuffi di aghi vecchi`,
+  filo: (n) => n === 1 ? 'Metti il filo a un ramo' : `Metti il filo a ${n} rami`,
+  foto: (n) => n === 1 ? 'Fotografa una pianta per il diario' : `Fotografa ${n} piante per il diario`,
+  rinvaso: (n) => n === 1 ? 'Rinvasa una pianta in tempo' : `Rinvasa ${n} piante in tempo`,
+};
+// per stagione, in ordine: il primo anno arrivano le più semplici, poi si alternano
+const SETTIMANE = [['cure', 'candele', 'pota'], ['pota', 'pizzica', 'foto'], ['aghi', 'foto', 'cure'], ['filo', 'cure']];
+// la potatura di ogni pianta, per la sfida della settimana
+const POTA_SETTIMANA = { acero: 'pota', pino: 'candele', ginepro: 'pizzica' };
+
+// Attrezzi (sezione 7.3): si comprano una volta e servono per sempre. Aiutano a curare meglio, non
+// fanno saltare l'attesa.
+export const ATTREZZI = [
+  { id: 'bastoncino', nome: 'Bastoncino di bambù', prezzo: 150, effetto: 'Dice quando annaffiare',
+    descrizione: 'Infilato nel terriccio, resta scuro finché è umido: sull\'etichetta di ogni pianta vedi fra quanto annaffiarla.' },
+  { id: 'tronchesino', nome: 'Tronchesino per filo', prezzo: 200, effetto: 'Filo senza segni',
+    descrizione: 'Taglia il filo a pezzetti invece di svolgerlo: i segni sulla corteccia spariscono il doppio più in fretta, e il filo tolto con un po\' di ritardo vale ancora il premio.' },
+  { id: 'forbici', nome: 'Forbici concave', prezzo: 250, effetto: 'Gemme più rapide',
+    descrizione: 'Lasciano un taglio pulito e un po\' incavato che si chiude presto: dopo la potatura le gemme dell\'acero crescono più in fretta.' },
+];
+const FORBICI_GEMME = 1.4;             // con le forbici concave le gemme crescono così più in fretta
+const TRONCHESINO_SEGNO = 0.2;         // col tronchesino il premio del filo vale anche con un segno leggero
+const ha = (stato, id) => (stato.attrezzi ?? []).includes(id);
 
 // Sfida del giorno (sezione 7.1): sempre fattibile. Si sceglie la prima volta che si apre il gioco
 // in quel giorno, guardando la pianta in quel momento: annaffiare se il terriccio è asciutto,
@@ -280,7 +318,12 @@ export function nuovoStato(ora) {
     semi: SEMI.iniziali,
     // si comincia con la pianta un po' assetata: la prima azione è annaffiarla
     albero: { sete: 1, ristagno: 0, avvisatoUmido: false, salute: 1, ultimaAcqua: null, ...alberoGiovane(), rinvaso: { primavera: 1, durata: DURATA_RINVASO.acero, stretto: false }, ...stileNuovo('acero') },
-    serie: { giorni: 0, ultimoGiorno: null, interrotta: false },
+    // serie di giorni con una cura; riposi: giorni di riposo pronti (sezione 7.2)
+    serie: { giorni: 0, ultimoGiorno: null, interrotta: false, riposi: 0 },
+    // sfida della settimana (la sceglie avanza)
+    settimana: null,
+    // attrezzi comprati
+    attrezzi: [],
     vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
     // decorazioni comprate e quelle messe nel giardino
     // decorazioni comprate, quelle messe nel giardino e dove sono ({ x, z, r })
@@ -391,6 +434,8 @@ export function migra(stato) {
   if (stato.versione === 20) { stato.piantePosti = {}; stato.versione = 21; }
   // elementi del giardino spostabili: per ora tutti al loro posto
   if (stato.versione === 21) { stato.elementiPosti = {}; stato.elementiTolti = []; stato.versione = 22; }
+  // giorni di riposo, sfida della settimana e attrezzi: niente ancora
+  if (stato.versione === 22) { stato.serie.riposi = 0; stato.settimana = null; stato.attrezzi = []; stato.versione = 23; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -470,8 +515,9 @@ export function avanza(stato, ora) {
     if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
-    for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA);
-    cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni);
+    for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA * (ha(stato, 'forbici') ? FORBICI_GEMME : 1));
+    const svanisce = ha(stato, 'tronchesino') ? 2 : 1;
+    cresceFilo(a.rami, v * PRESA_AL_GIORNO, giorni, svanisce);
     ricresce(a.tagli, v * RICRESCITA_CIUFFO);
     for (const p of altre(stato)) {
       const c = stato.conifere[p], vc = giorni * vigoreDi(c, stagione, t), k = RITMO_CHIOMA[p];
@@ -481,7 +527,7 @@ export function avanza(stato, ora) {
       else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t));
       if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
-      cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni);
+      cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni, svanisce);
       ricresce(c.tagli, vc * RICRESCITA_CIUFFO * k);
     }
     t += passo;
@@ -495,11 +541,20 @@ export function avanza(stato, ora) {
   const oggi = giornoLocale(ora);
   if (stato.oggi.giorno !== oggi) nuovoGiorno(stato, ora);
   if (!stato.oggi.sfida) scegliSfida(stato, ora);
-  // serie interrotta: si dimezza una volta sola invece di azzerarsi (sezione 7.2)
+  const cal = calendario(stato.inizio, ora);
+  if (stato.settimana?.chiave !== cal.anno + '-' + cal.stagione) scegliSettimana(stato, cal);
+  // serie interrotta: un giorno saltato lo copre il giorno di riposo, se c'è; altrimenti si dimezza
+  // una volta sola invece di azzerarsi (sezione 7.2)
   const s = stato.serie;
   if (s.ultimoGiorno && !s.interrotta && giorniTra(s.ultimoGiorno, oggi) > 1) {
-    s.giorni = Math.floor(s.giorni / 2);
-    s.interrotta = true;
+    if (giorniTra(s.ultimoGiorno, oggi) === 2 && (s.riposi ?? 0) > 0) {
+      s.riposi -= 1;
+      s.ultimoGiorno = giornoDopo(oggi, -1);
+      s.avvisoRiposo = true;
+    } else {
+      s.giorni = Math.floor(s.giorni / 2);
+      s.interrotta = true;
+    }
   }
   return stato;
 }
@@ -512,9 +567,9 @@ function ricresce(tagli, quanto) {
 
 // il ramo col filo prende la forma crescendo (presa: quanto ne prende in questo passo): come i germogli,
 // si ferma sotto stress; a forma presa il filo comincia a segnare la corteccia
-function cresceFilo(rami, presa, giorni) {
+function cresceFilo(rami, presa, giorni, svanisce = 1) {
   for (const r of rami) {
-    if (!r.filo) { r.segno = Math.max(0, r.segno - giorni * SEGNO_SVANISCE); continue; }
+    if (!r.filo) { r.segno = Math.max(0, r.segno - giorni * SEGNO_SVANISCE * svanisce); continue; }
     if (r.filo.presa < 1) r.filo.presa = Math.min(1, r.filo.presa + presa);
     else {
       r.filo.oltre += giorni;
@@ -610,13 +665,58 @@ function completaSfida(stato, tipo, pianta = 'acero') {
   return SEMI.sfida;
 }
 
-// Un'azione di cura conta per la serie una volta al giorno. Restituisce i Semi del bonus.
+// Un'azione di cura conta per la serie una volta al giorno. Restituisce i Semi del bonus. Ogni 7 giorni di fila arriva un giorno di riposo (se non ce n'è già uno).
 function registraCura(stato, ora) {
   const s = stato.serie, oggi = giornoLocale(ora);
   if (s.ultimoGiorno === oggi) return 0;
   s.giorni += 1; s.ultimoGiorno = oggi; s.interrotta = false;
-  if (s.giorni % 7 === 0) { stato.semi += SEMI.serie7; return SEMI.serie7; }
+  contaSettimana(stato, 'cure');
+  if (s.giorni % 7 === 0) {
+    if ((s.riposi ?? 0) < RIPOSI_MASSIMI) { s.riposi = (s.riposi ?? 0) + 1; s.riposoGuadagnato = oggi; }
+    stato.semi += SEMI.serie7; return SEMI.serie7;
+  }
   return 0;
+}
+
+// Il giorno di riposo ha coperto un giorno saltato: true una volta sola, per dirlo al giocatore
+export function leggiAvvisoRiposo(stato) {
+  const si = !!stato.serie.avvisoRiposo;
+  delete stato.serie.avvisoRiposo;
+  return si;
+}
+
+// Sceglie la sfida della settimana per la stagione cal (vedi SFIDE_SETTIMANA)
+function scegliSettimana(stato, cal) {
+  const { anno, stagione, giornoStagione } = cal, rimasti = 8 - giornoStagione;
+  const chiave = anno + '-' + stagione, nuova = (tipo, obiettivo) => ({ chiave, tipo, obiettivo: Math.max(1, obiettivo), fatti: 0, fatta: false, piante: [] });
+  // d'inverno, se una pianta va rinvasata e c'è un terriccio adatto, la sfida è il rinvaso
+  if (stagione === 3) {
+    const finestra = { anno, stagione: 3, giornoStagione: 4 };
+    const daRinvasare = presenti(stato).some(p => rinvasoDovuto(curaDi(stato, p), finestra)
+      && PRODOTTI.some(t => t.tipo === 'terriccio' && t.piante.includes(p) && stato.inventario[t.id] > 0));
+    if (daRinvasare) { stato.settimana = nuova('rinvaso', 1); return; }
+  }
+  const scelte = SETTIMANE[stagione], tipo = scelte[(anno - 1) % scelte.length];
+  const obiettivo = {
+    cure: Math.min(5, rimasti), pota: stagione === 0 ? Math.min(8, rimasti * 2) : Math.min(5, rimasti),
+    candele: Math.min(6, rimasti * 2), pizzica: Math.min(4, rimasti), aghi: Math.min(4, rimasti),
+    filo: 3, foto: Math.min(3, presenti(stato).length),
+  }[tipo];
+  stato.settimana = nuova(tipo, obiettivo);
+}
+
+// Un'azione conta per la sfida della settimana se è del tipo giusto (le foto: una per pianta).
+// Completata, i Semi vanno subito nel conto: non sono nei risultati delle azioni, perché l'interfaccia
+// li fa arrivare dal banner della sfida. Restituisce i Semi guadagnati.
+function contaSettimana(stato, tipo, pianta) {
+  const s = stato.settimana;
+  if (!s || s.fatta || s.tipo !== tipo) return 0;
+  if (tipo === 'foto') { if (s.piante.includes(pianta)) return 0; s.piante.push(pianta); }
+  s.fatti += 1;
+  if (s.fatti < s.obiettivo) return 0;
+  s.fatta = true;
+  stato.semi += SEMI.settimana;
+  return SEMI.settimana;
 }
 
 // esito: 'ok'; 'umido' (terriccio ancora bagnato: la prima volta per ogni pianta non si annaffia e si avvisa,
@@ -662,6 +762,7 @@ export function pota(stato, ora, id, pianta = 'acero') {
   const gemme = pianta !== 'acero' ? 0 : Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
   for (let k = 0; k < gemme; k++) a.gemme.push({ punta: g.punta, crescita: 0 });
   const semi = completaSfida(stato, 'pota', pianta);
+  contaSettimana(stato, POTA_SETTIMANA[pianta], pianta);
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', gemme, semi, bonusSerie };
 }
@@ -676,6 +777,7 @@ export function mettiFilo(stato, ora, ramo, piega, pianta = 'acero') {
   r.filo = { piega: Math.max(-1, Math.min(1, piega)), presa: 0, oltre: 0 };
   // la sfida del filo vale su qualunque pianta
   const semi = completaSfida(stato, 'filo', stato.oggi.sfida?.pianta ?? 'acero');
+  contaSettimana(stato, 'filo');
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
@@ -689,7 +791,8 @@ export function togliFilo(stato, ora, ramo, pianta = 'acero') {
   const { piega, presa } = r.filo;
   r.piega += (piega - r.piega) * presa;
   r.filo = null;
-  const semi = presa >= 1 && r.segno < 0.05 ? SEMI.filo : 0;
+  // col tronchesino il filo si taglia senza strappare: il premio vale anche con un segno leggero
+  const semi = presa >= 1 && r.segno < (ha(stato, 'tronchesino') ? TRONCHESINO_SEGNO : 0.05) ? SEMI.filo : 0;
   stato.semi += semi;
   return { esito: 'ok', semi, presa, bonusSerie: registraCura(stato, ora) };
 }
@@ -702,6 +805,7 @@ export function togliAghi(stato, ora, id, pianta = 'pino') {
   if (i < 0) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
   c.vecchi.splice(i, 1);
   const semi = completaSfida(stato, 'pota', pianta);
+  if (pianta === 'pino') contaSettimana(stato, 'aghi');
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
@@ -723,8 +827,9 @@ export function rinvasa(stato, ora, pianta, id) {
   c.rinvaso = { primavera: finestra, durata: p.durata[pianta], stretto: false };
   // terriccio nuovo e ben bagnato
   c.sete = 0;
+  stato.semi += SEMI.rinvaso;
   const semi = SEMI.rinvaso + completaSfida(stato, 'rinvaso', pianta);
-  stato.semi += semi;
+  contaSettimana(stato, 'rinvaso', pianta);
   return { esito: 'ok', ...vuoto, semi, anni: p.durata[pianta], bonusSerie: registraCura(stato, ora) };
 }
 // giorni che mancano alla prossima finestra di rinvaso (4° giorno d'inverno)
@@ -774,6 +879,7 @@ export function fotografa(stato, ora, pianta) {
   const cal = calendario(stato.inizio, ora), chiave = cal.anno + '-' + cal.stagione;
   const ricordo = stato.diario[pianta] !== chiave;
   if (ricordo) { stato.diario[pianta] = chiave; stato.semi += SEMI.foto; }
+  contaSettimana(stato, 'foto', pianta);
   return { esito: 'ok', ...cal, nomeStagione: STAGIONI[cal.stagione], ricordo, semi: ricordo ? SEMI.foto : 0 };
 }
 
@@ -821,6 +927,18 @@ export function usaProdotto(stato, ora, pianta, id) {
   stato.inventario[id] -= 1;
   stato.semi += semi;
   return { esito: 'ok', semi, inTempo, presto, tolti, bonusSerie: registraCura(stato, ora) };
+}
+
+// Compra un attrezzo (una volta sola, dura per sempre). esito: 'ok', 'pochi', 'gia' o 'nessuno'
+export function compraAttrezzo(stato, id) {
+  const a = ATTREZZI.find(x => x.id === id);
+  if (!a) return { esito: 'nessuno', mancano: 0 };
+  stato.attrezzi ??= [];
+  if (stato.attrezzi.includes(id)) return { esito: 'gia', mancano: 0 };
+  if (stato.semi < a.prezzo) return { esito: 'pochi', mancano: a.prezzo - stato.semi };
+  stato.semi -= a.prezzo;
+  stato.attrezzi.push(id);
+  return { esito: 'ok', mancano: 0 };
 }
 
 // Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
@@ -1054,6 +1172,13 @@ function vistaRistagno(r, asciugaAlGiorno) {
     giorniAsciutto: r > 0 ? Math.max(1, Math.ceil(r / asciugaAlGiorno - 1e-9)) : 0,
   };
 }
+// fra quanti giorni (con decimali) il terriccio di una pianta sarà da annaffiare, se il tempo resta sereno:
+// prima scola l'acqua in più, poi la terra si asciuga
+function giorniAllAcqua(c, p, stagione) {
+  if (c.sete >= SETE_PER_ANNAFFIARE) return 0;
+  const f = FATTORE_SETE[stagione] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
+  return (c.ristagno ?? 0) / (f * scoloSpecie(p)) + (SETE_PER_ANNAFFIARE - c.sete) / (f * SETE_SPECIE[p]);
+}
 // quanta acqua in più scola dal vaso di una pianta in un giorno, adesso
 const asciugaAlGiorno = (c, p, stagione) => FATTORE_SETE[stagione] * scoloSpecie(p) * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
 // giorni (interi, per eccesso) che mancano all'inizio dell'anno di gioco indicato
@@ -1104,6 +1229,17 @@ export function vista(stato) {
     // catalogo delle decorazioni: comprate (tua) e messe nel giardino (messa)
     decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id), dove: stato.decorazioni.posti[d.id] ? { ...stato.decorazioni.posti[d.id] } : null })),
     serie: stato.serie.giorni,
+    // giorni di riposo pronti, e se oggi ne è arrivato uno nuovo
+    riposi: stato.serie.riposi ?? 0,
+    riposoNuovo: stato.serie.riposoGuadagnato === stato.oggi.giorno,
+    // sfida della settimana: tipo, obiettivo, quanti fatti, testo, premio e giorni che restano
+    settimana: stato.settimana ? { tipo: stato.settimana.tipo, obiettivo: stato.settimana.obiettivo, fatti: stato.settimana.fatti,
+      fatta: stato.settimana.fatta, testo: SFIDE_SETTIMANA[stato.settimana.tipo](stato.settimana.obiettivo), premio: SEMI.settimana,
+      giorniRimasti: 8 - cal.giornoStagione } : null,
+    // attrezzi del negozio, con quelli già tuoi
+    attrezzi: ATTREZZI.map(x => ({ ...x, tuo: ha(stato, x.id) })),
+    // col bastoncino di bambù: fra quanti giorni (con decimali) ogni pianta vorrà acqua (0 = adesso)
+    bastoncino: ha(stato, 'bastoncino') ? Object.fromEntries(presenti(stato).map(p => [p, giorniAllAcqua(curaDi(stato, p), p, cal.stagione)])) : null,
     sete: a.sete,
     salute: a.salute,
     // riserva d'acqua nel terriccio: 1 appena annaffiata, 0 dopo una settimana senz'acqua (stress forte)
