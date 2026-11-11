@@ -8,7 +8,7 @@ import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './st
 export const VERSIONE = 24;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 5, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 30 };
+export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50 };
 
 // Giorno di riposo (sezione 7.2): ogni 7 giorni di fila se ne guadagna uno (se ne tiene uno solo alla
 // volta, così protegge la serie al massimo una volta a settimana). Se si salta un giorno, il giorno di
@@ -50,8 +50,8 @@ export const ATTREZZI = [
 export const RAGGIO_ISOLA = 5.3;
 export const AMPLIAMENTI = [
   { prezzo: 600, crescita: .6 },
-  { prezzo: 1200, crescita: .6 },
-  { prezzo: 2500, crescita: .6 },
+  { prezzo: 1000, crescita: .6 },
+  { prezzo: 1600, crescita: .6 },
 ];
 // di quanto è cresciuto il raggio dell'isola con n ampliamenti
 const crescitaIsola = (n) => AMPLIAMENTI.slice(0, n).reduce((t, a) => t + a.crescita, 0);
@@ -1331,7 +1331,7 @@ export function vista(stato) {
     curatoOggi: stato.serie.ultimoGiorno === stato.oggi.giorno,
     annaffiatoOggi: stato.oggi.acqua,
     // sfida del giorno: tipo ('acqua', 'pota', 'filo'), testo da mostrare e se è già fatta
-    sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: testoSfida(stato.oggi.sfida) } : null,
+    sfida: stato.oggi.sfida ? { ...stato.oggi.sfida, testo: testoSfida(stato.oggi.sfida), premio: SEMI.sfida } : null,
     // pino e ginepro: la loro acqua (stessi campi dell'acero qui sopra)
     // pino e ginepro: acqua (stessi campi dell'acero), potatura e rami da legare
     conifere: Object.fromEntries(altre(stato).map(p => {

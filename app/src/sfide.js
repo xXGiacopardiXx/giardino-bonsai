@@ -47,7 +47,7 @@ export function creaSfide() {
       ultima = v;
       if (el.hidden) return;
       const s = v.sfida, w = v.settimana, parti = [];
-      if (s) parti.push(scheda({ tipo: 'giorno', titolo: 'Sfida del giorno', testo: s.testo, premio: 5, fatti: s.fatta ? 1 : 0, obiettivo: 1, fatta: s.fatta,
+      if (s) parti.push(scheda({ tipo: 'giorno', titolo: 'Sfida del giorno', testo: s.testo, premio: s.premio, fatti: s.fatta ? 1 : 0, obiettivo: 1, fatta: s.fatta,
         nota: s.fatta ? 'Domani ne arriva una nuova.' : 'Una cosa sola, sempre fattibile oggi.' }));
       if (w) parti.push(scheda({ tipo: 'settimana', titolo: 'Sfida della settimana', testo: w.testo, premio: w.premio, fatti: w.fatti, obiettivo: w.obiettivo, fatta: w.fatta,
         nota: w.fatta ? 'Con la stagione nuova ne arriva un\'altra.' : w.giorniRimasti === 1 ? 'Ultimo giorno di questa stagione.' : `Ancora ${w.giorniRimasti} giorni, fino alla fine della stagione.` }));

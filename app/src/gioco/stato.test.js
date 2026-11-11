@@ -1367,3 +1367,13 @@ test('un salvataggio della versione 23 riceve il giardino com era', () => {
   assert.equal(s.versione, VERSIONE);
   assert.equal(vista(s).ampliamenti, 0);
 });
+
+test('bilanciamento: un giocatore costante compra una cosa piccola ogni 2-3 giorni e una grande ogni 3-4 settimane', async () => {
+  const { simula } = await import('./simula.js');
+  const r = simula(56, T0);
+  assert.equal(r.stato.serie.giorni, 56, 'nella simulazione non salta mai un giorno');
+  // una cosa piccola (vaso o decorazione da 50-120 Semi) ogni 2-4 giorni
+  assert.ok(r.alGiorno * 3 >= 80 && r.alGiorno * 2 <= 90, `Semi al giorno: ${r.alGiorno}`);
+  // una cosa grande (azalea 400, primo ampliamento 600) entro 3-4 settimane
+  assert.ok(r.alGiorno * 21 >= AMPLIAMENTI[0].prezzo, 'il primo ampliamento in tre settimane');
+});

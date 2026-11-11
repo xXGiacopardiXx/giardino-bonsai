@@ -107,6 +107,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
     if (!s) bannerGiorno.nascondi(null);
     else {
       questEl.querySelector('.qd').textContent = s.testo;
+      $('q-premio').textContent = '+' + s.premio;
       $('qfill').style.width = s.fatta ? '100%' : '0'; $('qtxt').textContent = s.fatta ? '1/1' : '0/1';
       if (!s.fatta) bannerGiorno.mostra(kg);
       else if (primoAggiornamento) bannerGiorno.nascondi(kg + ':fatta');

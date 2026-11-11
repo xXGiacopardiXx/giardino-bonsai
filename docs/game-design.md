@@ -292,9 +292,9 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 - **Settimanali:** per esempio rinvasare nella stagione giusta, eliminare i parassiti in tempo.
 - **Di lungo periodo:** completare uno stile.
 - La potatura **non completa sfide da sola**: è lo strumento per raggiungere lo stile. Unica eccezione, la sfida del giorno "Pota un germoglio": è una cimatura leggera dei germogli nuovi, che non fa male alla pianta.
-- **Sfida della settimana nell'app (sempre fattibile):** la settimana è una stagione di gioco. La prima volta che si apre il gioco in una stagione si sceglie un obiettivo da raggiungere a poco a poco, tra quelli possibili in quella stagione: primavera "Cura il giardino N giorni", "Cima N candele del pino" o "Pota N germogli dell'acero"; estate potatura dell'acero, "Pizzica N punte del ginepro" o "Fotografa N piante per il diario" (piante diverse); autunno "Togli N ciuffi di aghi vecchi", foto o giorni di cura; inverno "Metti il filo a N rami" o giorni di cura, e al loro posto "Rinvasa una pianta in tempo" se una pianta va rinvasata e c'è un terriccio adatto nell'inventario. Il primo anno arrivano le più semplici, poi si alternano. L'obiettivo tiene conto dei giorni che restano nella stagione (chi arriva il sesto giorno ha un obiettivo più piccolo). "Elimina i parassiti in tempo" resta fuori: gli afidi arrivano a caso e la sfida potrebbe essere impossibile. Completata dà 30 Semi, che partono dal banner.
+- **Sfida della settimana nell'app (sempre fattibile):** la settimana è una stagione di gioco. La prima volta che si apre il gioco in una stagione si sceglie un obiettivo da raggiungere a poco a poco, tra quelli possibili in quella stagione: primavera "Cura il giardino N giorni", "Cima N candele del pino" o "Pota N germogli dell'acero"; estate potatura dell'acero, "Pizzica N punte del ginepro" o "Fotografa N piante per il diario" (piante diverse); autunno "Togli N ciuffi di aghi vecchi", foto o giorni di cura; inverno "Metti il filo a N rami" o giorni di cura, e al loro posto "Rinvasa una pianta in tempo" se una pianta va rinvasata e c'è un terriccio adatto nell'inventario. Il primo anno arrivano le più semplici, poi si alternano. L'obiettivo tiene conto dei giorni che restano nella stagione (chi arriva il sesto giorno ha un obiettivo più piccolo). "Elimina i parassiti in tempo" resta fuori: gli afidi arrivano a caso e la sfida potrebbe essere impossibile. Completata dà 50 Semi, che partono dal banner.
 - **Banner e pulsante delle sfide:** i banner (del giorno e della settimana, con la barra azzurra e i giorni che restano) compaiono solo per qualche secondo (5) quando c'è qualcosa di nuovo: all'apertura, una sfida nuova, un passo avanti, una sfida completata; poi escono da soli, così non ingombrano il giardino. Le sfide si rivedono quando si vuole col pulsante con la bandierina, sotto quello del maestro (o toccando un banner): un pannello "Le sfide" con la sfida del giorno, quella della settimana (quanto manca e fino a quando) e la serie (quanti giorni al prossimo bonus e al giorno di riposo, o se il riposo è già pronto). Un pallino rosso sul pulsante dice che la sfida del giorno è ancora da fare.
-- **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", e in autunno, a giorni alterni e se non ha già il concime, "Concima l'acero": le azioni tipiche della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 5 Semi.
+- **Sfida del giorno nell'app (sempre fattibile):** si sceglie la prima volta che si apre il gioco in quel giorno, guardando la pianta in quel momento: "Annaffia l'acero" se il terriccio è asciutto; altrimenti "Pota un germoglio" (ogni giorno ne spunta almeno uno); in inverno, a giorni alterni, "Metti il filo a un ramo", e in autunno, a giorni alterni e se non ha già il concime, "Concima l'acero": le azioni tipiche della stagione (sezione 4.1). Così il giocatore non trova mai una sfida impossibile, per esempio "Annaffia" con il terriccio ancora umido. Completata, dà 10 Semi.
 
 ### 7.2 Serie di giorni consecutivi
 
@@ -308,8 +308,8 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 | Come si guadagna | Semi |
 |---|---|
-| Sfida del giorno (acqua, potatura o filo) | 5 |
-| Sfida della settimana | 30 |
+| Sfida del giorno (acqua, potatura o filo) | 10 |
+| Sfida della settimana | 50 |
 | Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
@@ -323,7 +323,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Vaso estetico | 80–300 |
 | Decorazione del giardino | 50–200 |
 | Nuova specie (azalea Satsuki: 400) | 400–1.000 |
-| Ampliamento del giardino (sezione 8.5) | 600 → 1.200 → 2.500 (prezzo crescente) |
+| Ampliamento del giardino (sezione 8.5) | 600 → 1.000 → 1.600 (prezzo crescente) |
 | Attrezzi (bastoncino di bambù, tronchesino per filo, forbici concave) | 150–250 |
 
 **Attrezzi nell'app** (negozio, scheda Cura, categoria Attrezzi): si comprano una volta e servono per sempre. Aiutano a curare meglio e a capire la pianta, non fanno saltare l'attesa.
@@ -335,6 +335,8 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Forbici concave | 250 | Taglio pulito che si chiude presto: dopo la potatura le gemme dell'acero crescono il 40% più in fretta. |
 
 **Regola di bilanciamento:** un giocatore costante deve potersi permettere una cosa piccola ogni 2–3 giorni e una grande ogni 3–4 settimane.
+
+**Verifica (11/11/2026):** una simulazione del motore (`app/src/gioco/simula.js`, controllata da un test) fa giocare per 8 settimane un giocatore costante: ogni giorno la sfida del giorno, l'acqua a chi ha sete, gli afidi tolti, il filo tolto al momento giusto, una foto per pianta a stagione; compra solo i prodotti che gli servono. Con i premi di prima (sfida del giorno 5, della settimana 30) guadagnava circa 22 Semi al giorno: un vaso o una decorazione ogni 5–7 giorni, troppo pochi. Ora la sfida del giorno vale 10 e quella della settimana 50: circa 31 Semi al giorno, cioè una cosa piccola (50–120) ogni 2–4 giorni, l'azalea in meno di due settimane e il primo ampliamento in tre. Gli ampliamenti successivi costano 1.000 e 1.600 (prima 1.200 e 2.500): obiettivi lunghi, da uno e due mesi, non da tre.
 
 ### 7.4 I consigli del maestro
 
@@ -417,7 +419,7 @@ Oltre a piante e decorazioni, si sposta tutto quello che c'è nel giardino fin d
 - Le posizioni si salvano nella partita (`elementiPosti`); un elemento mai spostato sta al suo posto iniziale.
 ### 8.5 Ampliamento del giardino
 
-- **Com'è:** il prato dell'isola si allarga tutto intorno, come in un diorama che cresce: niente isolette staccate né schermate nuove, il giardino resta uno solo. Tre ampliamenti a prezzo crescente, nella scheda Giardino del negozio (per primo, "Prato più grande, 1 di 3"): 600, 1.200 e 2.500 Semi.
+- **Com'è:** il prato dell'isola si allarga tutto intorno, come in un diorama che cresce: niente isolette staccate né schermate nuove, il giardino resta uno solo. Tre ampliamenti a prezzo crescente, nella scheda Giardino del negozio (per primo, "Prato più grande, 1 di 3"): 600, 1.000 e 1.600 Semi.
 - **Quanto:** a ogni passo il raggio dell'isola cresce di 0,6 (da 5,3 a 5,9, 6,5 e 7,1): alla fine il prato è grande quasi il doppio. Cresce tutto il blocco dell'isola (prato, terra, roccia, radici che pendono) e sull'anello nuovo spunta l'erba coi fiorellini. Ghiaia, staccionata, albero dietro e bambù restano dove sono; dietro la staccionata non si guadagna posto.
 - **A cosa serve:** più posto per piante e decorazioni, che si sistemano con Sposta. Le cose già messe restano dove sono.
 - **Telecamera:** si allontana un po' per inquadrare tutta l'isola (meno di quanto cresce l'isola); col pizzico si torna vicini.
@@ -570,7 +572,7 @@ Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un arti
 
 - Nome definitivo del gioco.
 - Nome definitivo della moneta (provvisorio: Semi).
-- Bilanciamento numerico dell'economia.
-- Quante piante può avere il giardino iniziale. (Ampliamenti decisi: tre, a 600, 1.200 e 2.500 Semi, sezione 8.5.)
+- Bilanciamento numerico dell'economia: verificato con la simulazione (sezione 7.3); da riguardare quando arrivano stili completati e premi di fioritura, che la simulazione non conta ancora.
+- Quante piante può avere il giardino iniziale. (Ampliamenti decisi: tre, a 600, 1.000 e 1.600 Semi, sezione 8.5.)
 - Come si calcola la percentuale di stile (confronto della forma con un modello dello stile).
 - Ora delle notifiche: fissa o scelta dal giocatore.
