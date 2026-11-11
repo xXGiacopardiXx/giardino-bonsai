@@ -31,6 +31,7 @@ import { creaCure } from './cure.js';
 import { creaCura } from './scena/cura.js';
 import { creaGuida } from './guida.js';
 import { creaConsigli, RITRATTO } from './consigli.js';
+import { creaSfide, BANDIERINA } from './sfide.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/maestro.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
@@ -142,7 +143,7 @@ function avvia() {
   avanza(stato, ora());
   salva(stato);
 
-  let pannello, negozio, cure;
+  let pannello, negozio, cure, sfide;
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
@@ -179,6 +180,8 @@ function avvia() {
     acero.setVaso(v.vaso);
     negozio?.mostra(v);
     cure?.mostra(v);
+    sfide?.mostra(v);
+    document.getElementById('sfide').classList.toggle('nuovo', !!(v.sfida && !v.sfida.fatta));
     rinvasoScena.setRinvaso(v.rinvaso);
     decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa && d.dove).map(d => ({ id: d.id, ...d.dove })));
     // le piante dove le ha messe il giocatore (sezione 8.3); niente erba sotto piante e decorazioni
@@ -363,6 +366,15 @@ function avvia() {
       stato.semi = semi; salva(stato); disegna(); suoni.magia();
       ui.toast('Ecco l\'azalea, in regalo! Toccala per curarla.', 4000);
     },
+    // per provare il giardino grande senza aspettare i Semi: il prato si allarga fino in fondo, gratis
+    prato: () => {
+      if (!vista(stato).prossimoAmpliamento) { ui.toast('Il prato è già al massimo.'); return; }
+      const semi = stato.semi;
+      while (vista(stato).prossimoAmpliamento) { stato.semi += vista(stato).prossimoAmpliamento.prezzo; compraAmpliamento(stato); }
+      stato.semi = semi; salva(stato); disegna(); suoni.magia();
+      vola(target.clone(), baseDist * 1.05);
+      ui.toast('Ecco il giardino grande, in regalo! Con Sposta puoi sistemare le cose dove vuoi.', 4500);
+    },
   });
 
   disegna();
@@ -376,7 +388,7 @@ function avvia() {
   // mostra quello nuovo, o fa rileggere quello della stagione ---
   const consigli = creaConsigli(), maestroBtn = document.getElementById('maestro');
   maestroBtn.innerHTML = RITRATTO;
-  const occupato = () => guida.attiva || consigli.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
+  const occupato = () => guida.attiva || consigli.aperto || sfide?.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
   function maestroParla() {
     if (!stato.guida.fatta) return;
     const c = consiglioMaestro(stato);
@@ -391,6 +403,15 @@ function avvia() {
     consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.toggle('nuovo', !!consiglioMaestro(stato)); });
   });
   setTimeout(maestroParla, 1800);
+  // --- Le sfide (sezioni 7.1 e 7.2): il pulsante con la bandierina, sotto il maestro, o un tocco su un banner
+  // mostrano tutte le sfide del momento e la serie; un pallino rosso se la sfida del giorno è da fare ---
+  sfide = creaSfide();
+  const sfideBtn = document.getElementById('sfide');
+  sfideBtn.innerHTML = BANDIERINA;
+  const apriSfide = () => { if (sfide.aperto) { sfide.chiudi(); return; } chiudiMenu(); sfide.apri(); };
+  sfideBtn.addEventListener('click', apriSfide);
+  for (const id of ['quest', 'quest-sett']) document.getElementById(id).addEventListener('click', apriSfide);
+  disegna();
   const suoniBtn = document.getElementById('suoni');
   const ICONE_SUONI = { si: suoniBtn.innerHTML, no: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#d9cdb6" stroke="#3b2716" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="#c4291c" stroke-width="2" stroke-linecap="round"/></svg>` };
   function mostraSuoni() {

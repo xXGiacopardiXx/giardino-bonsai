@@ -5,7 +5,8 @@
 const fmtData = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const fmtNum = (n, cifre = 1) => n.toLocaleString('it-IT', { maximumFractionDigits: cifre });
 
-// azioni: anteprima(giorni), applica(giorni), azzera(), guida(), azalea() (l'azalea in regalo, per provarla)
+// azioni: anteprima(giorni), applica(giorni), azzera(), guida(), azalea() (l'azalea in regalo, per provarla),
+// prato() (il prato allargato fino in fondo, in regalo)
 export function creaPannelloProva(azioni) {
   const el = document.createElement('section');
   el.className = 'prova'; el.hidden = true;
@@ -28,6 +29,7 @@ export function creaPannelloProva(azioni) {
       <button data-a="applica" class="principale">Fai passare il tempo</button>
       <button data-a="guida">Rivedi la guida</button>
       <button data-a="azalea">Azalea in regalo</button>
+      <button data-a="prato">Giardino grande in regalo</button>
       <button data-a="azzera" class="pericolo">Nuova partita</button>
     </div>`;
   document.getElementById('screen').appendChild(el);
@@ -45,6 +47,7 @@ export function creaPannelloProva(azioni) {
     else if (a === 'ora') { azzeraCursore(); azioni.applica(1 / 24); }
     else if (a === 'applica') { const g = giorni(); azzeraCursore(); if (g > 0) azioni.applica(g); }
     else if (a === 'azalea') { el.hidden = true; azzeraCursore(); azioni.azalea(); }
+    else if (a === 'prato') { el.hidden = true; azzeraCursore(); azioni.prato(); }
     else if (a === 'guida') { el.hidden = true; azzeraCursore(); azioni.guida(); }
     else if (a === 'azzera' && confirm('Ricominciare da capo? La partita salvata verrà cancellata.')) { azzeraCursore(); azioni.azzera(); }
   });

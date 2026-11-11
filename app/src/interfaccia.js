@@ -72,43 +72,62 @@ export function creaInterfaccia(screenEl, camera, trees) {
   }
 
   const settimanaEl = $('settimana'), questEl = $('quest'), settEl = $('quest-sett'), riposoEl = $('riposo');
-  let primoAggiornamento = true, sfidaChiusa = false, ultima = null;
-  for (const el of [questEl, settEl]) el.addEventListener('animationend', () => {
-    if (!el.classList.contains('via')) return;
-    el.style.display = 'none';
-    // uscito il banner del giorno, al suo posto arriva quello della settimana
-    if (el === questEl && ultima) mostraSettimana(ultima);
-  });
-  // Sfida della settimana (sezione 7.1): sta al posto di quella del giorno quando quella è fatta, così il
-  // giardino resta libero. Avanza a poco a poco; completata, i Semi partono dal banner, che poi esce.
-  let settFatta = null, settAnimata = false;
-  function mostraSettimana(v) {
+  let primoAggiornamento = true, ultima = null;
+  // Banner delle sfide (del giorno e della settimana): compaiono per qualche secondo quando c'è qualcosa
+  // di nuovo (all'apertura, una sfida nuova, un passo avanti, una sfida completata), poi escono da soli
+  // per lasciare libero il giardino. Tutte le sfide si rivedono col pulsante delle sfide (sfide.js).
+  const PER_QUANTO = 5000;
+  function creaBanner(el) {
+    let chiave = null, timer = null;
+    el.addEventListener('animationend', () => { if (el.classList.contains('via')) el.style.display = 'none'; });
+    const esci = (dopo) => { clearTimeout(timer); timer = setTimeout(() => el.classList.add('via'), dopo); };
+    return {
+      // si mostra se la chiave è cambiata, e dopo qualche secondo esce
+      mostra(k) {
+        if (k === chiave) return;
+        chiave = k;
+        el.classList.remove('via', 'done'); el.style.display = '';
+        esci(PER_QUANTO);
+      },
+      // completata: la scritta si cancella, poi esce; festa() parte poco dopo (Semi che volano)
+      completa(k, festa) {
+        if (k === chiave) return;
+        chiave = k;
+        el.classList.remove('via'); el.style.display = ''; el.classList.add('done');
+        if (festa) setTimeout(festa, 700);
+        esci(2400);
+      },
+      nascondi(k) { chiave = k; clearTimeout(timer); el.classList.remove('via', 'done'); el.style.display = 'none'; },
+    };
+  }
+  const bannerGiorno = creaBanner(questEl), bannerSettimana = creaBanner(settEl);
+  function mostraSfide(v) {
+    // sfida del giorno: acqua, potatura, filo... (gioco/stato.js, SFIDE)
+    const s = v.sfida, kg = s && `${v.anno}-${v.stagione}-${v.giornoStagione}:${s.testo}`;
+    if (!s) bannerGiorno.nascondi(null);
+    else {
+      questEl.querySelector('.qd').textContent = s.testo;
+      $('qfill').style.width = s.fatta ? '100%' : '0'; $('qtxt').textContent = s.fatta ? '1/1' : '0/1';
+      if (!s.fatta) bannerGiorno.mostra(kg);
+      else if (primoAggiornamento) bannerGiorno.nascondi(kg + ':fatta');
+      else bannerGiorno.completa(kg + ':fatta');
+    }
+    // sfida della settimana: si fa vedere a ogni passo avanti; completata, i Semi partono dal banner
     const w = v.settimana;
-    if (!w) { settEl.style.display = 'none'; return; }
+    if (!w) { bannerSettimana.nascondi(null); return; }
     $('qs-testo').textContent = w.testo;
     $('qs-premio').textContent = '+' + w.premio;
     $('qs-fill').style.width = Math.round(Math.min(1, w.fatti / w.obiettivo) * 100) + '%';
     const resto = w.giorniRimasti === 1 ? 'ultimo giorno' : `ancora ${w.giorniRimasti} giorni`;
     $('qs-txt').textContent = `${Math.min(w.fatti, w.obiettivo)}/${w.obiettivo} · ${resto}`;
-    const libero = questEl.style.display === 'none';
-    if (!w.fatta) {
-      settFatta = null; settAnimata = false;
-      settEl.classList.remove('done', 'via');
-      settEl.style.display = libero ? '' : 'none';
-      return;
-    }
-    // completata: se lo era già all'apertura non si mostra; se è appena successo, festa appena c'è posto
-    if (settFatta === null) settFatta = primoAggiornamento ? 'vecchia' : 'nuova';
-    if (settFatta === 'vecchia') { settEl.style.display = 'none'; return; }
-    if (settAnimata || !libero) return;
-    settAnimata = true;
-    settEl.style.display = ''; settEl.classList.add('done');
-    setTimeout(() => {
-      const r = settEl.getBoundingClientRect(), s = screenEl.getBoundingClientRect();
-      semiDa(w.premio, ultima.semi, r.left - s.left + r.width * .8, r.top - s.top);
+    const kw = `${v.anno}-${v.stagione}:${w.testo}:${w.fatti}`;
+    if (!w.fatta) bannerSettimana.mostra(kw);
+    else if (primoAggiornamento) bannerSettimana.nascondi(kw + ':fatta');
+    else bannerSettimana.completa(kw + ':fatta', () => {
+      const r = settEl.getBoundingClientRect(), sc = screenEl.getBoundingClientRect();
+      semiDa(w.premio, ultima.semi, r.left - sc.left + r.width * .8, r.top - sc.top);
       suoni.magia();
-    }, 700);
-    setTimeout(() => settEl.classList.add('via'), 2400);
+    });
   }
   // un tocco sulla serie spiega come funziona, col giorno di riposo (sezione 7.2)
   $('serie').parentElement.addEventListener('click', () => {
@@ -140,24 +159,8 @@ export function creaInterfaccia(screenEl, camera, trees) {
       riposoEl.hidden = !v.riposi;
       riposoEl.classList.toggle('nuovo', !!v.riposoNuovo);
 
-      // la sfida del giorno cambia: acqua, potatura o filo (gioco/stato.js, SFIDE)
-      if (v.sfida) questEl.querySelector('.qd').textContent = v.sfida.testo;
-      // sfida completata: la barra si riempie, la scritta si cancella e il banner esce di scena
-      if (!v.sfida?.fatta) {
-        sfidaChiusa = false;
-        questEl.classList.remove('done', 'via');
-        questEl.style.display = v.sfida ? '' : 'none';
-        $('qfill').style.width = '0'; $('qtxt').textContent = '0/1';
-      } else if (!sfidaChiusa) {
-        sfidaChiusa = true;
-        if (primoAggiornamento) questEl.style.display = 'none';
-        else {
-          questEl.classList.add('done');
-          $('qfill').style.width = '100%'; $('qtxt').textContent = '1/1';
-          setTimeout(() => { if (sfidaChiusa) questEl.classList.add('via'); }, 1800);
-        }
-      }
-      mostraSettimana(v);
+      // banner delle sfide: per qualche secondo, quando c'è qualcosa di nuovo
+      mostraSfide(v);
       primoAggiornamento = false;
 
       const salute = Math.round(v.salute * 100) + '%';

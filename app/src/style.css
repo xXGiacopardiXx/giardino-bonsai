@@ -328,7 +328,10 @@ button{touch-action:manipulation}
 /* il maestro: pulsante col ritratto sotto la musica, e il suo fumetto (come quello della guida) */
 .maestro-b{top:calc(var(--top) + 37.4cqw);background:radial-gradient(circle at 35% 30%,#fff1c2,#f0b45a)}
 .maestro-b svg,.maestro-ic svg{width:88%;height:88%}
-.maestro-b.nuovo::after{content:"";position:absolute;top:-.6cqw;right:-.6cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#e2483a;border:.45cqw solid var(--ink)}
+/* le sfide: pulsante con la bandierina sotto il maestro, e il loro pannello */
+.sfide-b{top:calc(var(--top) + 48.4cqw);background:radial-gradient(circle at 35% 30%,#fff7d6,#f5c86a)}
+.sfide-b svg{width:66%;height:66%}
+.sfide-b.nuovo::after,.maestro-b.nuovo::after{content:"";position:absolute;top:-.6cqw;right:-.6cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#e2483a;border:.45cqw solid var(--ink)}
 /* pannello del maestro: riflessione, schede per pianta, punti col perché; scorre se è lungo */
 .maestro{z-index:7}
 .maestro-pannello{max-height:78vh;display:flex;flex-direction:column;gap:2cqw}
@@ -355,3 +358,22 @@ button{touch-action:manipulation}
 .stile-perche{color:#8a6a48;font-style:italic}
 .suoni-b svg{width:62%;height:62%}
 .suoni-b:active{transform:translateY(.5cqw);box-shadow:0 .2cqw 0 var(--ink)}
+
+/* pannello delle sfide: una scheda per sfida, con premio, barra e una nota */
+.sfide{z-index:7}
+.sfide-lista{display:grid;gap:2.4cqw;max-height:62vh;overflow-y:auto;overscroll-behavior:contain;padding-right:.6cqw}
+.sfida-scheda{display:grid;grid-template-columns:1fr auto;gap:.9cqw 1.6cqw;align-items:center;padding:2.2cqw 2.8cqw 2.4cqw;border-radius:3.4cqw;border:.5cqw solid var(--ink);background:rgba(255,250,240,.96);box-shadow:0 .7cqw 0 var(--ink)}
+.sfida-scheda.settimana{background:rgba(240,248,255,.96)}
+.sfida-scheda.serie{background:#fff3e2}
+.sfida-titolo{grid-column:1/-1;font:600 2.8cqw/1 var(--display);color:#8a6a48}
+.sfida-scheda.settimana .sfida-titolo{color:#4a6f8a}
+.sfida-testo{font:600 3.7cqw/1.15 var(--display)}
+.sfida-scheda.fatta .sfida-testo{color:#7a6a58;text-decoration:line-through;text-decoration-thickness:.5cqw}
+.sfida-premio{display:flex;align-items:center;gap:.6cqw;font:700 3.5cqw/1 var(--display);color:#b9781c}
+.sfida-premio svg{width:4cqw;height:4cqw}
+.sfida-scheda .qbar{height:3.4cqw}
+.sfida-scheda .qbar span{font-size:2.5cqw}
+.sfida-scheda.settimana .qbar i{background:linear-gradient(#8fd3f5,#3f92d6)}
+.sfida-scheda.serie .qbar i{background:linear-gradient(#ffd27a,#f07b35)}
+.sfida-nota{grid-column:1/-1;font:500 3cqw/1.35 var(--display);color:#5a4632}
+.quest{cursor:pointer}
