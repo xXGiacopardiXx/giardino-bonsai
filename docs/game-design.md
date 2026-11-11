@@ -330,7 +330,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 
 | Attrezzo | Semi | Cosa fa |
 |---|---|---|
-| Bastoncino di bambù | 150 | Infilato nel terriccio resta scuro finché è umido (il trucco vero dei bonsaisti): sull'etichetta di ogni pianta che sta bene, al posto di "Sta bene", compare fra quanto annaffiarla ("Acqua fra 15 ore", "Acqua domani", "Acqua fra 3 giorni"), con il tempo sereno. Aiuta a non dare troppa acqua. |
+| Bastoncino di bambù | 150 | Infilato nel terriccio resta scuro finché è umido (il trucco vero dei bonsaisti): sull'etichetta di ogni pianta che sta bene, al posto di "Sta bene", compare fra quanto annaffiarla ("Acqua fra 15 ore", "Acqua domani", "Acqua fra 3 giorni"), con il tempo sereno. Il bastoncino si vede anche nella scena, infilato nel terriccio di ogni pianta: la parte vicino alla terra è scura finché il terriccio è umido e torna color bambù quando è asciutto. Aiuta a non dare troppa acqua. |
 | Tronchesino per filo | 200 | Il filo si taglia a pezzetti invece di svolgerlo: i segni sulla corteccia spariscono il doppio più in fretta, e il filo tolto con un po' di ritardo (segno leggero) vale ancora il premio. |
 | Forbici concave | 250 | Taglio pulito che si chiude presto: dopo la potatura le gemme dell'acero crescono il 40% più in fretta. |
 

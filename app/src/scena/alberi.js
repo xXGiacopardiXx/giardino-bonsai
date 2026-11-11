@@ -198,7 +198,7 @@ export function creaAlberi(world) {
     ring.rotation.x = -PI / 2; ring.position.y = .025; ring.visible = false; t.add(ring);
     const pozza = pozzaSu(soil);
     return Object.assign(cura, {
-      ring, thirst: 0, soilDry: 0, flosce: 0, annaffiatoio,
+      ring, soil, thirst: 0, soilDry: 0, flosce: 0, annaffiatoio,
       setThirst(v) { this.thirst = v; colora(v, this.flosce); },
       setSoil(v) { this.soilDry = v; soil.material.color.copy(SOIL_WET).lerp(SOIL_DRY, v); },
       // troppa acqua: flosce 0..1 (aghi e squame che ingialliscono dall'interno), fradicio 0..1 (il vaso)
@@ -669,6 +669,8 @@ function pianta(f, soil, ring, dati) {
   const p = {
     ...dati,
     ring,
+    // il terriccio, per le cose che ci stanno sopra (bastoncino di bambù)
+    soil,
     thirst: 1,
     soilDry: 1,
     // colore delle foglie mature in questa stagione (lo usano le gemme che crescono)

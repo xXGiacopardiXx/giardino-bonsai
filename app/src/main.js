@@ -32,6 +32,7 @@ import { creaCura } from './scena/cura.js';
 import { creaGuida } from './guida.js';
 import { creaConsigli, RITRATTO } from './consigli.js';
 import { creaSfide, BANDIERINA } from './sfide.js';
+import { creaBastoncini } from './scena/bastoncini.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/maestro.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
@@ -120,6 +121,8 @@ function avvia() {
   // tutte le piante della scena (l'azalea c'è anche prima di comprarla, nascosta); quelle del giardino
   // in un dato momento sono v.piante della vista
   const TUTTE = ['acero', 'pino', 'ginepro', 'azalea'];
+  // il bastoncino di bambù nel terriccio di ogni pianta, quando c'è l'attrezzo (sezione 7.3)
+  const bastoncini = creaBastoncini({ acero: acero.soil, pino: alberi.cure.pino.soil, ginepro: alberi.cure.ginepro.soil, azalea: alberi.cure.azalea.soil });
   const altreDi = (v) => v.piante.filter(p => p !== 'acero');
   // germogli dell'acero, candele del pino, punte del ginepro, germogli dell'azalea; aghi vecchi del pino
   // e fiori appassiti dell'azalea
@@ -181,6 +184,7 @@ function avvia() {
     negozio?.mostra(v);
     cure?.mostra(v);
     sfide?.mostra(v);
+    bastoncini.set(!!v.bastoncino, { acero: v.terriccio, ...Object.fromEntries(Object.entries(v.conifere).map(([p, c]) => [p, c.terriccio])) });
     document.getElementById('sfide').classList.toggle('nuovo', !!(v.sfida && !v.sfida.fatta));
     rinvasoScena.setRinvaso(v.rinvaso);
     decorazioni.setDecorazioni(v.decorazioni.filter(d => d.messa && d.dove).map(d => ({ id: d.id, ...d.dove })));
