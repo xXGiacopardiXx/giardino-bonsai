@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { toon } from './strumenti.js';
 
 // quanto è grande il terriccio di ogni pianta (raggio in x e in z, nelle sue misure)
-const MISURE = { acero: [.68, .68], pino: [.58, .34], ginepro: [.52, .52], azalea: [.48, .48] };
+const MISURE = { acero: [.68, .68], pino: [.58, .34], ginepro: [.52, .52], azalea: [.48, .48], ciliegio: [.52, .42] };
 const VERDI = [0x5f8f3a, 0x6d9a43, 0x7aa84c];
 
 // terricci: { acero: mesh, pino: mesh, ... }

@@ -18,6 +18,7 @@ const SPECIE = {
   pino: { rx: .56, rz: .56, colore: 0xa4825a, spessore: .015, n: 6 },
   ginepro: { rx: .58, rz: .36, colore: 0x9c7a56, spessore: .014, n: 6 },
   azalea: { rx: .5, rz: .5, colore: 0xa07a5a, spessore: .013, n: 6 },
+  ciliegio: { rx: .55, rz: .45, colore: 0x8e5e4a, spessore: .013, n: 6 },
 };
 // colori dei granuli del terriccio nuovo
 const GRANULI = {
@@ -56,7 +57,7 @@ function forbici() {
 export function creaRinvaso(scene, piante) {
   const stati = {};
   for (const id in piante) {
-    const p = piante[id], s = SPECIE[id], rnd = sequenza({ acero: 131, pino: 137, ginepro: 139, azalea: 149 }[id]);
+    const p = piante[id], s = SPECIE[id], rnd = sequenza({ acero: 131, pino: 137, ginepro: 139, azalea: 149, ciliegio: 151 }[id]);
     const mat = toon({ color: s.colore });
     // radici che escono dal vaso stretto
     const fuori = new THREE.Group(); fuori.position.copy(p.potTop); fuori.visible = false; scene.add(fuori);

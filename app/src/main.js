@@ -121,9 +121,9 @@ function avvia() {
   const acero = alberi.acero;
   // tutte le piante della scena (l'azalea c'è anche prima di comprarla, nascosta); quelle del giardino
   // in un dato momento sono v.piante della vista
-  const TUTTE = ['acero', 'pino', 'ginepro', 'azalea'];
+  const TUTTE = ['acero', 'pino', 'ginepro', 'azalea', 'ciliegio'];
   // il bastoncino di bambù nel terriccio di ogni pianta, quando c'è l'attrezzo (sezione 7.3)
-  const terricci = { acero: acero.soil, pino: alberi.cure.pino.soil, ginepro: alberi.cure.ginepro.soil, azalea: alberi.cure.azalea.soil };
+  const terricci = { acero: acero.soil, pino: alberi.cure.pino.soil, ginepro: alberi.cure.ginepro.soil, azalea: alberi.cure.azalea.soil, ciliegio: alberi.cure.ciliegio.soil };
   const bastoncini = creaBastoncini(terricci);
   // il muschio steso sul terriccio (sezione 6.5)
   const muschio = creaMuschio(terricci);
@@ -134,6 +134,9 @@ function avvia() {
   const aghiVecchi = creaAghiVecchi(alberi.cure.pino);
   const fioriAppassiti = creaAghiVecchi(alberi.cure.azalea, { cuscinetti: [0, 1, 2, 3, 0, 1, 2, 3], quanti: 2, grandezza: .8, seme: 811,
     geo: new THREE.IcosahedronGeometry(.42, 0).scale(1, .5, 1), tinte: [0xc8968a, 0xb8847a, 0xd6a89a, 0xa87468] });
+  // le ciliegine del ciliegio: piccole sfere rosso scuro, due per posto
+  const ciliegine = creaAghiVecchi(alberi.cure.ciliegio, { cuscinetti: [0, 1, 2, 3, 0, 1, 2, 3], quanti: 2, grandezza: .32, seme: 911,
+    geo: new THREE.SphereGeometry(.5, 10, 8), tinte: [0xb81e2c, 0xc8283a, 0x9e1624, 0xd23446] });
   // afidi, concime e spray su tutte le piante
   const curaScene = Object.fromEntries(TUTTE.map(p => [p, creaCura(scene, alberi.cure[p], p)]));
   // radici che escono dal vaso stretto e animazione del rinvaso
@@ -155,7 +158,7 @@ function avvia() {
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
   const avvisati = new Set();
-  const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro', azalea: "sull'azalea" };
+  const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro', azalea: "sull'azalea", ciliegio: 'sul ciliegio' };
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
     const base = giorniAnteprima > 0 ? avanza(structuredClone(stato), ora() + giorniAnteprima * GIORNO) : stato;
@@ -171,6 +174,7 @@ function avvia() {
     }
     // pino, ginepro e azalea: aghi e foglie che ingialliscono, terriccio che schiarisce, anello quando hanno sete
     alberi.setAzalea(!!v.conifere.azalea);
+    alberi.setCiliegio(!!v.conifere.ciliegio);
     for (const p of altreDi(v)) {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
@@ -183,10 +187,11 @@ function avvia() {
     document.getElementById('t-wire').classList.toggle('needs', v.filoDaTogliere || altreDi(v).some(p => v.conifere[p].filoDaTogliere));
     // azalea: boccioli e fiori
     if (v.conifere.azalea) alberi.cure.azalea.setFioritura(v.conifere.azalea.boccioli, v.conifere.azalea.fioritura);
+    if (v.conifere.ciliegio) alberi.cure.ciliegio.setFioritura(v.conifere.ciliegio.boccioli, v.conifere.ciliegio.fioritura);
     acero.setSalute(v.salute);
     // il vaso di ogni pianta (l'acero e le altre, Aspetto nella tendina)
     acero.setVaso(v.vaso);
-    for (const p of ['pino', 'ginepro', 'azalea']) alberi.cure[p].setVaso(v.vasiPiante[p]);
+    for (const p of ['pino', 'ginepro', 'azalea', 'ciliegio']) alberi.cure[p].setVaso(v.vasiPiante[p]);
     negozio?.mostra(v);
     cure?.mostra(v);
     sfide?.mostra(v);
@@ -232,6 +237,7 @@ function avvia() {
     for (const p of altreDi(v)) germogliScene[p].sincronizza(v.conifere[p].germogli, []);
     aghiVecchi.sincronizza(v.conifere.pino.vecchi);
     fioriAppassiti.sincronizza(v.conifere.azalea?.vecchi ?? []);
+    ciliegine.sincronizza(v.conifere.ciliegio?.vecchi ?? []);
     pannello?.mostra(v, base.aggiornato);
     // stile: i ciuffi tagliati (che ricrescono), la valutazione di ogni pianta e la percentuale sull'etichetta
     for (const p of v.piante) {
@@ -302,7 +308,7 @@ function avvia() {
   const waterBtn = document.getElementById('t-water');
   const esiti = {};
   const ANTEPRIMA = 'Stai guardando un\'anteprima: chiudila o fai passare il tempo.';
-  const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro', azalea: 'L\'azalea' };
+  const IL = { acero: 'L\'acero', pino: 'Il pino', ginepro: 'Il ginepro', azalea: 'L\'azalea', ciliegio: 'Il ciliegio' };
   const DOPO = {
     acero: 'L\'acero si sta riprendendo. Tornerà ad avere sete tra un giorno o due.',
     pino: 'Il pino ha bevuto. Come tutte le conifere vuole il terriccio quasi asciutto: avrà di nuovo sete tra qualche giorno.',
@@ -376,6 +382,14 @@ function avvia() {
       if (compraPianta(stato, ora(), 'azalea').esito !== 'ok') { stato.semi = semi; return; }
       stato.semi = semi; salva(stato); disegna(); suoni.magia();
       ui.toast('Ecco l\'azalea, in regalo! Toccala per curarla.', 4000);
+    },
+    // e il ciliegio
+    ciliegio: () => {
+      if (stato.conifere.ciliegio) { ui.toast('Il ciliegio è già nel tuo giardino.'); return; }
+      const semi = stato.semi; stato.semi += 500;
+      if (compraPianta(stato, ora(), 'ciliegio').esito !== 'ok') { stato.semi = semi; return; }
+      stato.semi = semi; salva(stato); disegna(); suoni.magia();
+      ui.toast('Ecco il ciliegio, in regalo! Toccalo per curarlo.', 4000);
     },
     // per provare il giardino grande senza aspettare i Semi: il prato si allarga fino in fondo, gratis
     prato: () => {
@@ -505,7 +519,7 @@ function avvia() {
   document.getElementById('t-care').addEventListener('click', () => { chiudiMenu(); potatura(null); filatura(null); cure.apri('inventario'); disegna(); });
   // --- Rinvaso (sezione 4.4): dalla tendina della pianta (si usa il terriccio migliore che hai, prima lo
   // specifico) o dal pannello Cura scegliendo il terriccio. Si fa tra fine inverno e inizio primavera. ---
-  const DEL = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea" };
+  const DEL = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea", ciliegio: 'del ciliegio' };
   const anniTesto = (n) => n === 1 ? 'un anno' : `${n} anni`;
   function rinvasaPianta(p, id = null) {
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA_CURA); return; }
@@ -562,7 +576,8 @@ function avvia() {
       if (esito.esito !== 'ok') return;
       salva(stato); negozio.chiudi(); disegna(); suoni.magia();
       vola(fuocoPianta(id).clone().add(new THREE.Vector3(0, -.4, 0)), baseDist * .55);
-      ui.toast('L\'azalea è nel tuo giardino! Toccala per curarla: vuole il terriccio sempre un po\' umido, e a fine primavera fiorisce.', 5000);
+      ui.toast(id === 'ciliegio' ? 'Il ciliegio è nel tuo giardino! Toccalo per curarlo: beve quasi quanto l\'acero, e a inizio primavera fiorisce.'
+        : 'L\'azalea è nel tuo giardino! Toccala per curarla: vuole il terriccio sempre un po\' umido, e a fine primavera fiorisce.', 5000);
     },
     // decorazioni (sezione 8.2): la comprata spunta nel giardino e si può subito spostare dove si vuole
     compraDecorazione(id) {
@@ -616,14 +631,14 @@ function avvia() {
   // --- Tendine delle piante: si aprono toccando la pianta. L'acero ha Acqua, Pota, Filo, Cura e Aspetto;
   // pino e ginepro Acqua, Pota, Filo e Cura ---
   const menuAcero = document.getElementById('menu-acero');
-  const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro'), azalea: document.getElementById('menu-azalea') };
+  const menuPiante = { acero: menuAcero, pino: document.getElementById('menu-pino'), ginepro: document.getElementById('menu-ginepro'), azalea: document.getElementById('menu-azalea'), ciliegio: document.getElementById('menu-ciliegio') };
   function chiudiMenu() {
     for (const m of Object.values(menuPiante)) { m.hidden = true; m.parentElement.classList.remove('aperta'); }
     screenEl.classList.remove('menu-aperto');
   }
   // la tendina aperta passa sopra al banner della sfida, che si fa da parte
   function apriMenu(m) { m.hidden = false; m.parentElement.classList.add('aperta'); screenEl.classList.add('menu-aperto'); }
-  for (const p of ['pino', 'ginepro', 'azalea']) menuPiante[p].addEventListener('click', (e) => {
+  for (const p of ['pino', 'ginepro', 'azalea', 'ciliegio']) menuPiante[p].addEventListener('click', (e) => {
     const a = e.target.closest('button')?.dataset.a; if (!a) return;
     chiudiMenu();
     if (a === 'acqua') annaffiaPianta(p);
@@ -649,7 +664,7 @@ function avvia() {
     else if (a === 'foto') fotoPianta('acero');
     else if (a === 'sposta') sposta('acero');
   });
-  const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro', azalea: 'Azalea Satsuki' };
+  const nomiPiante = { acero: 'Acero giapponese', pino: 'Pino nero', ginepro: 'Ginepro', azalea: 'Azalea Satsuki', ciliegio: 'Ciliegio giapponese' };
 
   // --- Potatura e filo su tutte le piante (sezioni 4.2 e 4.3). Pota e Filo avvicinano la telecamera
   // alla pianta scelta: dalla sua tendina, oppure dalla barra (se più piante ne hanno bisogno, si tocca
@@ -688,6 +703,10 @@ function avvia() {
       : c.germogli.some(g => g.potabile) ? 'Pota i germogli nuovi che brillano: dopo la fioritura è il momento giusto.'
       : c.fioritura > 0 || c.boccioli > 0 ? 'Mentre fiorisce non si pota: aspetta che i fiori appassiscano.'
       : 'L\x27azalea si pota subito dopo la fioritura, a inizio estate. Per ora non c\x27è niente da fare.';
+    if (p === 'ciliegio') return c.vecchi.length ? 'Togli le ciliegine: tocca quelle rosse che brillano, una per una.'
+      : c.germogli.some(g => g.potabile) ? 'Pota i germogli nuovi che brillano: dopo la fioritura i tagli si chiudono in fretta.'
+      : c.fioritura > 0 || c.boccioli > 0 ? 'Mentre fiorisce non si pota: i fiori stanno proprio sui rametti.'
+      : 'Il ciliegio si pota dopo la fioritura, fino all\x27inizio dell\x27autunno. Per ora non c\x27è niente da fare.';
     if (p === 'pino') return c.vecchi.length ? 'Togli gli aghi vecchi: tocca i ciuffi gialli che brillano.'
       : c.germogli.some(g => g.potabile) ? 'Cima le candele: tocca quelle chiare che brillano, in punta ai rami.'
       : 'Il pino mette le candele in primavera; in autunno si tolgono gli aghi vecchi. Per ora non c\'è niente da fare.';
@@ -701,7 +720,7 @@ function avvia() {
     if (p && !potando && !filando) distanzaPrima = camera.position.distanceTo(controls.target);
     potando = p;
     for (const q in germogliScene) germogliScene[q].potatura = q === p;
-    aghiVecchi.potatura = p === 'pino'; fioriAppassiti.potatura = p === 'azalea';
+    aghiVecchi.potatura = p === 'pino'; fioriAppassiti.potatura = p === 'azalea'; ciliegine.potatura = p === 'ciliegio';
     if (p) chiudiMenu();
     pruneBtn.classList.toggle('attivo', !!p);
     if (p) { avvicina(p, p === 'acero' ? .27 : .3); ui.toast(consiglioPota(p), 4000); } else allontana();
@@ -710,7 +729,7 @@ function avvia() {
   // --- Stile (sezione 5.2): la sagoma fantasma dello stile attorno alla chioma; i ciuffi che ne escono
   // brillano e si tagliano con un tocco (insieme ai vicinissimi). La percentuale e le regole stanno nella
   // scheda in basso; da lì si cambia stile tra quelli adatti alla pianta. ---
-  const AL = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea" };
+  const AL = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea", ciliegio: 'al ciliegio' };
   pannelloStile = creaPannelloStile({
     cambia(id) { if (stilando && scegliStile(stato, stilando, id)) { salva(stato); disegna(); suoni.magia(); } },
     fine() { stilatura(null); },
@@ -1019,12 +1038,13 @@ function avvia() {
     pino: 'Candela cimata: gli aghi nuovi resteranno corti e la chioma compatta.',
     ginepro: 'Punta pizzicata: il ginepro resterà fitto e compatto.',
     azalea: 'Germoglio potato: la chioma resta compatta, e sui rami nuovi nasceranno i boccioli.',
+    ciliegio: 'Germoglio potato: la chioma resta compatta, e il taglio si chiude in fretta.',
   };
   function potaQui(e, r) {
     const p = potando;
     if (pannello.anteprima > 0) { ui.toast(ANTEPRIMA); return; }
     // aghi vecchi del pino, fiori appassiti dell'azalea
-    const daTogliere = p === 'pino' ? aghiVecchi : p === 'azalea' ? fioriAppassiti : null;
+    const daTogliere = p === 'pino' ? aghiVecchi : p === 'azalea' ? fioriAppassiti : p === 'ciliegio' ? ciliegine : null;
     const vecchio = daTogliere ? daTogliere.tocca(raycaster) : null;
     if (vecchio !== null) {
       const esito = togliAghi(stato, ora(), vecchio, p);
@@ -1034,6 +1054,7 @@ function avvia() {
       if (esito.semi + esito.bonusSerie) { ui.guadagnaSemi(esito.semi + esito.bonusSerie, stato.semi, p); suoni.semi(); }
       ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
         : p === 'azalea' ? 'Fiore appassito tolto: la forza resta ai rami, e l\'anno prossimo fiorirà in pieno.'
+        : p === 'ciliegio' ? 'Ciliegina tolta: la forza va ai boccioli, e l\'anno prossimo fiorirà in pieno.'
         : 'Aghi vecchi tolti: luce e aria arrivano dentro la chioma.');
     } else {
       const id = germogliScene[p].tocca(raycaster);
@@ -1104,7 +1125,7 @@ function avvia() {
     controls.update();
     alberi.aggiorna(clock); alberi.aggiornaAnello(clock); elementi.aggiorna(clock);
     for (const p in germogliScene) germogliScene[p].aggiorna(dt, clock);
-    aghiVecchi.aggiorna(dt, clock); fioriAppassiti.aggiorna(dt, clock);
+    aghiVecchi.aggiorna(dt, clock); fioriAppassiti.aggiorna(dt, clock); ciliegine.aggiorna(dt, clock);
     for (const p in curaScene) curaScene[p].aggiorna(dt);
     rinvasoScena.aggiorna(dt);
     decorazioni.aggiorna(dt);

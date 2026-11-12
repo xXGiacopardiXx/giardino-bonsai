@@ -7,7 +7,7 @@ import { M, toon } from './strumenti.js';
 
 const CHIARO = new THREE.Color(0xd9b86a), BAGNATO = new THREE.Color(0x6b4a2a);
 // dove sta il bastoncino sul terriccio di ogni pianta (x, z, nelle misure del terriccio) e quanto è lungo
-const POSTI = { acero: [.52, .3, .85], pino: [.5, .22, .7], ginepro: [.42, .25, .7], azalea: [.38, .24, .62] };
+const POSTI = { acero: [.52, .3, .85], pino: [.5, .22, .7], ginepro: [.42, .25, .7], azalea: [.38, .24, .62], ciliegio: [.4, .26, .64] };
 
 // terricci: { acero: mesh, pino: mesh, ... }
 export function creaBastoncini(terricci) {

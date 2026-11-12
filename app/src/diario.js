@@ -8,7 +8,7 @@ const DB = 'giardino-bonsai-diario', NEGOZIO = 'foto';
 const MASSIME = 120; // foto per pianta: oltre, si toglie la più vecchia (tranne la prima, il ricordo dell'inizio)
 const STAGIONI_BREVI = ['Prim.', 'Est.', 'Aut.', 'Inv.'];
 const DALLA = ['dalla primavera', "dall'estate", "dall'autunno", "dall'inverno"];
-const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino', azalea: 'Azalea' };
+const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino', azalea: 'Azalea', ciliegio: 'Ciliegio' };
 
 // --- archivio ---
 let memoria = [], prossimo = 1;

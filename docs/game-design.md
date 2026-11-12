@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 12/11/2026
+Ultimo aggiornamento: 13/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -180,6 +180,21 @@ La prima pianta che si compra: **400 Semi**, dal Negozio, scheda Giardino (in ci
 - **Stili:** Moyogi (cuscinetti tondi a gradini, 350 Semi) e Hokidachi (cupola tonda che in fioritura sembra un mazzo di fiori, 400 Semi).
 - **Per provarla:** nel pannello di prova (3 tocchi sulla stagione) c'è "Azalea in regalo", che la mette nel giardino senza spendere Semi.
 - **Il maestro:** una scheda anche per l'azalea in ogni consiglio di stagione; alla prima fioritura un consiglio apposta, col perché dei fiori appassiti da togliere; "come si sente" racconta la fioritura e i fiori che appassiscono.
+
+### 5.5 Ciliegio giapponese: la quinta pianta
+
+Scelto dal giocatore tra ciliegio e glicine (13/11/2026). Si compra coi Semi (500, scheda Giardino del negozio; nel pannello di prova c'è "Ciliegio in regalo").
+
+- **Dove sta:** davanti, al centro, tra il laghetto e il sentiero, in un vaso ovale grigio (vaso di partenza, gratis) su una base di legno; se il posto è occupato, lì vicino. Si sposta come le altre.
+- **Com'è:** tronco dritto con la corteccia bruno-rossiccia lucida e le strisce orizzontali (lenticelle), rami che si aprono in fuori, foglie ovali verde brillante.
+- **Stagioni:** come l'acero perde le foglie. Primavera verde tenero, estate verde pieno, autunno arancio e rosso, spoglio da fine autunno a fine inverno.
+- **Fioritura (hanami):** all'inizio della primavera, prima che le foglie si facciano piene: boccioli rosa scuro il 1° e 2° giorno, fiori rosa chiaro dal 3°, pieni il 4° e 5°, poi i petali cadono (si vedono cadere piano attorno alla pianta) e il 7° giorno non ce ne sono più. Più breve di quella dell'azalea: è il bello del ciliegio.
+- **Ciliegine:** nei primi due giorni d'estate, dove c'erano i fiori, compaiono le ciliegine rosse (fino a 8). Vanno tolte una per una (Pota): se restano, all'inizio dell'autunno cadono e l'anno dopo il ciliegio fiorisce la metà (come i fiori appassiti dell'azalea).
+- **Acqua:** beve quasi quanto l'acero (×0,9).
+- **Potatura:** germogli nuovi dal 5° giorno di primavera (dopo la fioritura), per tutta l'estate e nei primi due giorni d'autunno; d'inverno niente. Mentre fiorisce non si pota. La sfida del giorno può chiedere "Togli le ciliegine del ciliegio" o "Pota i germogli del ciliegio".
+- **Rinvaso:** ogni 2 anni (akadama: ogni anno).
+- **Stili:** Hokidachi (a scopa, quello di partenza, 400 Semi), Moyogi (eretto informale, 350), Kabudachi (a più tronchi, dal 2° anno, 650).
+- **Maestro:** consigli di ogni stagione (non potare mentre fiorisce, potare subito dopo, togliere le ciliegine, niente tagli grandi d'autunno perché il ciliegio cicatrizza male, il freddo dell'inverno serve ai boccioli), come si sente in fioritura e con le ciliegine, e una volta sola il consiglio "Hanami" alla prima fioritura.
 
 ## 6. Salute della pianta e trascuratezza
 
@@ -583,7 +598,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Ciliegio giapponese, la quinta pianta (sezione 5.5); vasi per tutte le piante (sezione 8.1.1). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

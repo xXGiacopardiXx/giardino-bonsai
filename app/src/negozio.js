@@ -19,6 +19,7 @@ const DISEGNI = {
   terracotta: `<path d="M13 28h38l-5 20H18Z" fill="#c27a4a"/><rect x="10" y="24" width="44" height="7" rx="3" fill="#ae6a3d"/>`,
   rettangolare: `<rect x="5" y="30" width="54" height="13" fill="#5b4636"/><rect x="3" y="27" width="58" height="5" fill="#4a3829"/><rect x="8" y="43" width="7" height="4" fill="#4a3829"/><rect x="49" y="43" width="7" height="4" fill="#4a3829"/>`,
   celadon: `<path d="M5 32h54l-7 11H12Z" fill="#8cbfa3"/><rect x="3" y="28" width="58" height="6" rx="3" fill="#a9d6bd"/><rect x="18" y="43" width="28" height="4" rx="2" fill="#76a98c"/>`,
+  grigio: `<path d="M8 30h48l-6 15H14Z" fill="#8f8c86"/><rect x="5" y="26" width="54" height="6" rx="3" fill="#a3a09a"/>`,
   cotto: `<path d="M13 28h38l-5 18H18Z" fill="#c27a4a"/><rect x="10" y="24" width="44" height="6" rx="3" fill="#ae6a3d"/>`,
   'bruno-rett': `<rect x="7" y="29" width="50" height="14" fill="#8a573a"/><rect x="5" y="26" width="54" height="5" fill="#76482f"/><rect x="10" y="43" width="6" height="3" fill="#76482f"/><rect x="48" y="43" width="6" height="3" fill="#76482f"/>`,
   bruno: `<path d="M11 29h42l-5 15H16Z" fill="#6e4a38"/><rect x="9" y="25" width="46" height="6" rx="3" fill="#5f3e2f"/>`,
@@ -53,6 +54,8 @@ const ELEMENTI_DISEGNI = {
 const disegnoElemento = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${ELEMENTI_DISEGNI[id.replace(/-\d+$/, '')] || ''}</svg>`;
 // le piante in vendita: un'azalea in fiore nel suo vaso tondo
 const PIANTE_DISEGNI = {
+  // il ciliegio in fiore, nel suo vaso grigio
+  ciliegio: `<path d="M15 35h34l-4 11H19Z" fill="#8f8c86"/><rect x="12" y="32" width="40" height="4" rx="2" fill="#a3a09a"/><path d="M32 32c0-8 1-12-1-20M31 22l-9-5M31 18l9-6" stroke="#6e4440" stroke-width="2.6" fill="none" stroke-linecap="round"/><g fill="#f8c2d6"><circle cx="20" cy="17" r="6"/><circle cx="29" cy="11" r="6.5"/><circle cx="40" cy="12" r="6"/><circle cx="45" cy="19" r="5"/><circle cx="25" cy="21" r="5"/><circle cx="36" cy="19" r="5.5"/></g><g fill="#fde8f0"><circle cx="27" cy="9" r="2.4"/><circle cx="41" cy="10" r="2.2"/><circle cx="20" cy="15" r="2"/></g><g fill="#e07a9c"><circle cx="31" cy="13" r="1"/><circle cx="23" cy="19" r="1"/><circle cx="38" cy="18" r="1"/></g>`,
   azalea: `<path d="M16 34h32l-3 12H19Z" fill="#6e4a38"/><rect x="13" y="31" width="38" height="4" rx="2" fill="#5f3e2f"/><path d="M32 31c-1-6 3-8 1-14" stroke="#7a4e3a" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="21" rx="10" ry="6" fill="#3f6e30"/><ellipse cx="42" cy="18" rx="10" ry="6" fill="#467a36"/><ellipse cx="32" cy="11" rx="9" ry="5.5" fill="#4e823b"/><g fill="#f27ea6"><circle cx="18" cy="18" r="2.6"/><circle cx="25" cy="17" r="2.4"/><circle cx="22" cy="23" r="2.2"/><circle cx="38" cy="15" r="2.6"/><circle cx="46" cy="16" r="2.4"/><circle cx="42" cy="21" r="2.2"/><circle cx="29" cy="9" r="2.4"/><circle cx="35" cy="8" r="2.2"/></g><g fill="#fbd3e1"><circle cx="21" cy="20" r="1.4"/><circle cx="44" cy="19" r="1.4"/><circle cx="33" cy="11" r="1.4"/></g>`,
 };
 // gli attrezzi (sezione 7.3): bastoncino di bambù nel terriccio, tronchesino per filo, forbici concave
@@ -68,8 +71,8 @@ const disegnoPrato = (n) => {
   return `<svg viewBox="0 0 64 50" aria-hidden="true"><path d="M${32 - rx} 26Q32 50 ${32 + rx} 26Z" fill="#9a643f"/><path d="M${32 - rx * .7} 30Q32 54 ${32 + rx * .7} 30Z" fill="#877e6e"/><ellipse cx="32" cy="26" rx="${rx}" ry="${rx * .38}" fill="#a5d36a"/><ellipse cx="32" cy="26" rx="18" ry="6.8" fill="#8cbc50"/><ellipse cx="34" cy="25" rx="7" ry="2.6" fill="#ebe3d1"/><path d="M29 24c0-4 1-6 0-9" stroke="#6b5444" stroke-width="2" fill="none"/><circle cx="29" cy="14" r="4" fill="#e3462a"/><path d="M${32 + rx - 4} 22l3-3 3 3M${32 + rx - 1} 19v6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
 };
 // la pianta di cui si sceglie il vaso, nelle frasi
-const DI = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea" };
-const A = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea" };
+const DI = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea", ciliegio: 'del ciliegio' };
+const A = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea", ciliegio: 'al ciliegio' };
 const disegnoPianta = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${PIANTE_DISEGNI[id] || ''}</svg>`;
 const disegnoDeco = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${DECO[id] || ''}</svg>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;

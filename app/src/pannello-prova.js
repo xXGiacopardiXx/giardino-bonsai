@@ -29,6 +29,7 @@ export function creaPannelloProva(azioni) {
       <button data-a="applica" class="principale">Fai passare il tempo</button>
       <button data-a="guida">Rivedi la guida</button>
       <button data-a="azalea">Azalea in regalo</button>
+      <button data-a="ciliegio">Ciliegio in regalo</button>
       <button data-a="prato">Giardino grande in regalo</button>
       <button data-a="azzera" class="pericolo">Nuova partita</button>
     </div>`;
@@ -47,6 +48,7 @@ export function creaPannelloProva(azioni) {
     else if (a === 'ora') { azzeraCursore(); azioni.applica(1 / 24); }
     else if (a === 'applica') { const g = giorni(); azzeraCursore(); if (g > 0) azioni.applica(g); }
     else if (a === 'azalea') { el.hidden = true; azzeraCursore(); azioni.azalea(); }
+    else if (a === 'ciliegio') { el.hidden = true; azzeraCursore(); azioni.ciliegio(); }
     else if (a === 'prato') { el.hidden = true; azzeraCursore(); azioni.prato(); }
     else if (a === 'guida') { el.hidden = true; azzeraCursore(); azioni.guida(); }
     else if (a === 'azzera' && confirm('Ricominciare da capo? La partita salvata verrà cancellata.')) { azzeraCursore(); azioni.azzera(); }

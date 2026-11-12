@@ -8,9 +8,9 @@ import { STILI } from './stili.js';
 
 export const NOME_MAESTRO = 'Il maestro Ren';
 const STAGIONI = ['Primavera', 'Estate', 'Autunno', 'Inverno'];
-const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino', azalea: 'Azalea' };
+const NOMI = { acero: 'Acero', ginepro: 'Ginepro', pino: 'Pino', azalea: 'Azalea', ciliegio: 'Ciliegio' };
 // le piante del giardino, nell'ordine delle schede (l'azalea solo se è stata comprata)
-const ordine = (v) => ['acero', 'ginepro', 'pino', 'azalea'].filter(p => v.piante.includes(p));
+const ordine = (v) => ['acero', 'ginepro', 'pino', 'azalea', 'ciliegio'].filter(p => v.piante.includes(p));
 
 // riflessione d'apertura di ogni stagione: due testi, alternati negli anni dispari e pari
 const INTRO = [
@@ -60,6 +60,17 @@ const AZIONI = {
     [{ fai: 'Acqua poca, ma mai terriccio secco.', perche: 'L\'azalea Satsuki tiene le foglie anche d\'inverno, e un poco beve sempre.' },
       { fai: 'Guarda i boccioli che aspettano.', perche: 'Sono già lì, chiusi sulle punte dei rami: il freddo dell\'inverno serve proprio a farli aprire in primavera.' }],
   ],
+  ciliegio: [
+    [{ fai: 'Goditi i fiori, e non potare finché ci sono.', perche: 'Il ciliegio fiorisce sui rametti corti dell\'anno prima: i boccioli si sono formati l\'estate scorsa. Tagliando adesso toglieresti proprio i fiori.' },
+      { fai: 'Dopo la fioritura, pota i germogli nuovi.', perche: 'Appena cadono i petali il ciliegio mette rami nuovi e lunghi: accorciandoli subito la chioma resta compatta e la ferita si chiude in fretta, con la linfa che scorre.' },
+      { fai: 'Annaffia appena il terriccio si asciuga.', perche: 'Aprire tanti fiori costa molta acqua, e le foglie nuove sono tenere: se le radici restano a secco i petali cadono prima.' }],
+    [{ fai: 'Togli le ciliegine, una per una.', perche: 'Ogni ciliegina è un seme che la pianta nutre per settimane. Togliendole, quella forza va ai rami e alle gemme dei fiori: se restano, l\'anno dopo il ciliegio fiorirà la metà.' },
+      { fai: 'Acqua spesso: con il caldo beve quasi quanto l\'acero.', perche: 'Le foglie del ciliegio sono larghe e sottili, e d\'estate perdono tanta acqua.' }],
+    [{ fai: 'Niente tagli grandi, ormai.', perche: 'Il ciliegio cicatrizza male quando la linfa rallenta: un taglio d\'autunno resta aperto e può far entrare funghi. Meglio aspettare la prossima fioritura.' },
+      { fai: 'Annaffia un po\' meno.', perche: 'Col fresco il vaso asciuga piano, e le foglie arancio stanno già per cadere.' }],
+    [{ fai: 'Lascialo dormire spoglio.', perche: 'Il freddo dell\'inverno è il segnale che sveglia i boccioli: senza un po\' di gelo il ciliegio in primavera fiorirebbe poco.' },
+      { fai: 'Acqua rara, ma mai terriccio secco.', perche: 'Senza foglie beve pochissimo, ma le radici sono vive e non devono seccare.' }],
+  ],
   pino: [
     [{ fai: 'Cima le candele quando sono allungate e chiare.', perche: 'Il pino cresce a scatti, dalle candele. Accorciandole la forza si divide tra più gemme: i ciuffi di aghi restano corti e i cuscinetti compatti, invece di rami lunghi e spogli.' },
       { fai: 'Annaffia solo quando il terriccio è quasi asciutto.', perche: 'Le radici del pino vivono insieme a un fungo amico che le aiuta a nutrirsi, e quel fungo ha bisogno di aria: nel terriccio zuppo muore.' }],
@@ -86,6 +97,10 @@ const STA_BENE = {
     'Dopo la fioritura mette rami nuovi, teneri e chiari. Sulle loro punte, a fine estate, nasceranno i boccioli dell\'anno dopo.',
     'Rallenta e custodisce i boccioli già formati. Le foglie più vecchie, all\'interno, si colorano un poco.',
     'Riposa con le sue foglie piccole e scure. I boccioli aspettano la primavera.'],
+  ciliegio: ['Si sveglia fiorendo: prima delle foglie apre i fiori rosa chiaro, che durano solo pochi giorni.',
+    'Ha messo le foglie e le ciliegine: lavora al sole e beve tanto. Sulle punte prepara già i boccioli dell\'anno dopo.',
+    'Porta le riserve nel legno: le foglie si fanno arancio e rosse, e poi cadono.',
+    'Dorme spoglio, con i boccioli chiusi sui rametti corti. Il freddo gli serve per fiorire bene.'],
   pino: ['Allunga le candele, le gemme nuove che diventeranno rami. È il suo unico scatto dell\'anno, e ci mette tutta la forza.',
     'Le candele sono diventate aghi nuovi. Ora irrobustisce i rami e beve poco: il caldo non lo spaventa.',
     'Gli aghi più vecchi, all\'interno, ingialliscono: la pianta li sta lasciando andare, è normale.',
@@ -104,6 +119,8 @@ function sente(v, p) {
   if (c.salute < .7) return 'La chioma si è diradata: sta ricostruendo i rametti persi, piano, con le forze che ha.';
   if (p === 'azalea' && c.fioritura > .5) return 'È in piena fioritura: ha speso mesi a preparare questi fiori, e ora beve tanto per tenerli aperti.';
   if (p === 'azalea' && c.vecchi.length) return 'I fiori appassiscono: se restano sulla pianta proverà a farne semi, e le costerà tanta forza.';
+  if (p === 'ciliegio' && c.fioritura > .5) return 'È tutto fiori, e le foglie non ci sono ancora: per pochi giorni è la pianta più bella del giardino.';
+  if (p === 'ciliegio' && c.vecchi.length) return 'Ha fatto le ciliegine: le nutre una per una, e le costano la forza dei fiori dell\'anno dopo.';
   if (v.meteo.adesso === 'pioggia') return 'Beve la pioggia dalle radici e la sente sulle foglie: per oggi ha tutta l\'acqua che le serve.';
   if (v.meteo.adesso === 'neve') return 'Dorme sotto la neve, al riparo dal vento gelido. Non ha bisogno di niente.';
   if (v.meteo.piovutoOggi) return 'Oggi ha piovuto: il terriccio è ancora fresco e le radici hanno bevuto.';
@@ -153,6 +170,17 @@ const MOMENTI = [
         { fai: 'Subito dopo, pota i germogli nuovi.', perche: 'È l\'unico momento giusto: più tardi taglieresti i boccioli della prossima primavera.' },
       ] }] } : null;
   },
+  // la prima fioritura del ciliegio (una volta sola): l'hanami, e perché le ciliegine vanno tolte
+  (v) => {
+    const ci = v.conifere.ciliegio;
+    return ci && ci.fioritura > .5 ? { id: 'hanami', titolo: 'Hanami',
+      intro: 'Il ciliegio è in fiore. In Giappone si chiama hanami: si sta sotto i ciliegi a guardare i fiori, perché durano pochi giorni e poi il vento li porta via. Proprio per questo sono così belli.',
+      piante: [{ id: 'ciliegio', nome: NOMI.ciliegio, sente: sente(v, 'ciliegio'), punti: [
+        { fai: 'Guardalo, e tienilo annaffiato.', perche: 'Con il terriccio umido i fiori restano aperti qualche giorno in più.' },
+        { fai: 'Quando cadono i petali, pota i germogli nuovi.', perche: 'È il momento giusto: la linfa scorre forte e i tagli si chiudono in fretta.' },
+        { fai: 'A inizio estate togli le ciliegine: tocca il ciliegio e scegli Pota.', perche: 'Ogni frutto costa forza. Se restano, l\'anno dopo i fiori saranno la metà.' },
+      ] }] } : null;
+  },
   // la prima volta che le radici marciscono per troppa acqua
   (v) => {
     const piante = ordine(v).filter(q => (q === 'acero' ? v : v.conifere[q]).marciume);
@@ -174,6 +202,7 @@ const METEO = {
         { fai: 'Domani guarda di nuovo il terriccio.', perche: 'Con il cielo coperto le foglie traspirano poco e il vaso asciuga più piano del solito: la sete tornerà più tardi.' }],
       ginepro: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Le conifere vogliono il terriccio quasi asciutto prima di bere di nuovo: dopo la pioggia ci vorrà qualche giorno.' }],
       azalea: [{ fai: 'Oggi niente acqua: la pioggia è perfetta per lei.', perche: 'L\'acqua piovana è leggera e un po\' acida, proprio come piace all\'azalea.' }],
+      ciliegio: [{ fai: 'Oggi niente acqua.', perche: 'La pioggia ha bagnato il vaso fino in fondo. Se è in fiore, qualche petalo cadrà prima: è la sua natura.' }],
       pino: [{ fai: 'Lascia sgocciolare il vaso, senza aggiungere acqua.', perche: 'Il fungo amico delle radici del pino ha bisogno d\'aria: meglio che il terriccio torni asciutto prima della prossima acqua.' }],
     } },
   neve: { titolo: 'La neve',
@@ -183,6 +212,7 @@ const METEO = {
         { fai: 'Non annaffiare mentre nevica.', perche: 'Sotto la neve il terriccio non si asciuga, e l\'acqua in più potrebbe gelare nel vaso.' }],
       ginepro: [{ fai: 'Non preoccuparti del colore bronzeo.', perche: 'È la sua difesa contro il freddo: con la neve e il gelo il ginepro si protegge da solo.' }],
       azalea: [{ fai: 'Lascia la neve dov\'è.', perche: 'Ripara i boccioli già formati dal gelo più secco.' }],
+      ciliegio: [{ fai: 'Lascialo sotto la neve.', perche: 'Il freddo è proprio quello che serve ai suoi boccioli per fiorire bene in primavera.' }],
       pino: [{ fai: 'Se la neve è tanta, scuotila via dai rami.', perche: 'I cuscinetti di aghi la trattengono: troppo peso potrebbe piegare i rami legati col filo.' }],
     } },
 };

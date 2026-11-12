@@ -103,6 +103,12 @@ const VASI_FORME = {
     mesh(new THREE.CylinderGeometry(.88, .88, .06, 32), M(0x5f3e2f), g, 0, 1.17, 0);
     return { geo: new THREE.CylinderGeometry(.8, .8, .04, 32) };
   },
+  // il vaso di partenza del ciliegio: ovale grigio pietra, non smaltato
+  grigio(g) {
+    mesh(new THREE.CylinderGeometry(.84, .68, .34, 36), M(0x8f8c86), g, 0, 1.0, 0).scale.z = .78;
+    mesh(new THREE.CylinderGeometry(.9, .9, .06, 36), M(0xa3a09a), g, 0, 1.17, 0).scale.z = .78;
+    return { geo: new THREE.CylinderGeometry(.82, .82, .04, 36), sz: .76 };
+  },
   // ovale basso smaltato rosso scuro, col bordo appena più chiaro
   rosso(g) {
     mesh(new THREE.CylinderGeometry(.82, .66, .32, 40), M(0x9c2f24), g, 0, 1.01, 0).scale.z = .72;
@@ -517,6 +523,134 @@ export function creaAlberi(world) {
     azalea = { radice: t };
   });
 
+  // Ciliegio giapponese (sezione 5.5): la quinta pianta, comprata coi Semi. Sta davanti, in un vaso ovale
+  // grigio su una base di legno; tronco dritto con la corteccia lucida a strisce, rami che si aprono in fuori.
+  // A inizio primavera fiori rosa chiaro (e petali che cadono), poi foglie verdi, arancio d'autunno, spoglio
+  // d'inverno. Si costruisce sempre (nascosto finché non si compra), con un seme suo.
+  let ciliegio, vasoCil;
+  conSeme(5353, () => {
+    const t = new THREE.Group(); t.position.set(-.4, 0, 3.2); t.visible = false; world.add(t);
+    mesh(flatGeo(new THREE.CylinderGeometry(.82, .88, .18, 10)), M(0x8b6a4a), t, 0, .09, 0);
+    const soilC = mesh(new THREE.CylinderGeometry(.6, .6, .04, 32), toon({ color: SOIL_WET.clone() }), t, 0, .5, 0);
+    vasoCil = vasoCambiabile(t, soilC, 'grigio', { kx: .72, ky: .78 });
+    for (let i = 0; i < 4; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.07, .11), 1), M(0x6a9a40), t, R(-.38, .38), .51, R(-.3, .3)); b.scale.y = .4; }
+    const tr = new THREE.Group(); tr.position.set(0, .49, 0); t.add(tr);
+    // corteccia del ciliegio: bruno-rossiccia, lucida
+    const legnoC = corteccia(0x6e4440, { chiaro: .3, scuro: .25 });
+    tube([[0, -.04, 0], [-.05, .35, .02], [.06, .75, 0], [-.02, 1.15, .02], [.04, 1.55, 0], [0, 1.85, 0]], .19, .05, legnoC, tr, 24);
+    // le strisce orizzontali della corteccia del ciliegio (lenticelle)
+    for (let i = 0; i < 7; i++) { const y = .12 + i * .16, s = mesh(new THREE.TorusGeometry(.17 - i * .014, .012, 4, 18), M(0x4e302c), tr, 0, y, 0, false); s.rotation.x = PI / 2; s.scale.set(1, 1, .6); }
+    for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2 + .7; tube([[0, .05, 0], [Math.cos(a) * .2, 0, Math.sin(a) * .2], [Math.cos(a) * .36, -.03, Math.sin(a) * .36]], .07, .02, legnoC, tr, 6); }
+    const ramiC = [[[0, .7, .02], [-.4, .9, .05], [-.72, .98, .05]], [[.02, .9, 0], [.42, 1.1, -.04], [.74, 1.18, -.05]], [[0, 1.25, .02], [-.18, 1.45, .1], [-.3, 1.55, .12]], [[.02, 1.0, .04], [.04, 1.2, .28], [.05, 1.32, .42]]];
+    const LEGABILI_C = [[0, 0], [1, 1], [2, 2], [3, 4]];
+    const gC = gruppiRami(tr, LEGABILI_C);
+    ramiC.forEach((p, b) => tube(p, .065, .02, legnoC, gC.gruppoRamo[b] ?? tr, 10));
+    tube([[0, 1.5, 0], [.15, 1.68, -.02], [.3, 1.8, -.02]], .05, .02, legnoC, tr, 8);
+    const padsC = [[-.72, 1.0, .05, .44], [.74, 1.2, -.05, .44], [-.3, 1.58, .12, .42], [.32, 1.82, -.02, .42], [.05, 1.36, .42, .34]];
+    // foglie ovali, seghettate, verde brillante
+    const fc = foliage(tr, padsC, { palette: ['#3f7a2c', '#4b8a33', '#58983b', '#66a544', '#76b04f'], density: 70, size: .4, flat: .7, detail: 1,
+      geo: ciuffoFoglie({ n: 8, seme: 37, lobi: 3, incavo: .5, grandezza: .5, nucleo: .3 }) });
+    const rametC = rametti(pad => gC.gruppoPad[pad] ?? tr, padsC, legnoC, 11);
+    trees.ciliegio = { g: tr, radice: t, tag: new THREE.Vector3(-.4, .49 + 2.75, 3.2), ph: 3.1 };
+    // colori di ogni stagione dallo stesso posto della tavolozza: verde tenero, verde, arancio e rosso
+    const tinta = (pal) => fc.toni.map(x => new THREE.Color(pal[Math.round(x * (pal.length - 1))]));
+    const primavera = tinta(['#8cc256', '#9ccd62', '#acd76e', '#bce07c', '#c9e68c']), estate = fc.healthy;
+    const autunno = tinta(['#c8402a', '#d9552c', '#e86e2e', '#f08a34', '#f4a840']);
+    const base = fc.healthy.map(c => c.clone());
+    const rs = sequenza(83), seccoC = fc.toni.map(() => rs() < .55 ? new THREE.Color(['#8a7a3a', '#9a7034', '#7a6a34'][Math.floor(rs() * 3)]) : null);
+    const pallidoC = fc.healthy.map((_, i) => fc.periferia[i] < .55 ? new THREE.Color(['#b0b45e', '#bcbc68', '#a6a656'][i % 3]) : null);
+    const cc = new THREE.Color();
+    let seteC = 0, floscioC = 0;
+    function coloraC(v = seteC, fl = floscioC) {
+      seteC = v; floscioC = fl;
+      for (let i = 0; i < fc.healthy.length; i++) {
+        cc.copy(base[i]);
+        if (seccoC[i]) cc.lerp(seccoC[i], v * .85);
+        if (pallidoC[i]) cc.lerp(pallidoC[i], fl * .7);
+        fc.m.setColorAt(i, cc);
+      }
+      fc.m.instanceColor.needsUpdate = true;
+    }
+    cure.ciliegio = assetabile(curabile(fc, tr, new THREE.Vector3(-.4, .52, 3.2), .6, gC.gruppoPad), {
+      t, soil: soilC, raggioAnello: 1.05, annaffiatoio: new THREE.Vector3(.95, 1.05, .75), colora: coloraC,
+    });
+    // fiori: cinque petali rosa chiaro, tanti, sopra quasi tutti i ciuffi (un gruppo per cuscinetto)
+    const fioreGeo = new THREE.IcosahedronGeometry(.5, 0).scale(1, .4, 1);
+    const ROSA = ['#fbd3e1', '#f8c2d6', '#ffe4ee', '#f4b0c8', '#fde8f0'].map(x => new THREE.Color(x)), BOCCIOLO = new THREE.Color('#e07a9c');
+    const m4 = new THREE.Matrix4(), pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), rf = sequenza(97);
+    const fiori = padsC.map((pd, pad) => {
+      const scelti = [];
+      fc.pad.forEach((p, i) => { if (p === pad && rf() < .92) scelti.push(i); });
+      const im = new THREE.InstancedMesh(fioreGeo, toon({ color: 0xffffff }), scelti.length); im.castShadow = true;
+      const basi = scelti.map((i, k) => {
+        fc.m.getMatrixAt(i, m4); m4.decompose(pos, q, sc);
+        const fuori = pos.clone().sub(new THREE.Vector3(pd[0], pd[1] - .1, pd[2])).normalize().multiplyScalar(sc.x * .3);
+        im.setColorAt(k, ROSA[Math.floor(rf() * ROSA.length)]);
+        return { p: pos.clone().add(fuori).add(new THREE.Vector3(0, sc.x * .2, 0)), s: sc.x * (.85 + rf() * .35), r: rf() * 6, ordine: rf() };
+      });
+      (gC.gruppoPad[pad] ?? tr).add(im);
+      return { im, basi, colori: im.instanceColor.array.slice() };
+    });
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0), ms = new THREE.Matrix4(), qq = new THREE.Quaternion(), e = new THREE.Euler();
+    let chiaveFiori = '', petali = 0;
+    function setFioritura(boccioli, aperti) {
+      const chiave = boccioli.toFixed(2) + ':' + aperti.toFixed(2);
+      if (chiave === chiaveFiori) return; chiaveFiori = chiave;
+      petali = aperti;
+      for (const f of fiori) {
+        f.basi.forEach((b, k) => {
+          const aperto = Math.min(1, Math.max(0, aperti * 1.4 - b.ordine * .4)), bocciolo = boccioli > b.ordine * .8 ? .3 : 0;
+          const s = Math.max(aperto, aperto > 0 ? 0 : bocciolo);
+          if (s < .02) { f.im.setMatrixAt(k, zero); return; }
+          ms.compose(b.p, qq.setFromEuler(e.set(0, b.r, 0)), sc.setScalar(b.s * s));
+          f.im.setMatrixAt(k, ms);
+          const col = aperto > 0 ? null : BOCCIOLO;
+          f.im.instanceColor.setXYZ(k, col ? col.r : f.colori[k * 3], col ? col.g : f.colori[k * 3 + 1], col ? col.b : f.colori[k * 3 + 2]);
+        });
+        f.im.instanceMatrix.needsUpdate = true; f.im.instanceColor.needsUpdate = true;
+      }
+    }
+    setFioritura(0, 0);
+    // petali che cadono piano attorno alla pianta, finché è in fiore
+    const petaloGeo = new THREE.CircleGeometry(.05, 5).scale(1, .7, 1);
+    const cadono = Array.from({ length: 16 }, (_, i) => {
+      const m = new THREE.Mesh(petaloGeo, toon({ color: ROSA[i % ROSA.length], side: THREE.DoubleSide })); m.visible = false; t.add(m);
+      return { m, ph: i * 1.3, v: .18 + (i % 5) * .04 };
+    });
+    const ricomincia = (c) => { const a = c.ph * 2.4; c.m.position.set(Math.cos(a) * (.3 + (c.ph % 1) * .7), 2.1 + (c.ph % .5), Math.sin(a) * (.3 + (c.ph % 1) * .6)); };
+    cadono.forEach(ricomincia);
+    // stagione (0 = inizio primavera): colori delle foglie; spoglio da metà autunno inoltrato a fine inverno
+    function setStagione(p) {
+      const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a)));
+      for (let i = 0; i < base.length; i++) {
+        if (p < 1) base[i].copy(primavera[i]).lerp(estate[i], k(.6, 1));
+        else if (p < 2.2) base[i].copy(estate[i]).lerp(autunno[i], k(2, 2.2));
+        else base[i].copy(autunno[i]);
+      }
+      fc.m.visible = !(p >= 2.95 && p < 3.92);
+      coloraC();
+    }
+    Object.assign(cure.ciliegio, {
+      g: tr, aghi: false, specie: 'ciliegio', punte: punteDa(rametC, padsC, gC.gruppoPad), scalaGermogli: .85,
+      verde: new THREE.Color(0x58983b), coloreGermoglio: new THREE.Color(0xb6dd78),
+      fuoco: new THREE.Vector3(-.4, 1.75, 3.2),
+      filo: creaFilo(LEGABILI_C.map(([b, pad]) => { const [x, y, z, r] = padsC[pad]; return { gruppo: gC.gruppoRamo[b], punti: ramiC[b], r0: .065, r1: .02, cima: new THREE.Vector3(x, y + r * .55, z) }; })),
+      setFioritura,
+      // i petali cadono (dt: secondi dall'ultima volta)
+      petali(dt) {
+        for (const c of cadono) {
+          c.m.visible = petali > .3 && t.visible;
+          if (!c.m.visible) continue;
+          c.ph += dt; c.m.position.y -= c.v * dt; c.m.position.x += Math.sin(c.ph * 1.7) * .15 * dt;
+          c.m.rotation.set(c.ph * 1.4, c.ph, c.ph * .7);
+          if (c.m.position.y < .05) ricomincia(c);
+        }
+      },
+    });
+    cure.ciliegio.filo.quandoPiega = () => cure.ciliegio.aggiornaPieghe();
+    ciliegio = { radice: t, setStagione };
+  });
+
   cure.acero = acero;
 
   // Piante spostabili (sezione 8.3): ogni pianta si sposta col vaso e il supporto (il gruppo radice), e con
@@ -534,6 +668,7 @@ export function creaAlberi(world) {
   Object.assign(cure.pino, { setVaso: vasoPino.setVaso, scintille: vasoPino.scintille });
   Object.assign(cure.ginepro, { setVaso: vasoGin.setVaso, scintille: vasoGin.scintille });
   Object.assign(cure.azalea, { setVaso: vasoAza.setVaso, scintille: vasoAza.scintille });
+  Object.assign(cure.ciliegio, { setVaso: vasoCil.setVaso, scintille: vasoCil.scintille });
   let orologioVasi = null;
   const anelloSposta = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 56), new THREE.MeshBasicMaterial({ color: 0x8fe06a, transparent: true, opacity: .8, depthWrite: false }));
   anelloSposta.rotation.x = -PI / 2; anelloSposta.visible = false; anelloSposta.renderOrder = 3; world.add(anelloSposta);
@@ -575,6 +710,8 @@ export function creaAlberi(world) {
     cure,
     // l'azalea c'è solo dopo averla comprata
     setAzalea(si) { azalea.radice.visible = si; },
+    // e così il ciliegio
+    setCiliegio(si) { ciliegio.radice.visible = si; },
     // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino', 'azalea' oppure null
     tocca(raycaster) {
       let meglio = null, d = Infinity;
@@ -586,13 +723,14 @@ export function creaAlberi(world) {
       return meglio;
     },
     // punto dell'anno (0 = inizio primavera, 3 = inverno): l'acero cambia chioma, il ginepro si fa bronzeo
-    setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
+    setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); ciliegio.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
       // il saltello del vaso nuovo di pino, ginepro e azalea (quello dell'acero lo fa l'acero)
       const dt = orologioVasi === null ? 0 : Math.min(.05, clock - orologioVasi); orologioVasi = clock;
-      for (const p of ['pino', 'ginepro', 'azalea']) cure[p].scintille?.aggiorna(dt);
-      cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock); cure.azalea.filo.aggiorna(clock);
+      for (const p of ['pino', 'ginepro', 'azalea', 'ciliegio']) cure[p].scintille?.aggiorna(dt);
+      cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock); cure.azalea.filo.aggiorna(clock); cure.ciliegio.filo.aggiorna(clock);
+      cure.ciliegio.petali(dt);
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }
       if (acero.ring.visible) acero.ring.material.opacity = .45 + .3 * Math.sin(clock * 3.2);
       acero.aggiorna(clock);

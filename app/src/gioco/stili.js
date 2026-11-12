@@ -130,7 +130,33 @@ STILI.azalea = [
     ] },
 ];
 
-export const STILE_INIZIALE = { acero: 'moyogi', pino: 'shakan', ginepro: 'moyogi', azalea: 'moyogi' };
+// il ciliegio (sezione 5.5): tronco dritto e alto, rami che si aprono in fuori, fiori prima delle foglie
+STILI.ciliegio = [
+  { id: 'hokidachi', nome: 'Hokidachi', sottotitolo: 'A scopa', premio: 400,
+    descrizione: 'Il tronco sale dritto e si apre in una chioma tonda e larga: in fioritura sembra una nuvola rosa.',
+    sagoma: [E(0, 1.45, .05, 1.05, .58, .8)],
+    regole: [
+      { testo: 'Rami bassi alzati col filo, verso l\'alto', ok: (v) => ramoSu(0)(v) && ramoSu(1)(v) },
+      { testo: 'Chioma sana (almeno 80%)', ok: sana },
+    ] },
+  { id: 'moyogi', nome: 'Moyogi', sottotitolo: 'Eretto informale', premio: 350,
+    descrizione: 'Cuscinetti separati, a gradini, con l\'aria in mezzo: i fiori spuntano a nuvolette sui rami.',
+    sagoma: [E(-.7, 1.0, .05, .46, .24, .4), E(.72, 1.2, -.05, .46, .24, .4), E(-.3, 1.55, .12, .44, .24, .38), E(.3, 1.8, -.02, .44, .24, .38)],
+    regole: [
+      { testo: 'Rami bassi abbassati col filo', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) },
+      { testo: 'Chioma sana (almeno 80%)', ok: sana },
+    ] },
+  { id: 'kabudachi', nome: 'Kabudachi', sottotitolo: 'A più tronchi', premio: 650, anno: 2,
+    descrizione: 'Più tronchi dalla stessa radice, come un piccolo boschetto: una chioma sola, larga e leggera.',
+    perche: 'I tronchi nuovi nascono dalla base solo da una pianta già radicata bene nel vaso: serve almeno un anno con te.',
+    sagoma: [E(0, 1.35, .02, 1.15, .5, .82)],
+    regole: [
+      { testo: 'Tutti i rami bassi abbassati col filo', ok: (v) => ramoGiu(0)(v) && ramoGiu(1)(v) && ramoGiu(3)(v) },
+      { testo: 'Chioma sana (almeno 80%)', ok: sana },
+    ] },
+];
+
+export const STILE_INIZIALE = { acero: 'moyogi', pino: 'shakan', ginepro: 'moyogi', azalea: 'moyogi', ciliegio: 'hokidachi' };
 export const COMPLETATO_DA = 90;   // percentuale per il sigillo dello stile
 export const stileDi = (pianta, id) => STILI[pianta]?.find(s => s.id === id) ?? null;
 // uno stile si può scegliere dall'anno indicato; quello in corso e quelli già sigillati restano sempre scelti

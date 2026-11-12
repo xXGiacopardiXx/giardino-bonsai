@@ -11,7 +11,7 @@ const livello = (c) => c.marciume ? 'grave' : c.ristagno > 0 ? 'troppa'
 const livelloAcqua = (c) => c.ristagno > 0 ? 'troppa' : c.acqua > .6 ? 'bene' : c.acqua > .3 ? 'poca' : 'pochissima';
 
 export function creaInterfaccia(screenEl, camera, trees) {
-  const tagEls = { acero: $('tag-acero'), ginepro: $('tag-ginepro'), pino: $('tag-pino'), azalea: $('tag-azalea') };
+  const tagEls = { acero: $('tag-acero'), ginepro: $('tag-ginepro'), pino: $('tag-pino'), azalea: $('tag-azalea'), ciliegio: $('tag-ciliegio') };
   const pv = new THREE.Vector3();
   const toScreen = (v) => { pv.copy(v).project(camera); return [(pv.x + 1) / 2 * screenEl.clientWidth, (1 - pv.y) / 2 * screenEl.clientHeight, pv.z]; };
 
@@ -177,6 +177,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
       $('acero-acqua').parentElement.dataset.livello = livelloAcqua(v);
       // pino, ginepro e azalea (se c'è): fase della sete e acqua nel terriccio, come l'acero
       tagEls.azalea.hidden = !v.conifere.azalea;
+      tagEls.ciliegio.hidden = !v.conifere.ciliegio;
       for (const p of Object.keys(v.conifere)) {
         const c = v.conifere[p];
         $(p + '-fase').textContent = c.nomeFase;

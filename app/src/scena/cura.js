@@ -7,7 +7,7 @@ import { toon, sequenza } from './strumenti.js';
 
 // cuscinetti della chioma dove possono stare i parassiti (POSTI_PARASSITI del motore): per l'acero
 // i più visibili; pino e ginepro ne hanno 5 in tutto
-const CUSCINETTI = { acero: [0, 1, 2, 6, 3], pino: [0, 1, 2, 3, 4], ginepro: [0, 1, 2, 3, 4], azalea: [0, 1, 2, 3, 4] };
+const CUSCINETTI = { acero: [0, 1, 2, 6, 3], pino: [0, 1, 2, 3, 4], ginepro: [0, 1, 2, 3, 4], azalea: [0, 1, 2, 3, 4], ciliegio: [0, 1, 2, 3, 4] };
 const AFIDI = 70;
 const smooth = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 
@@ -24,7 +24,7 @@ const nebbiaTex = (() => {
 // pianta: una pianta di scena/alberi.js (cure.acero, cure.pino, cure.ginepro: ciuffiDi, gruppoDi, potTop);
 // id: 'acero', 'pino' o 'ginepro'
 export function creaCura(scene, pianta, id = 'acero') {
-  const semeBase = { acero: 0, pino: 500, ginepro: 900, azalea: 1300 }[id];
+  const semeBase = { acero: 0, pino: 500, ginepro: 900, azalea: 1300, ciliegio: 1700 }[id];
   // --- afidi: un InstancedMesh per ogni cuscinetto possibile, nel gruppo che si piega col filo ---
   const colonie = CUSCINETTI[id].map((pad, posto) => {
     const rnd = sequenza(301 + semeBase + posto * 17);

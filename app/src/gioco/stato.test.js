@@ -206,7 +206,7 @@ test('si parte con il primo vaso; gli altri si comprano con i Semi', () => {
   const s = nuovoStato(T0);
   assert.equal(vista(s).vaso, VASI[0].id);
   // si hanno già il vaso dell'acero e quelli di partenza delle altre piante
-  assert.deepEqual(vista(s).vasi.filter(v => v.tuo).map(v => v.id), [VASI[0].id, 'cotto', 'bruno-rett', 'bruno']);
+  assert.deepEqual(vista(s).vasi.filter(v => v.tuo).map(v => v.id), [VASI[0].id, 'cotto', 'bruno-rett', 'bruno', 'grigio']);
   // 50 Semi non bastano per un vaso da 80
   assert.deepEqual(compra(s, 'terracotta'), { esito: 'pochi', mancano: 30 });
   s.semi = 100;
@@ -227,7 +227,7 @@ test('un salvataggio della versione 2 riceve il vaso iniziale', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.equal(s.vasi.scelto, VASI[0].id);
-  assert.deepEqual(s.vasi.posseduti, [VASI[0].id, 'cotto', 'bruno-rett', 'bruno']);
+  assert.deepEqual(s.vasi.posseduti, [VASI[0].id, 'cotto', 'bruno-rett', 'bruno', 'grigio']);
 });
 
 test('saltando più giorni in una volta spunta un germoglio per ogni giorno', () => {
@@ -1443,7 +1443,7 @@ test('le decorazioni nuove si comprano e trovano un posto libero', () => {
 
 test('ogni pianta ha il suo vaso, e un vaso comprato va bene per tutte', () => {
   const s = nuovoStato(T0); s.semi = 1000;
-  assert.deepEqual(vista(s).vasiPiante, { acero: 'blu', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' });
+  assert.deepEqual(vista(s).vasiPiante, { acero: 'blu', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno', ciliegio: 'grigio' });
   assert.equal(compra(s, 'celadon', 'pino').esito, 'ok');
   assert.equal(vista(s).vasiPiante.pino, 'celadon');
   assert.equal(vista(s).vaso, 'blu', "l'acero tiene il suo");
@@ -1461,6 +1461,45 @@ test('un salvataggio della versione 24 riceve i vasi delle altre piante', () => 
   vecchio.versione = 24; vecchio.vasi = { posseduti: ['blu', 'celadon'], scelto: 'celadon' };
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
-  assert.deepEqual(vista(s).vasiPiante, { acero: 'celadon', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' });
+  assert.deepEqual(vista(s).vasiPiante, { acero: 'celadon', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno', ciliegio: 'grigio' });
   assert.ok(s.vasi.posseduti.includes('cotto') && s.vasi.posseduti.includes('celadon'));
+});
+
+test('il ciliegio si compra coi Semi e fiorisce a inizio primavera, prima delle foglie', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  assert.equal(compraPianta(s, T0, 'ciliegio').esito, 'ok');
+  assert.equal(s.semi, 500);
+  assert.ok(vista(s).piante.includes('ciliegio'));
+  assert.ok(vista(s).stile.ciliegio && vista(s).rinvaso.ciliegio);
+  // un anno dopo (curato bene, senza ciliegine rimaste): boccioli il primo giorno di primavera, fiori pieni il quarto, petali via dal quinto
+  avanza(s, dopo(27.9)); Object.assign(s.conifere.ciliegio, { salute: 1, fiori: 1, sete: 0 });
+  const giorno = (g) => { const t = dopo(28 + g - .5); s.conifere.ciliegio.sete = 0; avanza(s, t); return vista(s).conifere.ciliegio; };
+  assert.ok(giorno(1).boccioli > 0);
+  assert.ok(giorno(4).fioritura > .9);
+  assert.ok(giorno(7).fioritura < .5);
+});
+
+test('le ciliegine vanno tolte: se restano, l anno dopo il ciliegio fiorisce la metà', () => {
+  const prova = (togli) => {
+    const s = nuovoStato(T0); s.semi = 1000; compraPianta(s, T0, 'ciliegio');
+    for (let g = 0; g <= 10; g++) { s.conifere.ciliegio.sete = 0; avanza(s, dopo(g + .2)); }
+    const c = s.conifere.ciliegio;
+    assert.ok(c.vecchi.length > 0, 'a inizio estate ci sono le ciliegine');
+    if (togli) for (const x of [...c.vecchi]) assert.equal(togliAghi(s, dopo(10.3), x.id, 'ciliegio').esito, 'ok');
+    for (let g = 11; g <= 15; g++) { s.conifere.ciliegio.sete = 0; avanza(s, dopo(g + .2)); }
+    return c.fiori;
+  };
+  assert.equal(prova(true), 1);
+  assert.equal(prova(false), .5);
+});
+
+test('dopo la fioritura il ciliegio mette germogli da potare, e la sfida può chiederlo', () => {
+  const s = nuovoStato(T0); s.semi = 1000; compraPianta(s, T0, 'ciliegio');
+  for (let g = 0; g <= 5; g++) { s.conifere.ciliegio.sete = 0; avanza(s, dopo(g + .2)); }
+  const c = s.conifere.ciliegio;
+  assert.ok(c.germogli.length > 0);
+  // d'inverno niente germogli
+  const s2 = nuovoStato(T0); s2.semi = 1000; avanza(s2, dopo(21)); compraPianta(s2, dopo(21), 'ciliegio');
+  for (let g = 21; g <= 27; g++) { s2.conifere.ciliegio.sete = 0; avanza(s2, dopo(g + .2)); }
+  assert.equal(s2.conifere.ciliegio.germogli.length, 0);
 });
