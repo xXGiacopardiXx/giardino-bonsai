@@ -184,7 +184,9 @@ function avvia() {
     // azalea: boccioli e fiori
     if (v.conifere.azalea) alberi.cure.azalea.setFioritura(v.conifere.azalea.boccioli, v.conifere.azalea.fioritura);
     acero.setSalute(v.salute);
+    // il vaso di ogni pianta (l'acero e le altre, Aspetto nella tendina)
     acero.setVaso(v.vaso);
+    for (const p of ['pino', 'ginepro', 'azalea']) alberi.cure[p].setVaso(v.vasiPiante[p]);
     negozio?.mostra(v);
     cure?.mostra(v);
     sfide?.mostra(v);
@@ -534,16 +536,16 @@ function avvia() {
 
   const curaPianta = (p) => { chiudiMenu(); potatura(null); filatura(null); cure.apri('pianta', p); disegna(); };
 
-  // --- Negozio dei vasi: il vaso comprato va subito all'acero ---
+  // --- Negozio dei vasi: il vaso comprato va subito alla pianta di cui si guarda l'Aspetto (o all'acero) ---
   const nomeVaso = (id) => VASI.find(x => x.id === id).nome.toLowerCase();
   negozio = creaNegozio({
     compra(id) {
-      const esito = compra(stato, id);
+      const per = negozio.pianta ?? 'acero', esito = compra(stato, id, per);
       if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
       if (esito.esito !== 'ok') return;
       salva(stato); disegna(); suoni.magia();
       negozio.chiudi();
-      ui.toast(`Ecco il vaso ${nomeVaso(id)}! Per cambiarlo tocca l'acero e scegli Aspetto.`, 3500);
+      ui.toast(`Ecco il vaso ${nomeVaso(id)}, per ${IL[per].toLowerCase()}! Ogni vaso va bene per tutte le piante: toccane una e scegli Aspetto.`, 4500);
     },
     compraProdotto(id) {
       const esito = compraProdotto(stato, id);
@@ -602,7 +604,7 @@ function avvia() {
     },
     sposta(id) { sposta(id); },
     usa(id) {
-      if (!scegliVaso(stato, id)) return;
+      if (!scegliVaso(stato, id, negozio.pianta ?? 'acero')) return;
       salva(stato); disegna(); suoni.magia();
       negozio.chiudi();
     },
@@ -631,6 +633,7 @@ function avvia() {
     else if (a === 'stile') stilatura(p);
     else if (a === 'foto') fotoPianta(p);
     else if (a === 'sposta') sposta(p);
+    else if (a === 'aspetto') { negozio.apri('aspetto', 'vasi', p); disegna(); }
     else curaPianta(p);
   });
   menuAcero.addEventListener('click', (e) => {
@@ -639,7 +642,7 @@ function avvia() {
     if (a === 'acqua') annaffiaPianta('acero');
     else if (a === 'pota') potatura('acero');
     else if (a === 'filo') filatura('acero');
-    else if (a === 'aspetto') { negozio.apri('aspetto'); disegna(); }
+    else if (a === 'aspetto') { negozio.apri('aspetto', 'vasi', 'acero'); disegna(); }
     else if (a === 'cura') curaPianta('acero');
     else if (a === 'rinvasa') rinvasaPianta('acero');
     else if (a === 'stile') stilatura('acero');

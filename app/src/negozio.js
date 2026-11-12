@@ -19,6 +19,9 @@ const DISEGNI = {
   terracotta: `<path d="M13 28h38l-5 20H18Z" fill="#c27a4a"/><rect x="10" y="24" width="44" height="7" rx="3" fill="#ae6a3d"/>`,
   rettangolare: `<rect x="5" y="30" width="54" height="13" fill="#5b4636"/><rect x="3" y="27" width="58" height="5" fill="#4a3829"/><rect x="8" y="43" width="7" height="4" fill="#4a3829"/><rect x="49" y="43" width="7" height="4" fill="#4a3829"/>`,
   celadon: `<path d="M5 32h54l-7 11H12Z" fill="#8cbfa3"/><rect x="3" y="28" width="58" height="6" rx="3" fill="#a9d6bd"/><rect x="18" y="43" width="28" height="4" rx="2" fill="#76a98c"/>`,
+  cotto: `<path d="M13 28h38l-5 18H18Z" fill="#c27a4a"/><rect x="10" y="24" width="44" height="6" rx="3" fill="#ae6a3d"/>`,
+  'bruno-rett': `<rect x="7" y="29" width="50" height="14" fill="#8a573a"/><rect x="5" y="26" width="54" height="5" fill="#76482f"/><rect x="10" y="43" width="6" height="3" fill="#76482f"/><rect x="48" y="43" width="6" height="3" fill="#76482f"/>`,
+  bruno: `<path d="M11 29h42l-5 15H16Z" fill="#6e4a38"/><rect x="9" y="25" width="46" height="6" rx="3" fill="#5f3e2f"/>`,
   rosso: `<path d="M7 30h50l-6 15H13Z" fill="#9c2f24"/><rect x="5" y="26" width="54" height="6" rx="3" fill="#b8463a"/>`,
   nero: `<path d="M12 29h40l-4 15H16Z" fill="#2f2a28"/><rect x="10" y="25" width="44" height="6" rx="1" fill="#403a36"/><rect x="16" y="44" width="6" height="3" fill="#403a36"/><rect x="42" y="44" width="6" height="3" fill="#403a36"/><path d="M24 29v15M40 29v15" stroke="#403a36" stroke-width="1.2"/>`,
   nuvola: `<path d="M9 30h46l-4 13H13Z" fill="#eadfc6"/><rect x="7" y="26" width="50" height="6" rx="3" fill="#d9c9a6"/><rect x="10" y="35" width="44" height="2.5" fill="#4c7891"/><ellipse cx="17" cy="45" rx="6" ry="3" fill="#d0bc96"/><ellipse cx="47" cy="45" rx="6" ry="3" fill="#d0bc96"/>`,
@@ -64,6 +67,9 @@ const disegnoPrato = (n) => {
   const rx = 18 + n * 4;
   return `<svg viewBox="0 0 64 50" aria-hidden="true"><path d="M${32 - rx} 26Q32 50 ${32 + rx} 26Z" fill="#9a643f"/><path d="M${32 - rx * .7} 30Q32 54 ${32 + rx * .7} 30Z" fill="#877e6e"/><ellipse cx="32" cy="26" rx="${rx}" ry="${rx * .38}" fill="#a5d36a"/><ellipse cx="32" cy="26" rx="18" ry="6.8" fill="#8cbc50"/><ellipse cx="34" cy="25" rx="7" ry="2.6" fill="#ebe3d1"/><path d="M29 24c0-4 1-6 0-9" stroke="#6b5444" stroke-width="2" fill="none"/><circle cx="29" cy="14" r="4" fill="#e3462a"/><path d="M${32 + rx - 4} 22l3-3 3 3M${32 + rx - 1} 19v6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
 };
+// la pianta di cui si sceglie il vaso, nelle frasi
+const DI = { acero: "dell'acero", pino: 'del pino', ginepro: 'del ginepro', azalea: "dell'azalea" };
+const A = { acero: "all'acero", pino: 'al pino', ginepro: 'al ginepro', azalea: "all'azalea" };
 const disegnoPianta = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${PIANTE_DISEGNI[id] || ''}</svg>`;
 const disegnoDeco = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true">${DECO[id] || ''}</svg>`;
 const disegno = (id) => `<svg viewBox="0 0 64 50" aria-hidden="true" stroke="${INK}" stroke-width="0">${ALBERELLO}${DISEGNI[id] || ''}</svg>`;
@@ -89,7 +95,8 @@ export function creaNegozio(azioni) {
   document.getElementById('screen').appendChild(el);
   const v = (nome) => el.querySelector(`[data-v="${nome}"]`);
   const lista = v('lista'), semiEl = v('semi'), vai = el.querySelector('.negozio-vai');
-  let ultimaVista = null, modo = 'negozio', scheda = 'vasi', categoria = 'concime';
+  // pianta: di chi si sceglie il vaso (Aspetto dalla sua tendina); comprando dal negozio, l'acero
+  let ultimaVista = null, modo = 'negozio', scheda = 'vasi', categoria = 'concime', pianta = null;
 
   function chiudi() { el.hidden = true; }
   el.addEventListener('click', (e) => {
@@ -116,9 +123,13 @@ export function creaNegozio(azioni) {
     get aperto() { return !el.hidden; },
     get modo() { return modo; },
     get scheda() { return scheda; },
+    get pianta() { return pianta; },
     // nuovoModo: 'negozio' (comprare) o 'aspetto' (mettere in uso i vasi comprati);
     // nuovaScheda, nel negozio: 'vasi' o 'cura'
-    apri(nuovoModo = 'negozio', nuovaScheda = 'vasi') {
+    // perPianta: in Aspetto, la pianta di cui si cambia il vaso; "Altri vasi nel negozio" la ricorda
+    apri(nuovoModo = 'negozio', nuovaScheda = 'vasi', perPianta) {
+      if (perPianta !== undefined) pianta = perPianta;
+      else if (nuovoModo === 'negozio' && modo !== 'aspetto') pianta = null;
       modo = nuovoModo; scheda = nuovaScheda; el.hidden = false;
       v('titolo').textContent = modo === 'aspetto' ? 'Aspetto' : 'Negozio';
       v('schede').hidden = modo === 'aspetto';
@@ -126,9 +137,10 @@ export function creaNegozio(azioni) {
       v('categorie').hidden = modo !== 'negozio' || scheda !== 'cura';
       el.querySelectorAll('.categoria').forEach(b => b.classList.toggle('on', b.dataset.cat === categoria));
       lista.scrollTop = 0;
-      v('sotto').textContent = modo === 'aspetto' ? 'I tuoi vasi: tocca Usa per cambiare quello dell\'acero'
+      v('sotto').textContent = modo === 'aspetto' ? `I tuoi vasi: tocca Usa per cambiare quello ${DI[pianta ?? 'acero']}`
         : scheda === 'cura' ? CATEGORIE.find(c => c[0] === categoria)[2] + (categoria === 'attrezzo' ? '' : ' (3 dosi a confezione)')
-        : scheda === 'giardino' ? 'Piante nuove, decorazioni e cose messe da parte' : 'Vasi per l\'acero';
+        : scheda === 'giardino' ? 'Piante nuove, decorazioni e cose messe da parte'
+        : pianta ? `Vasi per tutte le piante: quello che compri va ${A[pianta]}` : 'Vasi per tutte le piante: quello che compri va all\'acero';
       if (ultimaVista) api.mostra(ultimaVista);
     },
     chiudi,
@@ -164,15 +176,17 @@ export function creaNegozio(azioni) {
         }).join('') + vista.elementiDaParte.map(e => `<div class="vaso" title="Messo da parte: rimetterlo è gratis"><div class="vaso-img">${disegnoElemento(e.id)}</div><span class="vaso-nome">${e.nome}</span><button class="vaso-b usa" data-a="rimetti" data-id="${e.id}">Rimetti</button></div>`).join('');
         return;
       }
-      const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi;
+      // in Aspetto i vasi tuoi; nel negozio quelli da comprare (i vasi di partenza, gratis, non si vendono)
+      const per = pianta ?? 'acero', inUso = (x) => x.id === vista.vasiPiante[per];
+      const vasi = modo === 'aspetto' ? vista.vasi.filter(x => x.tuo) : vista.vasi.filter(x => x.prezzo > 0);
       vai.hidden = modo !== 'aspetto' || vista.vasi.every(x => x.tuo);
       lista.innerHTML = vasi.map(x => {
         // nel negozio i vasi già comprati si mettono in uso da Aspetto; in Aspetto si cambiano qui
-        const pulsante = x.inUso ? '<span class="vaso-stato">In uso</span>'
+        const pulsante = modo === 'aspetto' && inUso(x) ? '<span class="vaso-stato">In uso</span>'
           : x.tuo && modo === 'aspetto' ? `<button class="vaso-b usa" data-a="usa" data-id="${x.id}">Usa</button>`
           : x.tuo ? '<span class="vaso-stato tuo">Già tuo</span>'
           : `<button class="vaso-b compra${vista.semi < x.prezzo ? ' caro' : ''}" data-a="compra" data-id="${x.id}" aria-label="Compra per ${x.prezzo} Semi">${x.prezzo}${SEME}</button>`;
-        return `<div class="vaso${x.inUso ? ' in-uso' : ''}"><div class="vaso-img">${disegno(x.id)}</div><span class="vaso-nome">${x.nome}</span>${pulsante}</div>`;
+        return `<div class="vaso${modo === 'aspetto' && inUso(x) ? ' in-uso' : ''}"><div class="vaso-img">${disegno(x.id)}</div><span class="vaso-nome">${x.nome}</span>${pulsante}</div>`;
       }).join('');
     },
   };

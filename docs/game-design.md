@@ -378,6 +378,12 @@ Un album dei ricordi di ogni pianta, per vedere quanto è cambiata con le stagio
 - **Diario:** una scheda per pianta (Acero, Ginepro, Pino), le foto in griglia dalla più vecchia, con la stagione sotto. Toccandone una si vede grande con la data, le frecce per scorrere, Elimina (con una domanda di conferma) e Torna al diario. **Rivedi la crescita** fa scorrere tutte le foto una dopo l'altra, dalla prima: il time-lapse della pianta.
 - Le foto stanno sul telefono (IndexedDB, 600×800 in JPEG), separate dal salvataggio della partita. Al massimo 120 per pianta: oltre, si toglie la più vecchia tranne la prima. Ricominciando la partita il diario si svuota.
 
+### 8.1.1 Vasi per tutte le piante
+
+- Ogni pianta ha il suo vaso, e **ogni vaso comprato va bene per tutte**: la scena lo fa nella misura giusta per ognuna (più stretto e basso per pino, ginepro e azalea), con il fondo appoggiato sul supporto e il terriccio al suo posto. Lo stesso modello si può usare su più piante insieme.
+- Vasi di partenza, già posseduti e gratis: acero ovale blu smaltato, pino tondo in cotto, ginepro rettangolare bruno, azalea tondo bruno. Nel negozio si vendono solo gli altri (sette, da 80 a 250 Semi).
+- **Aspetto** è nella tendina di ogni pianta: mostra i vasi tuoi, con "In uso" su quello della pianta e "Usa" sugli altri; "Altri vasi nel negozio" porta al negozio ricordando la pianta, e il vaso comprato va subito a lei. Comprato dal negozio aperto dalla barra, va all'acero.
+
 ### 8.2 Decorazioni
 
 Ogni decorazione si mette **dove si vuole** sul prato e si gira, così ogni giardino è unico.

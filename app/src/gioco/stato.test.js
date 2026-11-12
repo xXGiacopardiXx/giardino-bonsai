@@ -205,7 +205,8 @@ test('un salvataggio della versione 1 riceve i germogli', () => {
 test('si parte con il primo vaso; gli altri si comprano con i Semi', () => {
   const s = nuovoStato(T0);
   assert.equal(vista(s).vaso, VASI[0].id);
-  assert.deepEqual(vista(s).vasi.filter(v => v.tuo).map(v => v.id), [VASI[0].id]);
+  // si hanno già il vaso dell'acero e quelli di partenza delle altre piante
+  assert.deepEqual(vista(s).vasi.filter(v => v.tuo).map(v => v.id), [VASI[0].id, 'cotto', 'bruno-rett', 'bruno']);
   // 50 Semi non bastano per un vaso da 80
   assert.deepEqual(compra(s, 'terracotta'), { esito: 'pochi', mancano: 30 });
   s.semi = 100;
@@ -225,7 +226,8 @@ test('un salvataggio della versione 2 riceve il vaso iniziale', () => {
   vecchio.versione = 2; delete vecchio.vasi;
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
-  assert.deepEqual(s.vasi, { posseduti: [VASI[0].id], scelto: VASI[0].id });
+  assert.equal(s.vasi.scelto, VASI[0].id);
+  assert.deepEqual(s.vasi.posseduti, [VASI[0].id, 'cotto', 'bruno-rett', 'bruno']);
 });
 
 test('saltando più giorni in una volta spunta un germoglio per ogni giorno', () => {
@@ -1437,4 +1439,28 @@ test('le decorazioni nuove si comprano e trovano un posto libero', () => {
     assert.equal(postoLibero(s, d.id, p.x, p.z), 'ok', d.id);
     s.decorazioni.messe.push(d.id);
   }
+});
+
+test('ogni pianta ha il suo vaso, e un vaso comprato va bene per tutte', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  assert.deepEqual(vista(s).vasiPiante, { acero: 'blu', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' });
+  assert.equal(compra(s, 'celadon', 'pino').esito, 'ok');
+  assert.equal(vista(s).vasiPiante.pino, 'celadon');
+  assert.equal(vista(s).vaso, 'blu', "l'acero tiene il suo");
+  assert.equal(scegliVaso(s, 'celadon', 'ginepro'), true);
+  assert.deepEqual(vista(s).vasi.find(v => v.id === 'celadon').su, ['pino', 'ginepro']);
+  assert.equal(scegliVaso(s, 'blu', 'pino'), true);
+  assert.equal(scegliVaso(s, 'nuvola', 'pino'), false, 'non è tuo');
+  // l'azalea non c'è ancora: il vaso comprato per lei va all'acero
+  assert.equal(compra(s, 'rosso', 'azalea').esito, 'ok');
+  assert.equal(vista(s).vaso, 'rosso');
+});
+
+test('un salvataggio della versione 24 riceve i vasi delle altre piante', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 24; vecchio.vasi = { posseduti: ['blu', 'celadon'], scelto: 'celadon' };
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(vista(s).vasiPiante, { acero: 'celadon', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' });
+  assert.ok(s.vasi.posseduti.includes('cotto') && s.vasi.posseduti.includes('celadon'));
 });

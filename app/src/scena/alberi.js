@@ -86,6 +86,23 @@ const VASI_FORME = {
     }
     return { geo: new THREE.CylinderGeometry(.7, .7, .04, 40), sz: .8 };
   },
+  // i vasi di partenza di pino (tondo in cotto), ginepro (rettangolare bruno) e azalea (tondo bruno)
+  cotto(g) {
+    mesh(new THREE.CylinderGeometry(.8, .66, .36, 36), M(0xc27a4a), g, 0, .99, 0);
+    mesh(new THREE.CylinderGeometry(.86, .86, .06, 36), M(0xae6a3d), g, 0, 1.17, 0);
+    return { geo: new THREE.CylinderGeometry(.78, .78, .04, 36) };
+  },
+  'bruno-rett'(g) {
+    mesh(new THREE.BoxGeometry(1.64, .34, 1.08), M(0x8a573a), g, 0, .98, 0);
+    mesh(new THREE.BoxGeometry(1.74, .06, 1.18), M(0x76482f), g, 0, 1.17, 0);
+    [[-.7, -.42], [.7, -.42], [-.7, .42], [.7, .42]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.16, .06, .16), M(0x76482f), g, x, .8, z));
+    return { geo: new THREE.BoxGeometry(1.56, .04, 1.0) };
+  },
+  bruno(g) {
+    mesh(new THREE.CylinderGeometry(.82, .66, .34, 32), M(0x6e4a38), g, 0, .99, 0);
+    mesh(new THREE.CylinderGeometry(.88, .88, .06, 32), M(0x5f3e2f), g, 0, 1.17, 0);
+    return { geo: new THREE.CylinderGeometry(.8, .8, .04, 32) };
+  },
   // ovale basso smaltato rosso scuro, col bordo appena più chiaro
   rosso(g) {
     mesh(new THREE.CylinderGeometry(.82, .66, .32, 40), M(0x9c2f24), g, 0, 1.01, 0).scale.z = .72;
@@ -101,6 +118,28 @@ const VASI_FORME = {
   },
 };
 
+// Un vaso che si cambia (sezione 14.1, poi per tutte le piante): i vasi di VASI_FORME sono fatti nella misura
+// dell'acero (terriccio a 1.19, fondo a .78); per le altre piante si stringono (kx) e si abbassano (ky)
+// perché il terriccio resti al suo posto e il fondo poggi sul supporto. Cambiando vaso fa un saltello
+// con le stelline. Il terriccio resta lo stesso oggetto (con quello che c'è sopra) e cambia solo forma.
+function vasoCambiabile(t, soil, iniziale, { kx = 1, ky = 1 } = {}) {
+  const misura = new THREE.Group(); misura.scale.set(kx, ky, kx); misura.position.y = soil.position.y - ky * 1.19; t.add(misura);
+  const vasoG = new THREE.Group(); misura.add(vasoG);
+  const scintille = creaScintille(t, vasoG);
+  let attuale = null, pronto = false;
+  function metti(id, anima) {
+    if (id === attuale || !VASI_FORME[id]) return;
+    attuale = id;
+    vasoG.children.slice().forEach(c => { vasoG.remove(c); c.geometry.dispose(); });
+    const terra = VASI_FORME[id](vasoG);
+    soil.geometry.dispose(); soil.geometry = terra.geo; soil.scale.set(kx, 1, kx * (terra.sz ?? 1));
+    if (anima) scintille.avvia();
+  }
+  metti(iniziale, false);
+  // il primo vaso (quello del salvataggio) si mette senza stelline
+  return { scintille, setVaso(id) { metti(id, pronto); pronto = true; } };
+}
+
 export function creaAlberi(world) {
   const trees = {};
 
@@ -112,20 +151,8 @@ export function creaAlberi(world) {
     [[-.9, -.52], [.9, -.52], [-.9, .52], [.9, .52]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.13, .75, .13), M(0x6b4226), t, x, .375, z));
     mesh(new THREE.BoxGeometry(1.9, .08, .1), M(0x6b4226), t, 0, .2, .52);
     // vaso: si cambia dal negozio; il terriccio resta lo stesso oggetto e cambia solo forma
-    const vasoG = new THREE.Group(); t.add(vasoG);
     const soil = mesh(new THREE.CylinderGeometry(.76, .76, .04, 36), toon({ color: SOIL_DRY.clone() }), t, 0, 1.19, 0);
-    let vasoAttuale = null, vasoPronto = false;
-    const scintille = creaScintille(t, vasoG);
-    // anima: fa un saltello e una pioggia di stelline, per far capire che il vaso è cambiato
-    function mettiVaso(id, anima = false) {
-      if (id === vasoAttuale || !VASI_FORME[id]) return;
-      vasoAttuale = id;
-      vasoG.children.slice().forEach(c => { vasoG.remove(c); c.geometry.dispose(); });
-      const terra = VASI_FORME[id](vasoG);
-      soil.geometry.dispose(); soil.geometry = terra.geo; soil.scale.set(1, 1, terra.sz ?? 1);
-      if (anima) scintille.avvia();
-    }
-    mettiVaso('blu');
+    const vasoA = vasoCambiabile(t, soil, 'blu');
     for (let i = 0; i < 7; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .14), 1), M(0x6a9a40), t, R(-.55, .55), 1.21, R(-.35, .35)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, 1.16, 0); t.add(tr);
     const legnoA = corteccia(0x857262, { chiaro: .18, scuro: .25 });
@@ -175,9 +202,8 @@ export function creaAlberi(world) {
       return { p: a.clone(), d: a.clone().sub(da).normalize().add(new THREE.Vector3(0, 1.3, 0)).normalize(), gruppo: gruppoPad[pad] };
     }));
     acero = pianta(f, soil, ring, {
-      // il primo vaso (quello del salvataggio) si mette senza stelline
-      setVaso(id) { mettiVaso(id, vasoPronto); vasoPronto = true; },
-      scintille,
+      setVaso: vasoA.setVaso,
+      scintille: vasoA.scintille,
       g: tr,
       punte,
       filo,
@@ -288,15 +314,13 @@ export function creaAlberi(world) {
     }));
   }
 
-  let ginepro;
+  let ginepro, vasoGin, vasoPino;
   // Ginepro su una lastra di pietra, con legno secco (jin) chiaro
   {
     const t = new THREE.Group(); t.position.set(-2.3, 0, .6); world.add(t);
     mesh(flatGeo(new THREE.CylinderGeometry(.85, .98, .26, 9)), M(0x9d998d), t, 0, .13, 0);
-    mesh(new THREE.BoxGeometry(1.36, .3, .9), M(0x8a573a), t, 0, .41, 0);
-    mesh(new THREE.BoxGeometry(1.44, .06, .98), M(0x76482f), t, 0, .57, 0);
     const soilG = mesh(new THREE.BoxGeometry(1.28, .04, .82), toon({ color: SOIL_WET.clone() }), t, 0, .59, 0);
-    [[-.55, -.33], [.55, -.33], [-.55, .33], [.55, .33]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(.14, .06, .14), M(0x76482f), t, x, .27, z));
+    vasoGin = vasoCambiabile(t, soilG, 'bruno-rett', { kx: .82, ky: .8 });
     for (let i = 0; i < 6; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.08, .13), 1), M(0x6a9a40), t, R(-.5, .5), .61, R(-.3, .3)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, .58, 0); t.add(tr);
     const legnoG = corteccia(0x7b5241, { chiaro: .3, scuro: .35 });
@@ -356,9 +380,9 @@ export function creaAlberi(world) {
     const t = new THREE.Group(); t.position.set(2.1, 0, 2.0); world.add(t);
     mesh(new THREE.BoxGeometry(1.7, .16, 1.15), M(0x9b6a3e), t, 0, .12, 0);
     mesh(new THREE.BoxGeometry(.18, .06, 1.15), M(0x7a4f2c), t, -.6, .02, 0); mesh(new THREE.BoxGeometry(.18, .06, 1.15), M(0x7a4f2c), t, .6, .02, 0);
-    mesh(new THREE.CylinderGeometry(.62, .5, .42, 36), M(0xc27a4a), t, 0, .41, 0);
-    mesh(new THREE.CylinderGeometry(.66, .66, .07, 36), M(0xae6a3d), t, 0, .6, 0);
+
     const soilP = mesh(new THREE.CylinderGeometry(.6, .6, .04, 36), toon({ color: SOIL_WET.clone() }), t, 0, .62, 0);
+    vasoPino = vasoCambiabile(t, soilP, 'cotto', { kx: .76, ky: 1.02 });
     const tr = new THREE.Group(); tr.position.set(0, .6, 0); t.add(tr);
     // corteccia del pino nero: scura, a placche
     const legnoP = corteccia(0x5e4434, { chiaro: .35, scuro: .45 });
@@ -405,13 +429,12 @@ export function creaAlberi(world) {
   // vaso tondo di terracotta scura su una lastra di pietra; tronco basso e mosso, foglie piccole e scure,
   // e a fine primavera fiori rosa sulle punte. Si costruisce sempre (nascosta finché non si compra), con
   // un seme suo: la sequenza casuale del resto della scena non cambia.
-  let azalea;
+  let azalea, vasoAza;
   conSeme(4242, () => {
     const t = new THREE.Group(); t.position.set(3.4, 0, -1.05); t.visible = false; world.add(t);
     mesh(flatGeo(new THREE.CylinderGeometry(.8, .9, .16, 8)), M(0xa29d90), t, 0, .08, 0);
-    mesh(new THREE.CylinderGeometry(.58, .46, .3, 32), M(0x6e4a38), t, 0, .31, 0);
-    mesh(new THREE.CylinderGeometry(.62, .62, .06, 32), M(0x5f3e2f), t, 0, .47, 0);
     const soilA = mesh(new THREE.CylinderGeometry(.56, .56, .04, 32), toon({ color: SOIL_WET.clone() }), t, 0, .49, 0);
+    vasoAza = vasoCambiabile(t, soilA, 'bruno', { kx: .7, ky: .8 });
     for (let i = 0; i < 4; i++) { const b = mesh(new THREE.IcosahedronGeometry(R(.07, .11), 1), M(0x6a9a40), t, R(-.35, .35), .5, R(-.3, .3)); b.scale.y = .4; }
     const tr = new THREE.Group(); tr.position.set(0, .48, 0); t.add(tr);
     // corteccia dell'azalea: liscia, bruno-rossiccia
@@ -507,6 +530,11 @@ export function creaAlberi(world) {
     const punti = [cura.potTop, cura.fuoco, trees[id].tag].map(v => ({ v, off: v.clone().sub(base) }));
     spostabili[id] = { radice, punti, posto: { x: base.x, z: base.z, r: 0 }, prova: null };
   }
+  // i vasi di pino, ginepro e azalea si cambiano come quello dell'acero (Aspetto nella loro tendina)
+  Object.assign(cure.pino, { setVaso: vasoPino.setVaso, scintille: vasoPino.scintille });
+  Object.assign(cure.ginepro, { setVaso: vasoGin.setVaso, scintille: vasoGin.scintille });
+  Object.assign(cure.azalea, { setVaso: vasoAza.setVaso, scintille: vasoAza.scintille });
+  let orologioVasi = null;
   const anelloSposta = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 56), new THREE.MeshBasicMaterial({ color: 0x8fe06a, transparent: true, opacity: .8, depthWrite: false }));
   anelloSposta.rotation.x = -PI / 2; anelloSposta.visible = false; anelloSposta.renderOrder = 3; world.add(anelloSposta);
   let sceltaSposta = null, raggioScelta = 1;
@@ -561,6 +589,9 @@ export function creaAlberi(world) {
     setStagione(p) { acero.setStagione(p); ginepro.setStagione(p); },
     // le piante ondeggiano appena, come mosse dalla brezza
     aggiorna(clock) {
+      // il saltello del vaso nuovo di pino, ginepro e azalea (quello dell'acero lo fa l'acero)
+      const dt = orologioVasi === null ? 0 : Math.min(.05, clock - orologioVasi); orologioVasi = clock;
+      for (const p of ['pino', 'ginepro', 'azalea']) cure[p].scintille?.aggiorna(dt);
       cure.pino.filo.aggiorna(clock); cure.ginepro.filo.aggiorna(clock); cure.azalea.filo.aggiorna(clock);
       for (const k in trees) { const { g, ph } = trees[k]; g.rotation.z = Math.sin(clock * .9 + ph) * .012; g.rotation.x = Math.cos(clock * .7 + ph) * .008; }
       if (acero.ring.visible) acero.ring.material.opacity = .45 + .3 * Math.sin(clock * 3.2);

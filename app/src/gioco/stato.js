@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 24;
+export const VERSIONE = 25;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50 };
@@ -81,7 +81,17 @@ export const VASI = [
   { id: 'nuvola', nome: 'Crema con piedini a nuvola', prezzo: 250 },
   { id: 'rosso', nome: 'Ovale rosso smaltato', prezzo: 160 },
   { id: 'nero', nome: 'Esagonale nero', prezzo: 220 },
+  // i vasi di partenza di pino, ginepro e azalea: ci sono già, gratis
+  { id: 'cotto', nome: 'Tondo in cotto', prezzo: 0 },
+  { id: 'bruno-rett', nome: 'Rettangolare bruno', prezzo: 0 },
+  { id: 'bruno', nome: 'Tondo bruno', prezzo: 0 },
 ];
+// Ogni vaso comprato va bene per tutte le piante (la scena lo fa nella misura giusta); ognuna ha il suo.
+// Il vaso di ogni pianta all'inizio:
+export const VASI_INIZIALI = { acero: 'blu', pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' };
+const vasiGratis = () => VASI.filter(v => !v.prezzo).map(v => v.id);
+// il vaso di una pianta adesso (per l'acero è vasi.scelto, come nei salvataggi vecchi)
+const vasoDi = (stato, p) => p === 'acero' ? stato.vasi.scelto : stato.vasi.piante?.[p] ?? VASI_INIZIALI[p];
 
 // Decorazioni del giardino (sezione 8.2): ognuna si mette dove si vuole sul prato e si gira, così ogni
 // giardino è diverso. posto: dove va appena comprata ([x, z, rotazione], coordinate dell'isola);
@@ -368,7 +378,8 @@ export function nuovoStato(ora) {
     attrezzi: [],
     // quante volte si è allargato il prato dell'isola
     giardino: { ampliamenti: 0 },
-    vasi: { posseduti: [VASI[0].id], scelto: VASI[0].id },
+    // vasi comprati, quello dell'acero (scelto) e quello delle altre piante
+    vasi: { posseduti: vasiGratis(), scelto: VASI[0].id, piante: { pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' } },
     // decorazioni comprate e quelle messe nel giardino
     // decorazioni comprate, quelle messe nel giardino e dove sono ({ x, z, r })
     decorazioni: { possedute: [], messe: [], posti: {} },
@@ -482,6 +493,12 @@ export function migra(stato) {
   if (stato.versione === 22) { stato.serie.riposi = 0; stato.settimana = null; stato.attrezzi = []; stato.versione = 23; }
   // ampliamenti del giardino: l'isola com'era
   if (stato.versione === 23) { stato.giardino = { ampliamenti: 0 }; stato.versione = 24; }
+  // vasi per tutte le piante: ognuna col vaso che aveva, e i vasi di partenza già posseduti
+  if (stato.versione === 24) {
+    stato.vasi.posseduti = [...new Set([...stato.vasi.posseduti, ...vasiGratis()])];
+    stato.vasi.piante = { pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno' };
+    stato.versione = 25;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -1011,14 +1028,15 @@ export function compraAttrezzo(stato, id) {
 }
 
 // Compra un vaso e lo mette subito all'albero. esito: 'ok', 'pochi' (Semi insufficienti), 'gia' (già tuo) o 'nessuno'.
-export function compra(stato, id) {
+// pianta: a chi va subito il vaso comprato (l'acero, se non si dice)
+export function compra(stato, id, pianta = 'acero') {
   const vaso = VASI.find(v => v.id === id);
   if (!vaso) return { esito: 'nessuno', mancano: 0 };
   if (stato.vasi.posseduti.includes(id)) return { esito: 'gia', mancano: 0 };
   if (stato.semi < vaso.prezzo) return { esito: 'pochi', mancano: vaso.prezzo - stato.semi };
   stato.semi -= vaso.prezzo;
   stato.vasi.posseduti.push(id);
-  stato.vasi.scelto = id;
+  scegliVaso(stato, id, PIANTE[pianta] && curaDi(stato, pianta) ? pianta : 'acero');
   return { esito: 'ok', mancano: 0 };
 }
 
@@ -1193,9 +1211,11 @@ export function posaDecorazione(stato, id, x, z, r) {
 }
 
 // Mette all'albero un vaso già comprato. Restituisce false se il vaso non è tuo.
-export function scegliVaso(stato, id) {
-  if (!stato.vasi.posseduti.includes(id)) return false;
-  stato.vasi.scelto = id;
+// Mette a una pianta (l'acero, se non si dice) un vaso già comprato. false se il vaso non è tuo.
+export function scegliVaso(stato, id, pianta = 'acero') {
+  if (!stato.vasi.posseduti.includes(id) || !PIANTE[pianta]) return false;
+  if (pianta === 'acero') stato.vasi.scelto = id;
+  else stato.vasi.piante = { ...stato.vasi.piante, [pianta]: id };
   return true;
 }
 
@@ -1298,7 +1318,10 @@ export function vista(stato) {
     semi: stato.semi,
     vaso: stato.vasi.scelto,
     // catalogo del negozio con lo stato di ogni vaso
-    vasi: VASI.map(v => ({ ...v, tuo: stato.vasi.posseduti.includes(v.id), inUso: stato.vasi.scelto === v.id })),
+    // inUso: sull'acero; su: le piante del giardino che lo hanno
+    vasi: VASI.map(v => ({ ...v, tuo: stato.vasi.posseduti.includes(v.id), inUso: stato.vasi.scelto === v.id, su: presenti(stato).filter(p => vasoDi(stato, p) === v.id) })),
+    // il vaso di ogni pianta (anche dell'azalea non ancora comprata, per la scena)
+    vasiPiante: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vasoDi(stato, p)])),
     // catalogo delle decorazioni: comprate (tua) e messe nel giardino (messa)
     decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id), dove: stato.decorazioni.posti[d.id] ? { ...stato.decorazioni.posti[d.id] } : null })),
     serie: stato.serie.giorni,
