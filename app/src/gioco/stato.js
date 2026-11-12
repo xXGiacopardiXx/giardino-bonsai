@@ -5,7 +5,7 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 26;
+export const VERSIONE = 27;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50 };
@@ -110,7 +110,28 @@ export const DECORAZIONI = [
   { id: 'tsukubai', nome: 'Vasca tsukubai', prezzo: 110, raggio: .5, posto: [3.9, 1.2, -.4], descrizione: 'La bassa vasca di pietra dove ci si lava le mani prima della cerimonia del tè, col mestolo di bambù.' },
   { id: 'ombrellone', nome: 'Ombrellone del tè', prezzo: 140, raggio: .75, posto: [-3.4, -.6, .6], descrizione: 'Un grande ombrello rosso sopra una panca col telo: il posto per bere il tè all\'aperto.' },
   { id: 'torii', nome: 'Piccolo torii', prezzo: 220, raggio: .8, posto: [1.2, 6.2, 0], descrizione: 'Il portale rosso dei santuari, in piccolo: segna l\'ingresso del giardino.' },
+  // le decorazioni dei momenti speciali (sezione 7.5): si comprano solo durante il loro evento
+  { id: 'picnic', nome: 'Telo dell\'hanami', prezzo: 120, raggio: .6, posto: [.6, 2.9, .3], evento: 'hanami', descrizione: 'Un telo rosso sul prato, con la scatola del pranzo e le tazze del tè: per guardare i fiori seduti.' },
+  { id: 'barattolo', nome: 'Barattolo di lucciole', prezzo: 100, raggio: .3, posto: [-1.2, 4.6, 0], evento: 'hotaru', descrizione: 'Un barattolo di vetro con qualche lucciola dentro, che si accende quando fa buio.' },
+  { id: 'dango', nome: 'Dango della luna', prezzo: 110, raggio: .4, posto: [2.6, 4.2, -.4], evento: 'tsukimi', descrizione: 'Un vassoio di legno con la piramide di dolcetti di riso e un vaso di erba susuki, per la luna d\'autunno.' },
+  { id: 'pupazzo', nome: 'Pupazzo di neve', prezzo: 80, raggio: .4, posto: [-2.9, 2.3, .4], evento: 'hatsuyuki', descrizione: 'Un yukidaruma: due palle di neve, un secchiello in testa e due rametti per sopracciglia. Non si scioglie mai.' },
   { id: 'pagoda', nome: 'Pagoda di pietra', prezzo: 260, raggio: .5, posto: [-1.6, -4.2, 0], descrizione: 'Una torre di pietra a cinque tetti, coperta di muschio: sembra lì da secoli.' },
+];
+
+// Momenti speciali delle stagioni (sezione 7.5): piccoli eventi di qualche giorno che arrivano col calendario
+// di gioco, ogni anno. La prima volta che si apre il gioco durante un evento arriva un piccolo regalo in Semi,
+// e nel negozio c'è una decorazione che si può comprare solo in quei giorni (poi resta per sempre; chi non ce
+// la fa la ritrova l'anno dopo: niente fretta e niente senso di colpa). da, a: giorni della stagione.
+// La prima neve non ha giorni fissi: comincia il primo giorno d'inverno in cui nevica e dura tre giorni.
+export const EVENTI = [
+  { id: 'hanami', nome: 'Hanami', sottotitolo: 'Guardare i fiori', stagione: 0, da: 3, a: 5, premio: 15, decorazione: 'picnic',
+    testo: 'È il tempo dei fiori di ciliegio: in Giappone ci si siede sotto gli alberi in fiore, si mangia insieme e si guardano i petali che volano. Durano pochi giorni, e per questo sono così belli.' },
+  { id: 'hotaru', nome: 'Hotaru', sottotitolo: 'La notte delle lucciole', stagione: 1, da: 3, a: 5, premio: 15, decorazione: 'barattolo',
+    testo: 'Nelle sere d\'inizio estate le lucciole si accendono sopra l\'acqua e sul prato. Stasera, quando fa buio, il giardino ne è pieno.' },
+  { id: 'tsukimi', nome: 'Tsukimi', sottotitolo: 'Guardare la luna', stagione: 2, da: 4, a: 6, premio: 15, decorazione: 'dango',
+    testo: 'In autunno la luna piena è la più bella dell\'anno. Si prepara un vassoio di dolcetti di riso, i dango, con qualche spiga d\'erba, e la si guarda salire. Stasera è grande e dorata.' },
+  { id: 'hatsuyuki', nome: 'Hatsuyuki', sottotitolo: 'La prima neve', stagione: 3, giorni: 3, premio: 20, decorazione: 'pupazzo',
+    testo: 'È caduta la prima neve dell\'inverno. Il giardino è silenzioso e le piante dormono sotto una coperta bianca. È il momento giusto per un pupazzo di neve.' },
 ];
 
 // Elementi del giardino (sezione 8.4): ci sono fin dall'inizio e si spostano come le decorazioni; si
@@ -397,6 +418,8 @@ export function nuovoStato(ora) {
     attrezzi: [],
     // quante volte si è allargato il prato dell'isola
     giardino: { ampliamenti: 0 },
+    // momenti speciali già festeggiati ("hanami-2": l'hanami del secondo anno)
+    eventi: { festeggiati: [] },
     // vasi comprati, quello dell'acero (scelto) e quello delle altre piante
     vasi: { posseduti: vasiGratis(), scelto: VASI[0].id, piante: { pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno', ciliegio: 'grigio' } },
     // decorazioni comprate e quelle messe nel giardino
@@ -524,6 +547,8 @@ export function migra(stato) {
     stato.vasi.piante = { ...stato.vasi.piante, ciliegio: 'grigio' };
     stato.versione = 26;
   }
+  // momenti speciali: nessuno ancora festeggiato
+  if (stato.versione === 26) { stato.eventi = { festeggiati: [] }; stato.versione = 27; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -1057,6 +1082,39 @@ export function compraAmpliamento(stato) {
   return { esito: 'ok', mancano: 0, ampliamenti: n + 1 };
 }
 
+// Il momento speciale di adesso (o null): { ...evento, anno, giorniRimasti }. t: un istante (di solito stato.aggiornato)
+export function eventoDi(stato, t) {
+  const cal = calendario(stato.inizio, t), { anno, stagione, giornoStagione: g } = cal;
+  for (const e of EVENTI) {
+    if (e.stagione !== stagione) continue;
+    let da = e.da, a = e.a;
+    if (e.id === 'hatsuyuki') {
+      // il primo giorno di quest'inverno in cui nevica (il meteo di ogni giorno è già deciso)
+      const inizioInverno = stato.inizio + ((anno - 1) * 28 + 21) * GIORNO;
+      da = null;
+      for (let d = 1; d <= 7 && da === null; d++) if (meteoDelGiorno(stato, inizioInverno + (d - .5) * GIORNO).tipo === 'neve') da = d;
+      if (da === null) return null;
+      a = Math.min(7, da + e.giorni - 1);
+    }
+    if (g >= da && g <= a) return { ...e, anno, giorniRimasti: a - g + 1 };
+  }
+  return null;
+}
+// Il momento speciale da festeggiare adesso (la prima volta che lo si vede quest'anno), oppure null
+export function eventoDaFesteggiare(stato) {
+  const e = eventoDi(stato, stato.aggiornato);
+  return e && !(stato.eventi?.festeggiati ?? []).includes(e.id + '-' + e.anno) ? e : null;
+}
+// Festeggia il momento speciale di adesso: il regalo in Semi, una volta per anno. Restituisce i Semi (0 se già fatto)
+export function festeggiaEvento(stato) {
+  const e = eventoDaFesteggiare(stato);
+  if (!e) return 0;
+  stato.eventi ??= { festeggiati: [] };
+  stato.eventi.festeggiati = [...stato.eventi.festeggiati, e.id + '-' + e.anno].slice(-8);
+  stato.semi += e.premio;
+  return e.premio;
+}
+
 // Compra un attrezzo (una volta sola, dura per sempre). esito: 'ok', 'pochi', 'gia' o 'nessuno'
 export function compraAttrezzo(stato, id) {
   const a = ATTREZZI.find(x => x.id === id);
@@ -1179,6 +1237,8 @@ export function compraDecorazione(stato, id) {
   const d = DECORAZIONI.find(x => x.id === id);
   if (!d) return { esito: 'nessuno', mancano: 0 };
   if (stato.decorazioni.possedute.includes(id)) return { esito: 'gia', mancano: 0 };
+  // le decorazioni degli eventi si comprano solo durante il loro evento
+  if (d.evento && eventoDi(stato, stato.aggiornato)?.id !== d.evento) return { esito: 'evento', mancano: 0 };
   if (stato.semi < d.prezzo) return { esito: 'pochi', mancano: d.prezzo - stato.semi };
   stato.semi -= d.prezzo;
   stato.decorazioni.possedute.push(id);
@@ -1365,7 +1425,10 @@ export function vista(stato) {
     // il vaso di ogni pianta (anche dell'azalea non ancora comprata, per la scena)
     vasiPiante: Object.fromEntries(Object.keys(PIANTE).map(p => [p, vasoDi(stato, p)])),
     // catalogo delle decorazioni: comprate (tua) e messe nel giardino (messa)
-    decorazioni: DECORAZIONI.map(d => ({ ...d, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id), dove: stato.decorazioni.posti[d.id] ? { ...stato.decorazioni.posti[d.id] } : null })),
+    // il momento speciale di adesso (o null)
+    evento: eventoDi(stato, stato.aggiornato),
+    // disponibile: si può comprare adesso (quelle degli eventi solo durante il loro evento)
+    decorazioni: DECORAZIONI.map(d => ({ ...d, disponibile: !d.evento || eventoDi(stato, stato.aggiornato)?.id === d.evento, tua: stato.decorazioni.possedute.includes(d.id), messa: stato.decorazioni.messe.includes(d.id), dove: stato.decorazioni.posti[d.id] ? { ...stato.decorazioni.posti[d.id] } : null })),
     serie: stato.serie.giorni,
     // giorni di riposo pronti, e se oggi ne è arrivato uno nuovo
     riposi: stato.serie.riposi ?? 0,

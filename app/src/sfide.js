@@ -46,7 +46,13 @@ export function creaSfide() {
     mostra(v) {
       ultima = v;
       if (el.hidden) return;
-      const s = v.sfida, w = v.settimana, parti = [];
+      const s = v.sfida, w = v.settimana, parti = [], e = v.evento;
+      if (e) {
+        const deco = v.decorazioni.find(d => d.id === e.decorazione);
+        parti.push(`<div class="sfida-scheda evento-scheda"><span class="sfida-titolo">Momento speciale · ${e.giorniRimasti === 1 ? 'ultimo giorno' : `ancora ${e.giorniRimasti} giorni`}</span>
+          <span class="sfida-testo">${e.nome}: ${e.sottotitolo.toLowerCase()}</span>
+          <span class="sfida-nota">${deco && !deco.tua ? `Nel negozio, solo adesso: ${deco.nome}.` : 'Torna ogni anno, in questi giorni.'}</span></div>`);
+      }
       if (s) parti.push(scheda({ tipo: 'giorno', titolo: 'Sfida del giorno', testo: s.testo, premio: s.premio, fatti: s.fatta ? 1 : 0, obiettivo: 1, fatta: s.fatta,
         nota: s.fatta ? 'Domani ne arriva una nuova.' : 'Una cosa sola, sempre fattibile oggi.' }));
       if (w) parti.push(scheda({ tipo: 'settimana', titolo: 'Sfida della settimana', testo: w.testo, premio: w.premio, fatti: w.fatti, obiettivo: w.obiettivo, fatta: w.fatta,

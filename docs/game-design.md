@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 13/11/2026
+Ultimo aggiornamento: 14/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -333,6 +333,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 |---|---|
 | Sfida del giorno (acqua, potatura o filo) | 10 |
 | Sfida della settimana | 50 |
+| Momento speciale delle stagioni (una volta per anno ciascuno) | 15–20 |
 | Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
@@ -376,6 +377,22 @@ Un vecchio maestro di bonsai, **il maestro Ren**, insegna la tecnica vera un po'
 - **Come si vede:** un pannello con il ritratto (barba bianca, codino), "Il maestro Ren" e la stagione, la riflessione in corsivo, le schede delle piante e il pulsante **Grazie, maestro**: solo allora il consiglio conta come letto. Se è lungo, la parte della pianta scorre.
 - **Pulsante del maestro**, col suo ritratto, sotto quelli dei suoni e della musica: fa rileggere il consiglio della stagione (o quello nuovo, se c'è), con "come si sente" aggiornato a quel momento. Un pallino rosso dice che c'è un consiglio da leggere.
 - Nel salvataggio si tengono solo gli ultimi consigli letti.
+
+### 7.5 Momenti speciali delle stagioni
+
+Piccoli eventi di qualche giorno che arrivano col calendario di gioco, ogni anno: un motivo in più per aprire il giardino, senza senso di colpa (chi li perde li ritrova l'anno dopo).
+
+| Evento | Quando | Nella scena | Regalo | Decorazione (solo in quei giorni) |
+|---|---|---|---|---|
+| **Hanami**, guardare i fiori | primavera, giorni 3–5 (insieme ai fiori del ciliegio) | petali rosa che volano su tutto il giardino | 15 Semi | Telo dell'hanami, 120 |
+| **Hotaru**, la notte delle lucciole | estate, giorni 3–5 | di sera tre volte più lucciole, e si accendono prima | 15 Semi | Barattolo di lucciole, 100 |
+| **Tsukimi**, guardare la luna | autunno, giorni 4–6 | di notte la luna è grande, piena e dorata | 15 Semi | Dango della luna, 110 |
+| **Hatsuyuki**, la prima neve | inverno, dal primo giorno in cui nevica, per 3 giorni (se quell'inverno non nevica, niente) | la neve vera del meteo | 20 Semi | Pupazzo di neve, 80 |
+
+- La prima volta che si apre il gioco durante un evento (dopo la guida, mai sopra un'altra cosa; il maestro aspetta) arriva un pannello col disegno dell'evento, due righe su cosa si festeggia in Giappone, il regalo in Semi (una volta per anno) e la decorazione del negozio, con "Vai al negozio" e "Che bello!".
+- La decorazione si compra solo durante l'evento (nel negozio ha il bordo rosa e "Solo in questi giorni"); poi resta per sempre. Fuori dall'evento non si vede nel negozio; se non è stata presa, torna l'anno dopo.
+- Nel pannello delle sfide, in cima, la scheda del momento speciale con i giorni che restano.
+- Da adesso, di notte, nel cielo si vede anche la luna.
 
 ## 8. Giardino
 
@@ -598,7 +615,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Ciliegio giapponese, la quinta pianta (sezione 5.5); vasi per tutte le piante (sezione 8.1.1). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Ciliegio giapponese, la quinta pianta (sezione 5.5); momenti speciali delle stagioni (sezione 7.5); vasi per tutte le piante (sezione 8.1.1). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

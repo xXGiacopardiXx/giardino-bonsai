@@ -377,3 +377,18 @@ button{touch-action:manipulation}
 .sfida-scheda.serie .qbar i{background:linear-gradient(#ffd27a,#f07b35)}
 .sfida-nota{grid-column:1/-1;font:500 3cqw/1.35 var(--display);color:#5a4632}
 .quest{cursor:pointer}
+
+/* momenti speciali delle stagioni: il pannello dell'evento, la scheda nelle sfide, le decorazioni a tempo */
+.evento{z-index:7}
+.evento-pannello{display:flex;flex-direction:column;gap:2.4cqw}
+.evento-ic{background:radial-gradient(circle at 35% 30%,#fff1f6,#f4b0c8)}
+.evento-ic svg{width:90%;height:90%}
+.evento-cose{display:grid;gap:1.4cqw}
+.evento-cose span{padding:1.8cqw 2.4cqw;border-radius:2.6cqw;background:#fff3e2;border:.4cqw solid #e8c890;font:500 3.2cqw/1.35 var(--display);color:var(--ink)}
+.evento-cose b{font-weight:700;color:#b9781c}
+.evento-pulsanti{display:flex;gap:2cqw;justify-content:center}
+.evento-pulsanti [hidden]{display:none}
+.sfida-scheda.evento-scheda{background:#fff1f6;grid-template-columns:1fr}
+.sfida-scheda.evento-scheda .sfida-titolo{color:#b8406a}
+.vaso.a-tempo{box-shadow:0 0 0 .6cqw #f4b0c8}
+.evento-per{color:#b8406a}

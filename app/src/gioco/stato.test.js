@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, compraAmpliamento, AMPLIAMENTI, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, compraAmpliamento, AMPLIAMENTI, eventoDi, eventoDaFesteggiare, festeggiaEvento, EVENTI, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1432,8 +1432,9 @@ test('il piretro toglie gli afidi e protegge per tre giorni; il kiryu va bene pe
 
 test('le decorazioni nuove si comprano e trovano un posto libero', () => {
   const s = nuovoStato(T0); s.semi = 10000;
-  for (const d of DECORAZIONI) assert.equal(compraDecorazione(s, d.id).esito, 'ok', d.id);
-  for (const d of DECORAZIONI) {
+  const sempre = DECORAZIONI.filter(d => !d.evento);
+  for (const d of sempre) assert.equal(compraDecorazione(s, d.id).esito, 'ok', d.id);
+  for (const d of sempre) {
     const p = s.decorazioni.posti[d.id];
     s.decorazioni.messe = s.decorazioni.messe.filter(x => x !== d.id);
     assert.equal(postoLibero(s, d.id, p.x, p.z), 'ok', d.id);
@@ -1502,4 +1503,62 @@ test('dopo la fioritura il ciliegio mette germogli da potare, e la sfida può ch
   const s2 = nuovoStato(T0); s2.semi = 1000; avanza(s2, dopo(21)); compraPianta(s2, dopo(21), 'ciliegio');
   for (let g = 21; g <= 27; g++) { s2.conifere.ciliegio.sete = 0; avanza(s2, dopo(g + .2)); }
   assert.equal(s2.conifere.ciliegio.germogli.length, 0);
+});
+
+test('i momenti speciali arrivano col calendario: hanami, lucciole, tsukimi', () => {
+  const s = nuovoStato(T0);
+  const evento = (giorni) => eventoDi(s, dopo(giorni))?.id ?? null;
+  assert.equal(evento(.5), null, 'primo giorno di primavera: niente');
+  assert.equal(evento(2.5), 'hanami');
+  assert.equal(eventoDi(s, dopo(2.5)).giorniRimasti, 3);
+  assert.equal(evento(4.5), 'hanami');
+  assert.equal(evento(5.5), null);
+  assert.equal(evento(7 + 2.5), 'hotaru');
+  assert.equal(evento(14 + 3.5), 'tsukimi');
+  assert.equal(evento(28 + 2.5), 'hanami', 'e tornano ogni anno');
+});
+
+test('la prima neve comincia il primo giorno d inverno in cui nevica e dura tre giorni', () => {
+  const s = nuovoStatoVero(T0); // col meteo vero
+  let primo = null;
+  for (let g = 21; g < 28 && primo === null; g++) if (meteoDelGiorno(s, dopo(g + .5)).tipo === 'neve') primo = g;
+  if (primo === null) { assert.equal(eventoDi(s, dopo(25.5)), null); return; }
+  assert.equal(eventoDi(s, dopo(primo + .5)).id, 'hatsuyuki');
+  if (primo > 21) assert.equal(eventoDi(s, dopo(primo - .5)), null);
+  if (primo + 3 < 28) assert.equal(eventoDi(s, dopo(primo + 3.5)), null);
+  const s2 = nuovoStato(T0); // senza meteo non nevica mai
+  for (let g = 21; g < 28; g++) assert.equal(eventoDi(s2, dopo(g + .5)), null);
+});
+
+test('il regalo di un momento speciale arriva una volta per anno', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(2.5));
+  assert.equal(eventoDaFesteggiare(s).id, 'hanami');
+  const semi = s.semi;
+  assert.equal(festeggiaEvento(s), 15);
+  assert.equal(s.semi, semi + 15);
+  assert.equal(eventoDaFesteggiare(s), null);
+  assert.equal(festeggiaEvento(s), 0);
+  avanza(s, dopo(28 + 2.5));
+  assert.equal(festeggiaEvento(s), 15, 'l’anno dopo di nuovo');
+});
+
+test('la decorazione di un evento si compra solo durante il suo evento, poi resta', () => {
+  const s = nuovoStato(T0); s.semi = 1000;
+  assert.equal(compraDecorazione(s, 'picnic').esito, 'evento');
+  assert.equal(vista(s).decorazioni.find(d => d.id === 'picnic').disponibile, false);
+  avanza(s, dopo(3));
+  assert.equal(vista(s).decorazioni.find(d => d.id === 'picnic').disponibile, true);
+  assert.equal(compraDecorazione(s, 'picnic').esito, 'ok');
+  avanza(s, dopo(10));
+  assert.equal(vista(s).decorazioni.find(d => d.id === 'picnic').tua, true);
+  assert.equal(compraDecorazione(s, 'barattolo').esito, 'ok', 'durante le lucciole');
+});
+
+test('un salvataggio della versione 26 riceve i momenti speciali', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 26; delete vecchio.eventi;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.eventi, { festeggiati: [] });
 });

@@ -32,13 +32,14 @@ import { creaCura } from './scena/cura.js';
 import { creaGuida } from './guida.js';
 import { creaConsigli, RITRATTO } from './consigli.js';
 import { creaSfide, BANDIERINA } from './sfide.js';
+import { creaEventi } from './eventi.js';
 import { creaBastoncini } from './scena/bastoncini.js';
 import { creaMuschio } from './scena/muschio.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/maestro.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, eventoDaFesteggiare, festeggiaEvento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -153,7 +154,7 @@ function avvia() {
   avanza(stato, ora());
   salva(stato);
 
-  let pannello, negozio, cure, sfide;
+  let pannello, negozio, cure, sfide, eventi;
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
@@ -229,7 +230,7 @@ function avvia() {
     document.getElementById('t-care').classList.toggle('needs', Object.values(v.cura).some(c => c.parassiti?.visibili));
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     // meteo e ora del giorno (sezione 3.4): la scena, l'icona accanto alla stagione e un avviso se ha piovuto
-    meteoAdesso = { cade: v.meteo.adesso, stagione: v.stagione, ora: ora() + giorniAnteprima * GIORNO, temporale: !!v.meteo.temporale, neve: v.meteo.neve, pozze: v.meteo.pozze }; meteoPreso = Date.now();
+    meteoAdesso = { cade: v.meteo.adesso, stagione: v.stagione, ora: ora() + giorniAnteprima * GIORNO, temporale: !!v.meteo.temporale, neve: v.meteo.neve, pozze: v.meteo.pozze, evento: v.evento?.id ?? null }; meteoPreso = Date.now();
     mostraMeteo(v, giorniAnteprima);
     const pAnno = v.stagione + (v.giornoStagione - 1) / 7;
     alberi.setStagione(pAnno); giardino.setStagione(pAnno); musica.setStagione(v.stagione);
@@ -290,7 +291,7 @@ function avvia() {
     setTimeout(() => ui.toast(testo, 4000), 900);
   }
 
-  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); avvisaRiposo(); maestroParla(); }
+  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); avvisaRiposo(); if (!eventoArriva()) maestroParla(); }
   // serie di 7 giorni: i Semi del bonus e, se è arrivato, il giorno di riposo (sezione 7.2)
   function testoSerie(bonus) {
     return `${stato.serie.giorni} giorni di fila: +${bonus} Semi` + (vista(stato).riposoNuovo ? ' e un giorno di riposo, che salva la serie se salti un giorno.' : '!');
@@ -405,7 +406,7 @@ function avvia() {
   disegna();
 
   // --- Guida dei primi passi e suoni ---
-  const guida = creaGuida({ vista: () => vista(stato), finita: () => { stato.guida.fatta = true; salva(stato); setTimeout(maestroParla, 1500); } });
+  const guida = creaGuida({ vista: () => vista(stato), finita: () => { stato.guida.fatta = true; salva(stato); setTimeout(() => { if (!eventoArriva()) maestroParla(); }, 1500); } });
   if (!stato.guida.fatta) guida.avvia();
 
   // --- Il maestro (sezione 7.4): un consiglio nuovo arriva da solo, dopo la guida e quando non c'è
@@ -413,7 +414,7 @@ function avvia() {
   // mostra quello nuovo, o fa rileggere quello della stagione ---
   const consigli = creaConsigli(), maestroBtn = document.getElementById('maestro');
   maestroBtn.innerHTML = RITRATTO;
-  const occupato = () => guida.attiva || consigli.aperto || sfide?.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
+  const occupato = () => guida.attiva || consigli.aperto || sfide?.aperto || eventi?.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
   function maestroParla() {
     if (!stato.guida.fatta) return;
     const c = consiglioMaestro(stato);
@@ -427,7 +428,23 @@ function avvia() {
     const c = consiglioMaestro(stato) ?? consiglioStagione(stato);
     consigli.mostra(c, () => { segnaConsiglio(stato, c.id); salva(stato); maestroBtn.classList.toggle('nuovo', !!consiglioMaestro(stato)); });
   });
-  setTimeout(maestroParla, 1800);
+  // --- Momenti speciali delle stagioni (sezione 7.5): la prima volta che si apre il gioco durante un evento,
+  // il pannello dell'evento col regalo; il maestro aspetta che si chiuda ---
+  eventi = creaEventi({ negozio: () => { negozio.apri('negozio', 'giardino'); disegna(); } });
+  // true se l'evento si è annunciato adesso
+  function eventoArriva() {
+    if (!stato.guida.fatta || (pannello?.anteprima ?? 0) > 0) return false;
+    const e = eventoDaFesteggiare(stato);
+    if (!e || occupato()) return false;
+    const semi = festeggiaEvento(stato); salva(stato);
+    const deco = vista(stato).decorazioni.find(d => d.id === e.decorazione);
+    eventi.mostra(e, semi, deco, () => setTimeout(maestroParla, 800));
+    suoni.magia();
+    if (semi) setTimeout(() => { ui.guadagnaSemi(semi, stato.semi, 'acero'); suoni.semi(); }, 600);
+    disegna();
+    return true;
+  }
+  setTimeout(() => { if (!eventoArriva()) maestroParla(); }, 1800);
   // --- Le sfide (sezioni 7.1 e 7.2): il pulsante con la bandierina, sotto il maestro, o un tocco su un banner
   // mostrano tutte le sfide del momento e la serie; un pallino rosso se la sfida del giorno è da fare ---
   sfide = creaSfide();
@@ -583,6 +600,7 @@ function avvia() {
     compraDecorazione(id) {
       const esito = compraDecorazione(stato, id);
       if (esito.esito === 'pochi') { ui.toast(`Ti mancano ${esito.mancano} Semi. Li guadagni con la sfida di ogni giorno.`); return; }
+      if (esito.esito === 'evento') { ui.toast('Questa decorazione si trova solo durante il suo momento speciale: tornerà l\'anno prossimo.'); return; }
       if (esito.esito !== 'ok') return;
       salva(stato); negozio.chiudi(); disegna(); suoni.magia();
       sposta(id);

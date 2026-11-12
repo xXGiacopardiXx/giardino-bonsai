@@ -94,9 +94,10 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giard
   const neve = new THREE.Points(geoN, new THREE.PointsMaterial({ map: tex, color: 0xffffff, size: .13, transparent: true, opacity: 0, depthWrite: false }));
   neve.frustumCulled = false; neve.visible = false; scene.add(neve);
   // lucciole: luci gialle che vagano sul prato e si accendono e spengono
-  const N_LUCI = 36, luci = new Float32Array(N_LUCI * 3), colLuci = new Float32Array(N_LUCI * 3), moto = [];
+  // (36 di solito; durante l'hotaru, il momento speciale delle lucciole, tutte)
+  const N_LUCI = 110, LUCI_SOLITE = 36, luci = new Float32Array(N_LUCI * 3), colLuci = new Float32Array(N_LUCI * 3), moto = [];
   for (let i = 0; i < N_LUCI; i++) {
-    const a = Math.random() * PI * 2, r = 2.2 + Math.random() * 2.4;
+    const a = Math.random() * PI * 2, r = 1.2 + Math.random() * 3.6;
     moto.push({ x: Math.cos(a) * r, z: Math.sin(a) * r * 1.3, y: .3 + Math.random() * 1.2, f: Math.random() * 6, v: .3 + Math.random() * .5 });
   }
   const geoL = new THREE.BufferGeometry();
@@ -104,8 +105,26 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giard
   const lucciole = new THREE.Points(geoL, new THREE.PointsMaterial({ map: tex, size: .55, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   lucciole.frustumCulled = false; lucciole.visible = false; scene.add(lucciole);
 
+  // momenti speciali (sezione 7.5): petali di ciliegio che volano sul giardino durante l'hanami
+  const N_PETALI = 220, petali = new Float32Array(N_PETALI * 3), fasePetali = new Float32Array(N_PETALI);
+  for (let i = 0; i < N_PETALI; i++) { petali.set([(Math.random() - .5) * 16, Math.random() * 7, (Math.random() - .5) * 16], i * 3); fasePetali[i] = Math.random() * 6; }
+  const geoPet = new THREE.BufferGeometry(); geoPet.setAttribute('position', new THREE.BufferAttribute(petali, 3));
+  const petaliP = new THREE.Points(geoPet, new THREE.PointsMaterial({ map: tex, color: 0xff8fb8, size: .75, transparent: true, opacity: 0, depthWrite: false }));
+  petaliP.frustumCulled = false; petaliP.visible = false; scene.add(petaliP);
+  // la luna: di notte nel cielo; durante lo tsukimi grande, piena e dorata
+  const cl = document.createElement('canvas'); cl.width = cl.height = 128;
+  const xl = cl.getContext('2d'), gl = xl.createRadialGradient(64, 64, 20, 64, 64, 64);
+  gl.addColorStop(0, 'rgba(255,255,240,1)'); gl.addColorStop(.42, 'rgba(255,250,225,1)'); gl.addColorStop(.48, 'rgba(255,240,190,.45)'); gl.addColorStop(1, 'rgba(255,230,170,0)');
+  xl.fillStyle = gl; xl.fillRect(0, 0, 128, 128);
+  // qualche macchia grigia, i "mari" della luna (dove in Giappone si vede il coniglio che pesta il riso)
+  xl.fillStyle = 'rgba(200,190,170,.35)'; [[54, 52, 9], [72, 66, 7], [58, 74, 6], [76, 50, 5]].forEach(([x, y, r]) => { xl.beginPath(); xl.arc(x, y, r, 0, PI * 2); xl.fill(); });
+  const luna = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cl), transparent: true, depthWrite: false, fog: false, opacity: 0 }));
+  luna.position.set(-34, 30, -70); luna.scale.setScalar(7); luna.renderOrder = -1; scene.add(luna);
+  const lunaBianca = C(0xfffbea), lunaOro = C(0xffd27a);
+  let quantiPetali = 0, tsukimi = 0;
+
   const lampGiorno = lanterna.lamp.material.color.clone(), lampNotte = C(0xffe9b0);
-  let extra = { temporale: false, neve: 0, pozze: 0 };
+  let extra = { temporale: false, neve: 0, pozze: 0, evento: null };
   let ora = 12, cade = null, stagione = 0, attuale = null, tempo = 0, quantoPioggia = 0, quantoNeve = 0, quanteLucciole = 0;
 
   // disegna la sfumatura del cielo con i 4 colori
@@ -132,7 +151,8 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giard
   return {
     // h: ora del giorno (0..24, ora vera del telefono); cosaCade: 'pioggia', 'neve' o null; stag: stagione del gioco
     // e: { temporale, neve (a terra, 0..1), pozze (0..1) } dalla vista del motore
-    imposta(h, cosaCade, stag, e = {}) { ora = h; cade = cosaCade; stagione = stag; extra = { temporale: !!e.temporale, neve: e.neve ?? 0, pozze: e.pozze ?? 0 }; },
+    // evento: il momento speciale di adesso ('hanami', 'hotaru', 'tsukimi', 'hatsuyuki' o null)
+    imposta(h, cosaCade, stag, e = {}) { ora = h; cade = cosaCade; stagione = stag; extra = { temporale: !!e.temporale, neve: e.neve ?? 0, pozze: e.pozze ?? 0, evento: e.evento ?? null }; },
     // quanto è notte adesso (0..1)
     get notte() { return attuale?.notte ?? 0; },
     aggiorna(dt) {
@@ -164,7 +184,23 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giard
       const k = Math.min(1, dt * .8);
       quantoPioggia += ((cade === 'pioggia' ? 1 : 0) - quantoPioggia) * k;
       quantoNeve += ((cade === 'neve' ? 1 : 0) - quantoNeve) * k;
-      quanteLucciole += ((stagione === 1 && !cade && attuale.notte > .6 ? 1 : 0) - quanteLucciole) * k;
+      quanteLucciole += ((stagione === 1 && !cade && attuale.notte > (extra.evento === 'hotaru' ? .35 : .6) ? 1 : 0) - quanteLucciole) * k;
+      quantiPetali += ((extra.evento === 'hanami' && cade !== 'pioggia' ? 1 : 0) - quantiPetali) * k;
+      tsukimi += ((extra.evento === 'tsukimi' ? 1 : 0) - tsukimi) * k;
+      // la luna si vede quando è buio, e senza nuvole di pioggia o neve
+      luna.material.opacity = Math.max(0, (attuale.notte - .35) / .65) * (1 - Math.max(quantoPioggia, quantoNeve) * .9);
+      luna.visible = luna.material.opacity > .01;
+      luna.scale.setScalar(7 + 6 * tsukimi);
+      luna.material.color.copy(lunaBianca).lerp(lunaOro, tsukimi);
+      // petali dell'hanami: scendono piano portati dalla brezza
+      petaliP.visible = quantiPetali > .02; petaliP.material.opacity = .9 * quantiPetali;
+      if (petaliP.visible && !reduce) {
+        for (let i = 0; i < N_PETALI; i++) {
+          const j = i * 3; petali[j + 1] -= .45 * dt; petali[j] += (.35 + Math.sin(tempo * .7 + fasePetali[i]) * .3) * dt; petali[j + 2] += Math.cos(tempo * .5 + fasePetali[i]) * .15 * dt;
+          if (petali[j + 1] < 0 || petali[j] > 8) { petali[j] = -8 + Math.random() * 6; petali[j + 1] = 4 + Math.random() * 3; petali[j + 2] = (Math.random() - .5) * 16; }
+        }
+        geoPet.attributes.position.needsUpdate = true;
+      }
       // pioggia
       pioggia.visible = quantoPioggia > .02; pioggia.material.opacity = (extra.temporale ? .7 : .5) * quantoPioggia;
       if (pioggia.visible && !reduce) {
@@ -186,7 +222,9 @@ export function creaAtmosfera(scene, { sun, hemi, cielo, nuvole, lanterna, giard
       // lucciole: vagano piano e lampeggiano, ognuna col suo ritmo
       lucciole.visible = quanteLucciole > .02;
       if (lucciole.visible) {
+        const quante = extra.evento === 'hotaru' ? N_LUCI : LUCI_SOLITE;
         moto.forEach((m, i) => {
+          if (i >= quante) { colLuci.set([0, 0, 0], i * 3); return; }
           const t = tempo * m.v + m.f;
           luci.set([m.x + Math.sin(t * .7) * .5, m.y + Math.sin(t * 1.3) * .2, m.z + Math.cos(t * .6) * .5], i * 3);
           const b = Math.max(0, Math.sin(tempo * (1.4 + m.v) + m.f * 3)) ** 2 * quanteLucciole;
