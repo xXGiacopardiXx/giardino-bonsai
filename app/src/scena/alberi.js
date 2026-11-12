@@ -86,6 +86,19 @@ const VASI_FORME = {
     }
     return { geo: new THREE.CylinderGeometry(.7, .7, .04, 40), sz: .8 };
   },
+  // ovale basso smaltato rosso scuro, col bordo appena più chiaro
+  rosso(g) {
+    mesh(new THREE.CylinderGeometry(.82, .66, .32, 40), M(0x9c2f24), g, 0, 1.01, 0).scale.z = .72;
+    mesh(new THREE.CylinderGeometry(.86, .86, .06, 40), M(0xb8463a), g, 0, 1.17, 0).scale.z = .72;
+    return { geo: new THREE.CylinderGeometry(.78, .78, .04, 40), sz: .7 };
+  },
+  // esagonale nero opaco, alto, con una cornice e sei piedini
+  nero(g) {
+    mesh(flatGeo(new THREE.CylinderGeometry(.7, .6, .36, 6)), M(0x2f2a28), g, 0, .99, 0);
+    mesh(flatGeo(new THREE.CylinderGeometry(.75, .75, .06, 6)), M(0x403a36), g, 0, 1.17, 0);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; mesh(new THREE.BoxGeometry(.12, .06, .12), M(0x403a36), g, Math.cos(a) * .52, .8, Math.sin(a) * .52); }
+    return { geo: new THREE.CylinderGeometry(.67, .67, .04, 6) };
+  },
 };
 
 export function creaAlberi(world) {

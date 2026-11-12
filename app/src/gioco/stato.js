@@ -79,6 +79,8 @@ export const VASI = [
   { id: 'rettangolare', nome: 'Rettangolare in grès', prezzo: 120 },
   { id: 'celadon', nome: 'Ovale celadon', prezzo: 180 },
   { id: 'nuvola', nome: 'Crema con piedini a nuvola', prezzo: 250 },
+  { id: 'rosso', nome: 'Ovale rosso smaltato', prezzo: 160 },
+  { id: 'nero', nome: 'Esagonale nero', prezzo: 220 },
 ];
 
 // Decorazioni del giardino (sezione 8.2): ognuna si mette dove si vuole sul prato e si gira, così ogni
@@ -90,6 +92,13 @@ export const DECORAZIONI = [
   { id: 'fontana', nome: 'Fontana di bambù', prezzo: 120, raggio: .7, posto: [-3.55, 1.75, .25], descrizione: 'Il bambù si riempie d\'acqua, si inclina e batte sulla pietra: toc.' },
   { id: 'gatto', nome: 'Gatto che dorme', prezzo: 150, raggio: .45, posto: [3.3, 3.05, -.6], descrizione: 'Un gatto rosso acciambellato al sole, accanto al pino.' },
   { id: 'ponte', nome: 'Ponticello rosso', prezzo: 200, raggio: 1, posto: [-2.3, 3.45, 0], sullAcqua: true, descrizione: 'Un ponte ad arco laccato sopra il laghetto delle carpe.' },
+  // le decorazioni arrivate dopo (sezione 8.2): dalla più piccola alla più grande
+  { id: 'rana', nome: 'Rana di pietra', prezzo: 60, raggio: .3, posto: [-.6, 5.2, .5], descrizione: 'Una ranocchia di pietra col muschio sulla schiena. In giapponese "kaeru" vuol dire anche "tornare": porta a casa chi è lontano.' },
+  { id: 'lanterna-carta', nome: 'Lanterna di carta', prezzo: 90, raggio: .4, posto: [-4.1, .3, .3], descrizione: 'Una lanterna rossa di carta appesa a una canna di bambù: dondola piano col vento e di sera si accende.' },
+  { id: 'tsukubai', nome: 'Vasca tsukubai', prezzo: 110, raggio: .5, posto: [3.9, 1.2, -.4], descrizione: 'La bassa vasca di pietra dove ci si lava le mani prima della cerimonia del tè, col mestolo di bambù.' },
+  { id: 'ombrellone', nome: 'Ombrellone del tè', prezzo: 140, raggio: .75, posto: [-3.4, -.6, .6], descrizione: 'Un grande ombrello rosso sopra una panca col telo: il posto per bere il tè all\'aperto.' },
+  { id: 'torii', nome: 'Piccolo torii', prezzo: 220, raggio: .8, posto: [1.2, 6.2, 0], descrizione: 'Il portale rosso dei santuari, in piccolo: segna l\'ingresso del giardino.' },
+  { id: 'pagoda', nome: 'Pagoda di pietra', prezzo: 260, raggio: .5, posto: [-1.6, -4.2, 0], descrizione: 'Una torre di pietra a cinque tetti, coperta di muschio: sembra lì da secoli.' },
 ];
 
 // Elementi del giardino (sezione 8.4): ci sono fin dall'inizio e si spostano come le decorazioni; si
@@ -195,7 +204,9 @@ const limita = (v) => Math.min(1, Math.max(0, v));
 // l'avviso. Trattati entro un giorno danno Semi (di più se scoperti prima dell'avviso); dopo, rallentano
 // la crescita e diradano un po' la chioma, mai sotto la metà: la pianta non muore.
 const DURATA_CONCIME = 7;              // giorni
-const DURATA_PROTEZIONE = 7;           // giorni in cui l'olio di neem tiene lontani i parassiti
+const DURATA_PROTEZIONE = 7;
+const TONICO_RIPRESA = 2;              // col tonico alle alghe la chioma si riprende il doppio più in fretta
+const MUSCHIO_SETE = 0.85;             // col muschio sul terriccio il vaso asciuga più piano           // giorni in cui l'olio di neem tiene lontani i parassiti
 export const POSTI_PARASSITI = 5;      // cuscinetti della chioma dove possono comparire (li sceglie la scena)
 const PROBABILITA_PARASSITI = [0.12, 0.12, 0.06, 0]; // al giorno: primavera, estate, autunno, inverno
 const PROBABILITA_CONIFERE = 0.6;      // le conifere, robuste e sempre ben curate, ne prendono meno
@@ -235,11 +246,26 @@ export const PRODOTTI = [
     descrizione: 'Spray delicato: toglie gli afidi.' },
   { id: 'olio-neem', nome: 'Olio di neem', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro', 'azalea'], protezione: DURATA_PROTEZIONE, prezzo: 35,
     descrizione: 'Toglie gli afidi e li tiene lontani per una stagione. Si può usare anche prima.' },
+  { id: 'piretro', nome: 'Piretro naturale', tipo: 'trattamento', piante: ['acero', 'pino', 'ginepro', 'azalea'], protezione: 3, prezzo: 25,
+    descrizione: 'Estratto dai fiori di crisantemo: toglie gli afidi e li tiene lontani per tre giorni.' },
+  // concimi in più: liquido (veloce e breve) e per le azalee (acido)
+  { id: 'concime-liquido', nome: 'Concime liquido', tipo: 'concime', piante: ['acero', 'pino', 'ginepro', 'azalea'], spinta: 1.8, giorni: 3, prezzo: 25,
+    descrizione: "Si scioglie nell'acqua: fa effetto subito e forte, ma dura solo tre giorni." },
+  { id: 'concime-azalee', nome: 'Concime per azalee', tipo: 'concime', piante: ['azalea'], spinta: 1.6, prezzo: 30,
+    descrizione: 'Acido, con ferro e magnesio: foglie verdi e lucide e tanti boccioli.' },
+  // tonico: aiuta la chioma a riprendersi, anche d'inverno
+  { id: 'alghe', nome: 'Tonico alle alghe', tipo: 'tonico', piante: ['acero', 'pino', 'ginepro', 'azalea'], giorni: 7, prezzo: 35,
+    descrizione: "Estratto di alghe marine: per una stagione la chioma diradata si riprende il doppio più in fretta. Va bene anche d'inverno." },
+  // muschio: copre il terriccio fino al rinvaso, è bello e trattiene l'umidità
+  { id: 'muschio', nome: 'Muschio per il vaso', tipo: 'muschio', piante: ['acero', 'pino', 'ginepro', 'azalea'], prezzo: 20,
+    descrizione: "Un tappeto verde sul terriccio: trattiene l'umidità, così il vaso asciuga un po' più piano. Resta fino al rinvaso." },
   // terricci per il rinvaso: durata = anni di gioco prima del rinvaso successivo, per specie
   { id: 'akadama', nome: 'Akadama', tipo: 'terriccio', piante: ['acero', 'pino', 'ginepro', 'azalea'], durata: { acero: 1, pino: 2, ginepro: 2, azalea: 1 }, prezzo: 25,
     descrizione: 'Argilla giapponese in granuli: drena e trattiene il giusto. Va bene per tutti i bonsai.' },
   { id: 'kanuma', nome: 'Kanuma', tipo: 'terriccio', piante: ['azalea'], durata: { azalea: 3 }, prezzo: 30,
     descrizione: 'Pomice giallo-chiara e acida, leggera e piena d\'aria: il terriccio giusto per l\'azalea, che ci sta bene a lungo.' },
+  { id: 'kiryu', nome: 'Kiryu', tipo: 'terriccio', piante: ['pino', 'ginepro', 'azalea'], durata: { pino: 3, ginepro: 3, azalea: 2 }, prezzo: 30,
+    descrizione: 'Sabbia vulcanica gialla e dura, che non si sbriciola: piace a pino, ginepro e azalea.' },
   { id: 'miscela-conifere', nome: 'Miscela per conifere', tipo: 'terriccio', piante: ['pino', 'ginepro'], durata: { pino: 3, ginepro: 3 }, prezzo: 35,
     descrizione: 'Akadama, pomice e lapillo: molto drenante, le radici delle conifere ci stanno bene più a lungo.' },
 ];
@@ -307,6 +333,9 @@ function caso(testo) {
   return ((h ^ h >>> 16) >>> 0) / 4294967296;
 }
 const concimeAttivo = (a, t) => !!a.concime && t < a.concime.fino;
+// il tonico alle alghe: la chioma si riprende il doppio più in fretta
+const tonicoAttivo = (a, t) => !!a.tonico && t < a.tonico.fino;
+const tonico = (a, t) => tonicoAttivo(a, t) ? TONICO_RIPRESA : 1;
 const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
 const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
@@ -517,7 +546,8 @@ export function avanza(stato, ora) {
       const c = curaDi(stato, p);
       const k = giorni * FATTORE_SETE[stagione] * (c.rinvaso.stretto ? SETE_VASO_STRETTO : 1);
       // sotto la neve il terriccio non si asciuga
-      if (cade !== 'neve') asciuga(c, k * SETE_SPECIE[p], k * scoloSpecie(p));
+      // il muschio sul terriccio trattiene l'umidità: il vaso asciuga un po' più piano
+      if (cade !== 'neve') asciuga(c, k * SETE_SPECIE[p] * (c.muschio ? MUSCHIO_SETE : 1), k * scoloSpecie(p));
       // la pioggia annaffia: se la sfida era annaffiare questa pianta, se ne sceglie un'altra
       if (cade === 'pioggia' && c.sete > 0) {
         c.sete = Math.max(0, c.sete - giorni * 24 * PIOGGIA_ALL_ORA);
@@ -528,7 +558,7 @@ export function avanza(stato, ora) {
     }
     const max = Math.min(saluteMassima(a.sete), saluteRistagno(a.ristagno));
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
-    else if (a.sete < 2 && a.ristagno < FLOSCE_DA && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t));
+    else if (a.sete < 2 && a.ristagno < FLOSCE_DA && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t) * tonico(a, t));
     if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
@@ -541,7 +571,7 @@ export function avanza(stato, ora) {
       // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
       const maxC = Math.min(saluteMassima(c.sete), saluteRistagno(c.ristagno));
       if (c.salute > maxC) c.salute = Math.max(maxC, c.salute - giorni * PERDITA_AL_GIORNO * k);
-      else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t));
+      else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t) * tonico(c, t));
       if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
       cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni, svanisce);
@@ -634,6 +664,7 @@ function nuovoGiorno(stato, ora) {
     const c = curaDi(stato, pianta);
     if (c.concime && ora >= c.concime.fino) c.concime = null;
     if (c.protezione && ora >= c.protezione.fino) c.protezione = null;
+    if (c.tonico && ora >= c.tonico.fino) c.tonico = null;
     if (c.parassiti || protetta(c, ora)) continue;
     const p = PROBABILITA_PARASSITI[stagione] * (pianta === 'acero' ? (a.sete >= 2 ? 2 : 1) : PROBABILITA_CONIFERE) * (concimeAttivo(c, ora) ? 0.5 : 1);
     const giorno = stato.inizio + ':' + giornoLocale(ora) + (pianta === 'acero' ? '' : ':' + pianta);
@@ -842,6 +873,8 @@ export function rinvasa(stato, ora, pianta, id) {
   if (!stato.inventario[id]) return { esito: 'finito', ...vuoto };
   stato.inventario[id] -= 1;
   c.rinvaso = { primavera: finestra, durata: p.durata[pianta], stretto: false };
+  // col terriccio nuovo il muschio se ne va
+  c.muschio = false;
   // terriccio nuovo e ben bagnato
   c.sete = 0;
   stato.semi += SEMI.rinvaso;
@@ -929,8 +962,17 @@ export function usaProdotto(stato, ora, pianta, id) {
   if (p.tipo === 'concime') {
     if (calendario(stato.inizio, ora).stagione === 3) return { esito: 'inverno', ...vuoto };
     if (concimeAttivo(c, ora)) return { esito: 'attivo', ...vuoto };
-    c.concime = { fino: ora + DURATA_CONCIME * GIORNO, spinta: p.spinta, prodotto: id };
+    // il concime liquido fa effetto subito e forte, ma per pochi giorni
+    c.concime = { fino: ora + (p.giorni ?? DURATA_CONCIME) * GIORNO, spinta: p.spinta, prodotto: id };
     if (pianta === 'acero') semi += completaSfida(stato, 'concime');
+  } else if (p.tipo === 'tonico') {
+    // il tonico va bene anche d'inverno: aiuta la chioma a riprendersi, non spinge la crescita
+    if (tonicoAttivo(c, ora)) return { esito: 'attivo', ...vuoto };
+    c.tonico = { fino: ora + p.giorni * GIORNO };
+  } else if (p.tipo === 'muschio') {
+    // il muschio resta sul terriccio fino al prossimo rinvaso
+    if (c.muschio) return { esito: 'gia', ...vuoto };
+    c.muschio = true;
   } else {
     if (!c.parassiti && !p.protezione) return { esito: 'niente', ...vuoto };
     if (c.parassiti) {
@@ -1232,6 +1274,9 @@ function vistaCura(c, t, stagione) {
     } : null,
     // olio di neem: giorni di protezione dai parassiti
     protezione: protetta(c, t) ? giorniFino(c.protezione.fino, t) : 0,
+    // tonico alle alghe: giorni che restano; muschio sul terriccio
+    tonico: tonicoAttivo(c, t) ? giorniFino(c.tonico.fino, t) : 0,
+    muschio: !!c.muschio,
   };
 }
 

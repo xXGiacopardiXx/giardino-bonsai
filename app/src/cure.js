@@ -5,7 +5,7 @@
 // specifici. Cosa si può fare lo decide il motore; le azioni le fa main.js.
 import { iconaProdotto, perChi } from './icone-cura.js';
 
-const GRUPPI = [['concime', 'Concimi'], ['trattamento', 'Trattamenti'], ['terriccio', 'Terricci per il rinvaso']];
+const GRUPPI = [['concime', 'Concimi'], ['tonico', 'Tonici'], ['trattamento', 'Trattamenti'], ['muschio', 'Per il vaso'], ['terriccio', 'Terricci per il rinvaso']];
 
 // azioni: usa(pianta, id), negozio()
 export function creaCure(azioni) {
@@ -79,7 +79,9 @@ export function creaCure(azioni) {
       righe.push(r.dovuto && r.finestra ? '<span class="male">Le radici escono dal vaso: è il momento del rinvaso</span>'
         : r.dovuto ? `<span class="male">Vaso stretto: si rinvasa a fine inverno, tra ${giorni(r.giorniAllaFinestra)}</span>`
         : `<span>Radici a posto: prossimo rinvaso tra ${r.anniMancanti === 1 ? 'un anno' : r.anniMancanti + ' anni'} di gioco</span>`);
-      if (c.protezione) righe.push(`<span>Protetta dall'olio di neem per ${giorni(c.protezione)}</span>`);
+      if (c.protezione) righe.push(`<span>Protetta dagli afidi per ${giorni(c.protezione)}</span>`);
+      if (c.tonico) righe.push(`<span>Tonico alle alghe: la chioma si riprende più in fretta per ${giorni(c.tonico)}</span>`);
+      if (c.muschio) righe.push('<span>Muschio sul terriccio: il vaso asciuga più piano</span>');
       statoEl.hidden = false; statoEl.innerHTML = righe.join('');
       const adatti = vista.prodotti.filter(p => p.piante.includes(pianta)).sort((a, b) => a.piante.length - b.piante.length);
       v('lista').innerHTML = GRUPPI.map(([tipo, nomeG]) => {

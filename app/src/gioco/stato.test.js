@@ -1377,3 +1377,64 @@ test('bilanciamento: un giocatore costante compra una cosa piccola ogni 2-3 gior
   // una cosa grande (azalea 400, primo ampliamento 600) entro 3-4 settimane
   assert.ok(r.alGiorno * 21 >= AMPLIAMENTI[0].prezzo, 'il primo ampliamento in tre settimane');
 });
+
+test('il concime liquido fa effetto forte ma solo tre giorni', () => {
+  const s = nuovoStato(T0); s.inventario['concime-liquido'] = 3;
+  assert.equal(usaProdotto(s, T0, 'acero', 'concime-liquido').esito, 'ok');
+  assert.equal(vista(s).cura.acero.concime.giorni, 3);
+  avanza(s, dopo(3.1));
+  assert.equal(vista(s).cura.acero.concime.attivo, false);
+});
+
+test('il tonico alle alghe fa riprendere la chioma il doppio più in fretta, anche d inverno', () => {
+  const prova = (conTonico) => {
+    const s = nuovoStato(T0); s.inventario.alghe = 3;
+    s.albero.salute = .5; s.albero.sete = 0;
+    if (conTonico) assert.equal(usaProdotto(s, T0, 'acero', 'alghe').esito, 'ok');
+    s.albero.sete = 0; avanza(s, T0 + 12 * ORA);
+    return s.albero.salute - .5;
+  };
+  assert.ok(Math.abs(prova(true) - 2 * prova(false)) < 1e-9);
+  const s = nuovoStato(T0); s.inventario.alghe = 3;
+  avanza(s, dopo(21.5)); // inverno
+  assert.equal(usaProdotto(s, dopo(21.5), 'pino', 'alghe').esito, 'ok');
+  assert.equal(usaProdotto(s, dopo(21.6), 'pino', 'alghe').esito, 'attivo');
+  assert.equal(vista(s).cura.pino.tonico, 7);
+});
+
+test('il muschio sul terriccio fa asciugare il vaso più piano e se ne va col rinvaso', () => {
+  const sete = (conMuschio) => {
+    const s = nuovoStato(T0); s.inventario.muschio = 3;
+    s.conifere.pino.sete = 0;
+    if (conMuschio) assert.equal(usaProdotto(s, T0, 'pino', 'muschio').esito, 'ok');
+    avanza(s, dopo(2));
+    return s.conifere.pino.sete;
+  };
+  assert.ok(sete(true) < sete(false) * .9);
+  const s = nuovoStato(T0); s.inventario.muschio = 3;
+  usaProdotto(s, T0, 'acero', 'muschio');
+  assert.equal(usaProdotto(s, T0, 'acero', 'muschio').esito, 'gia');
+  assert.equal(vista(s).cura.acero.muschio, true);
+  avanza(s, dopo(24.1));
+  assert.equal(rinvasa(s, dopo(24.1), 'acero', 'akadama').esito, 'ok');
+  assert.equal(vista(s).cura.acero.muschio, false);
+});
+
+test('il piretro toglie gli afidi e protegge per tre giorni; il kiryu va bene per pino, ginepro e azalea', () => {
+  const s = nuovoStato(T0); s.inventario.piretro = 3;
+  assert.equal(usaProdotto(s, T0, 'ginepro', 'piretro').esito, 'ok');
+  assert.equal(vista(s).cura.ginepro.protezione, 3);
+  const kiryu = PRODOTTI.find(p => p.id === 'kiryu');
+  assert.deepEqual(kiryu.piante, ['pino', 'ginepro', 'azalea']);
+});
+
+test('le decorazioni nuove si comprano e trovano un posto libero', () => {
+  const s = nuovoStato(T0); s.semi = 10000;
+  for (const d of DECORAZIONI) assert.equal(compraDecorazione(s, d.id).esito, 'ok', d.id);
+  for (const d of DECORAZIONI) {
+    const p = s.decorazioni.posti[d.id];
+    s.decorazioni.messe = s.decorazioni.messe.filter(x => x !== d.id);
+    assert.equal(postoLibero(s, d.id, p.x, p.z), 'ok', d.id);
+    s.decorazioni.messe.push(d.id);
+  }
+});

@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 11/11/2026
+Ultimo aggiornamento: 12/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -273,6 +273,14 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 | Concime universale | tutte | concime, crescita ×1,3 | 20 |
 | Sapone molle | tutte | toglie gli afidi | 20 |
 | Olio di neem | tutte | toglie gli afidi e li tiene lontani per una stagione (si può usare anche prima) | 35 |
+| Piretro naturale | tutte | toglie gli afidi e li tiene lontani per tre giorni | 25 |
+| Concime liquido | tutte | concime, crescita ×1,8 ma solo per tre giorni | 25 |
+| Concime per azalee | azalea | concime acido, crescita ×1,6 | 30 |
+| Tonico alle alghe | tutte | tonico: per una stagione la chioma diradata si riprende il doppio più in fretta; va bene anche d'inverno, non si somma con sé stesso | 35 |
+| Muschio per il vaso | tutte | copre il terriccio fino al prossimo rinvaso (si vede nella scena): il vaso asciuga più piano (sete ×0,85) | 20 |
+| Kiryu | pino, ginepro, azalea | terriccio: sabbia vulcanica dura; rinvaso ogni 3 anni per pino e ginepro, 2 per l'azalea | 30 |
+
+**Tipologie di cura (12/11/2026):** oltre a concimi, trattamenti e terricci ci sono i **tonici** (aiutano la ripresa, non la crescita) e il **muschio** (bello, e cambia il ritmo dell'acqua: va ricordato, e il bastoncino lo dice). Nel negozio i tonici stanno coi concimi e il muschio coi terricci; nella cura della pianta ognuno ha il suo gruppo, e lo stato della pianta dice se ha il tonico (per quanti giorni) e il muschio.
 
   Si comincia con un kit: 2 dosi di concime universale e 2 di sapone molle.
 - **Inventario:** **Cura** nella barra in basso apre l'inventario: i prodotti che hai, divisi tra concimi e trattamenti, con le dosi rimaste, e un pulsante per il negozio. Da qui non si usano: servono a sapere cosa c'è.
@@ -381,6 +389,12 @@ Ogni decorazione si mette **dove si vuole** sul prato e si gira, così ogni giar
 | Fontana di bambù (shishi-odoshi) | 120 | sul prato a sinistra: il bambù si riempie, si inclina versando nella vasca e torna indietro battendo sulla pietra (un "toc" leggero ogni 9 secondi) |
 | Gatto che dorme | 150 | al sole accanto al pino, respira piano |
 | Ponticello rosso | 200 | ad arco sopra il laghetto delle carpe |
+| Rana di pietra | 60 | piccola, col muschio sulla schiena ("kaeru": tornare) |
+| Lanterna di carta | 90 | rossa, appesa a una canna di bambù, dondola piano e brilla appena |
+| Vasca tsukubai | 110 | bassa vasca di pietra col mestolo di bambù |
+| Ombrellone del tè | 140 | grande ombrello rosso sopra una panca col telo |
+| Piccolo torii | 220 | il portale rosso dei santuari, in piccolo |
+| Pagoda di pietra | 260 | torre a cinque tetti col muschio |
 
 - Si comprano dal **Negozio, scheda Giardino**. La decorazione comprata spunta con un saltello e le stelline nel suo posto iniziale (o lì vicino, se è occupato) e si passa subito a **Sposta**, per metterla dove si vuole.
 - **Sposta:** si entra toccando una decorazione nel giardino, oppure con Sposta nella scheda Giardino. Spariscono etichette e barra; in alto il nome, in basso **Togli**, **Ruota** e **Fatto**.
@@ -563,7 +577,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 5. **Ciclo completo dell'MVP:** stagioni dell'acero, fasi di sete, serie, Semi, negozio dei vasi, breve tutorial, suoni. Fatto: sete e potatura sono passate dal pino all'acero; l'acero cambia colore giorno per giorno (verde chiaro in primavera, verde pieno in estate, rosso in autunno), in inverno perde le foglie nei primi giorni, resta spoglio e l'ultimo giorno rimette le foglie nuove. Le foglie cadono nel giardino solo tra autunno e inizio inverno. I germogli dell'acero nascono dalla punta di un rametto della chioma (così sono sempre attaccati alla pianta) e sono uno stelo curvo, sottile in cima, che sfuma dal colore del legno al rosso, con coppie di foglie opposte a 7 lobi che si aprono man mano che crescono; sporgono dalla chioma e sono rosso tenero sul verde (verde chiaro sul rosso e sui rami spogli). Ogni albero ha una chioma con un carattere proprio: l'acero foglie a mano larghe e ariose, il pino ciuffi di aghi lunghi a spazzola, il ginepro fiammelle a squame fitte, verde-azzurro. Le stagioni si vedono in tutto il giardino: l'acero ha colori ben distinti (verde tenero, verde intenso, rosso fuoco, spoglio), l'albero di sfondo fiorisce di rosa in primavera, è verde d'estate, giallo oro in autunno e spoglio d'inverno, il ginepro d'inverno si fa bronzeo. Le foglie che cadono e quelle a terra hanno la forma della foglia d'acero. Cielo e prato restano uguali tutto l'anno. Negozio dei vasi fatto: si apre da Negozio e dal "+" dei Semi, ha 5 vasi per l'acero (ovale blu smaltato già posseduto; tondo in terracotta 80, rettangolare in grès 120, ovale celadon 180, crema con piedini a nuvola 250 Semi). Il vaso comprato va subito all'acero; quelli già comprati si rimettono con "Usa" da Aspetto. Quando il vaso cambia fa un saltello e intorno girano stelline dorate per un paio di secondi. Se mancano Semi il negozio dice quanti, senza spingere. Suoni e musica di sottofondo fatti (sezione 9.3). Guida dei primi passi fatta: alla prima partita un fumetto in alto accompagna 7 passi brevi (benvenuto, annaffiare, i Semi, potare un germoglio, le gemme, la tendina dell'acero, "torna domani"); i passi di Acqua e Pota aspettano che il giocatore faccia l'azione, e si saltano se non servono. Il pulsante interessato rimbalza. Chi stava già giocando non la vede; si può rivedere dal pannello di prova. Fase 5 completata ✅.
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
-8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5).
+8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

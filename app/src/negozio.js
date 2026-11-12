@@ -6,7 +6,9 @@
 import { iconaProdotto, perChi } from './icone-cura.js';
 
 // categorie della scheda Cura: tipo del prodotto (PRODOTTI nel motore), nome del pulsante, riga sotto
-const CATEGORIE = [['concime', 'Concimi', 'Concimi: la pianta cresce di più per una stagione'], ['trattamento', 'Contro gli afidi', 'Trattamenti contro gli afidi'], ['terriccio', 'Terricci', 'Terricci per il rinvaso'], ['attrezzo', 'Attrezzi', 'Attrezzi: si comprano una volta e servono per sempre']];
+// (i tonici stanno coi concimi, il muschio coi terricci)
+const CATEGORIE = [['concime', 'Concimi', 'Concimi e tonici: la pianta cresce di più, o si riprende prima'], ['trattamento', 'Contro gli afidi', 'Trattamenti contro gli afidi'], ['terriccio', 'Terricci', 'Terricci per il rinvaso e muschio per il vaso'], ['attrezzo', 'Attrezzi', 'Attrezzi: si comprano una volta e servono per sempre']];
+const DELLA_CATEGORIA = { concime: ['concime', 'tonico'], trattamento: ['trattamento'], terriccio: ['terriccio', 'muschio'] };
 
 const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6 7 6 10.5A6 6 0 0 1 6 13.5C6 10 7.5 6 12 3Z" fill="#a8641f" stroke="#3b2716" stroke-width="2"/></svg>';
 
@@ -17,6 +19,8 @@ const DISEGNI = {
   terracotta: `<path d="M13 28h38l-5 20H18Z" fill="#c27a4a"/><rect x="10" y="24" width="44" height="7" rx="3" fill="#ae6a3d"/>`,
   rettangolare: `<rect x="5" y="30" width="54" height="13" fill="#5b4636"/><rect x="3" y="27" width="58" height="5" fill="#4a3829"/><rect x="8" y="43" width="7" height="4" fill="#4a3829"/><rect x="49" y="43" width="7" height="4" fill="#4a3829"/>`,
   celadon: `<path d="M5 32h54l-7 11H12Z" fill="#8cbfa3"/><rect x="3" y="28" width="58" height="6" rx="3" fill="#a9d6bd"/><rect x="18" y="43" width="28" height="4" rx="2" fill="#76a98c"/>`,
+  rosso: `<path d="M7 30h50l-6 15H13Z" fill="#9c2f24"/><rect x="5" y="26" width="54" height="6" rx="3" fill="#b8463a"/>`,
+  nero: `<path d="M12 29h40l-4 15H16Z" fill="#2f2a28"/><rect x="10" y="25" width="44" height="6" rx="1" fill="#403a36"/><rect x="16" y="44" width="6" height="3" fill="#403a36"/><rect x="42" y="44" width="6" height="3" fill="#403a36"/><path d="M24 29v15M40 29v15" stroke="#403a36" stroke-width="1.2"/>`,
   nuvola: `<path d="M9 30h46l-4 13H13Z" fill="#eadfc6"/><rect x="7" y="26" width="50" height="6" rx="3" fill="#d9c9a6"/><rect x="10" y="35" width="44" height="2.5" fill="#4c7891"/><ellipse cx="17" cy="45" rx="6" ry="3" fill="#d0bc96"/><ellipse cx="47" cy="45" rx="6" ry="3" fill="#d0bc96"/>`,
 };
 // un piccolo acero sopra ogni vaso, perché si capisca a cosa serve
@@ -27,6 +31,12 @@ const DECO = {
   panchina: `<rect x="12" y="34" width="7" height="12" fill="#8e8a7e"/><rect x="45" y="34" width="7" height="12" fill="#8e8a7e"/><rect x="6" y="27" width="52" height="5" rx="1.5" fill="#9a6a46"/><rect x="6" y="32" width="52" height="4" rx="1.5" fill="#8a5a3a"/>`,
   fontana: `<path d="M36 36h20l-2 11H38Z" fill="#8e8a7e"/><ellipse cx="46" cy="36" rx="10" ry="2.6" fill="#6cb6c8"/><rect x="18" y="26" width="3" height="20" fill="#9c8448"/><rect x="4" y="20" width="38" height="6" rx="3" transform="rotate(12 21 23)" fill="#cdb46c"/><rect x="40" y="8" width="3.4" height="30" fill="#cdb46c"/><ellipse cx="9" cy="45" rx="5" ry="3" fill="#9d998c"/>`,
   gatto: `<ellipse cx="30" cy="36" rx="20" ry="10" fill="#e8913a"/><path d="M12 38c2 8 22 10 34 6" stroke="#e8913a" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="47" cy="31" r="9" fill="#e8913a"/><path d="M41 25l1-8 5 5ZM48 23l5-6 1 8Z" fill="#e8913a"/><path d="M44 31h3M49 31h3" stroke="#3b2716" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="50" cy="35" rx="4" ry="2.4" fill="#f7e3c4"/>`,
+  rana: `<ellipse cx="32" cy="38" rx="14" ry="9" fill="#8f9a7e"/><ellipse cx="32" cy="27" rx="10" ry="7" fill="#8f9a7e"/><circle cx="26" cy="21" r="4" fill="#a7b292"/><circle cx="38" cy="21" r="4" fill="#a7b292"/><circle cx="26" cy="21" r="1.6" fill="#3b2716"/><circle cx="38" cy="21" r="1.6" fill="#3b2716"/><ellipse cx="32" cy="35" rx="7" ry="2.6" fill="#6d9a43"/><ellipse cx="18" cy="45" rx="5" ry="2" fill="#8f9a7e"/><ellipse cx="46" cy="45" rx="5" ry="2" fill="#8f9a7e"/>`,
+  'lanterna-carta': `<rect x="14" y="6" width="3" height="42" fill="#cdb46c"/><path d="M15 7Q26 3 38 6" stroke="#cdb46c" stroke-width="2.6" fill="none"/><path d="M37 6v5" stroke="#3b2716" stroke-width="1"/><ellipse cx="37" cy="24" rx="9" ry="12" fill="#d8402c"/><rect x="31" y="11" width="12" height="3" rx="1" fill="#2e2018"/><rect x="31" y="34" width="12" height="3" rx="1" fill="#2e2018"/><path d="M29 20h16M28.5 25h17M29 30h16" stroke="#b8302a" stroke-width="1"/><ellipse cx="34" cy="21" rx="3" ry="5" fill="#f07a50" opacity=".6"/>`,
+  tsukubai: `<path d="M16 28h32l-3 16H19Z" fill="#8e8a7e"/><ellipse cx="32" cy="28" rx="16" ry="4" fill="#9d998c"/><ellipse cx="32" cy="28" rx="11" ry="2.6" fill="#6cb6c8"/><path d="M14 22l30 4" stroke="#cdb46c" stroke-width="2"/><rect x="11" y="19" width="6" height="5" rx="1" fill="#cdb46c"/><ellipse cx="54" cy="44" rx="5" ry="3" fill="#9d998c"/><ellipse cx="9" cy="45" rx="4" ry="2.4" fill="#9d998c"/>`,
+  ombrellone: `<path d="M8 22Q32 2 56 22Z" fill="#d8402c"/><path d="M32 9v32" stroke="#8a5a3a" stroke-width="2"/><rect x="14" y="34" width="36" height="4" fill="#c8402c"/><rect x="16" y="38" width="3" height="8" fill="#8a5a3a"/><rect x="45" y="38" width="3" height="8" fill="#8a5a3a"/><path d="M14 21l18-12 18 12" stroke="#e8d6a8" stroke-width=".8" fill="none"/>`,
+  torii: `<rect x="18" y="16" width="5" height="32" fill="#c8402c"/><rect x="41" y="16" width="5" height="32" fill="#c8402c"/><rect x="13" y="20" width="38" height="4" fill="#c8402c"/><path d="M6 12Q32 16 58 12v4Q32 20 6 16Z" fill="#c8402c"/><path d="M5 10Q32 14 59 10v3Q32 17 5 13Z" fill="#2e2018"/><rect x="30" y="16" width="4" height="5" fill="#c8402c"/>`,
+  pagoda: `<rect x="25" y="41" width="14" height="7" fill="#8e8a7e"/><path d="M18 40h28l-6-4H24Z" fill="#8a867a"/><rect x="27" y="31" width="10" height="5" fill="#9d998c"/><path d="M19 31h26l-6-4H25Z" fill="#8e8a7e"/><rect x="28" y="22" width="8" height="5" fill="#9d998c"/><path d="M21 22h22l-5-4H26Z" fill="#8a867a"/><rect x="29" y="14" width="6" height="4" fill="#9d998c"/><path d="M23 14h18l-5-3H28Z" fill="#8e8a7e"/><path d="M32 11V3" stroke="#8e8a7e" stroke-width="2"/><ellipse cx="38" cy="39" rx="4" ry="1.4" fill="#6d9a43"/>`,
   ponte: `<path d="M4 44Q32 14 60 44" stroke="#9a6a46" stroke-width="6" fill="none"/><path d="M6 34Q32 6 58 34" stroke="#c8402c" stroke-width="3" fill="none"/><path d="M10 40v-8M21 30v-9M32 26v-8M43 30v-9M54 40v-8" stroke="#c8402c" stroke-width="2.6"/><path d="M2 47h60" stroke="#6cb6c8" stroke-width="3"/>`,
 };
 // gli elementi del giardino messi da parte (sezione 8.4), per id senza il numero
@@ -137,7 +147,7 @@ export function creaNegozio(azioni) {
       if (modo === 'negozio' && scheda === 'cura') {
         vai.hidden = true;
         // schede compatte come quelle dei vasi: le dosi che hai stanno nell'angolo del disegno
-        lista.innerHTML = vista.prodotti.filter(p => p.tipo === categoria).map(p => `<div class="vaso prodotto"><div class="vaso-img">${iconaProdotto(p.id)}${p.dosi ? `<span class="prodotto-badge">×${p.dosi}</span>` : ''}</div><span class="vaso-nome">${p.nome}</span><span class="prodotto-per">${perChi(p.piante)}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="prodotto" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('');
+        lista.innerHTML = vista.prodotti.filter(p => DELLA_CATEGORIA[categoria].includes(p.tipo)).map(p => `<div class="vaso prodotto"><div class="vaso-img">${iconaProdotto(p.id)}${p.dosi ? `<span class="prodotto-badge">×${p.dosi}</span>` : ''}</div><span class="vaso-nome">${p.nome}</span><span class="prodotto-per">${perChi(p.piante)}</span><button class="vaso-b compra${vista.semi < p.prezzo ? ' caro' : ''}" data-a="prodotto" data-id="${p.id}" aria-label="Compra per ${p.prezzo} Semi">${p.prezzo}${SEME}</button></div>`).join('');
         return;
       }
       if (modo === 'negozio' && scheda === 'giardino') {

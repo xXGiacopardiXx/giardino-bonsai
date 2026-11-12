@@ -87,10 +87,89 @@ const COSTRUISCI = {
       [-L * .96, L * .96].forEach(x => mesh(new THREE.SphereGeometry(.055, 10, 8), M(0xe8b84a), g, x, y(x) + .34, z));
     });
   },
+  // rana di pietra accovacciata, col muschio sulla schiena
+  rana(g) {
+    const pietra = M(0x8f9a7e);
+    const corpo = mesh(new THREE.SphereGeometry(.2, 14, 10), pietra, g, 0, .14, 0); corpo.scale.set(1, .75, 1.15);
+    const testa = mesh(new THREE.SphereGeometry(.13, 12, 9), pietra, g, 0, .24, .16); testa.scale.set(1.1, .8, 1);
+    [-.07, .07].forEach(x => {
+      mesh(new THREE.SphereGeometry(.05, 10, 8), M(0xa7b292), g, x, .31, .19);
+      mesh(new THREE.SphereGeometry(.022, 8, 6), M(0x3b2716), g, x * 1.05, .32, .235, false);
+      // zampe davanti e dietro
+      const z1 = mesh(new THREE.SphereGeometry(.07, 8, 6), pietra, g, x * 1.6, .04, .16); z1.scale.set(1, .4, 1.3);
+      const z2 = mesh(new THREE.SphereGeometry(.1, 8, 6), pietra, g, x * 2.2, .07, -.06); z2.scale.set(.8, .6, 1.3);
+    });
+    const m = mesh(new THREE.IcosahedronGeometry(.13, 1), M(0x6d9a43), g, -.02, .26, -.05); m.scale.set(1, .3, 1);
+  },
+  // lanterna rossa di carta appesa a una canna di bambù piegata: dondola piano
+  'lanterna-carta'(g) {
+    mesh(new THREE.CylinderGeometry(.035, .045, 1.5, 7), M(BAMBU), g, 0, .75, 0);
+    tube([[0, 1.48, 0], [.18, 1.58, 0], [.42, 1.55, 0]], .03, .022, BAMBU, g, 8);
+    [.4, .9, 1.3].forEach(y => mesh(new THREE.CylinderGeometry(.045, .045, .02, 7), M(BAMBU_SCURO), g, 0, y, 0));
+    const perno = new THREE.Group(); perno.position.set(.42, 1.55, 0); g.add(perno);
+    mesh(new THREE.CylinderGeometry(.006, .006, .14, 4), M(0x3b2716), perno, 0, -.07, 0, false);
+    const carta = new THREE.Mesh(new THREE.SphereGeometry(.17, 14, 10), new THREE.MeshToonMaterial({ color: 0xd8402c, emissive: 0x5a1408 }));
+    carta.scale.set(1, 1.25, 1); carta.position.y = -.33; carta.castShadow = true; perno.add(carta);
+    [-.2, .2].forEach((dy, i) => mesh(new THREE.CylinderGeometry(.09, .09, .04, 12), M(0x2e2018), perno, 0, -.33 + dy * (i ? 1.05 : 1.05), 0));
+    mesh(new THREE.CylinderGeometry(.01, .01, .12, 4), M(0xe8b84a), perno, 0, -.6, 0, false);
+    let c = 0;
+    return (dt) => { c += dt; perno.rotation.z = Math.sin(c * 1.3) * .08; perno.rotation.x = Math.sin(c * .9 + 1) * .05; };
+  },
+  // tsukubai: vasca bassa di pietra con l'acqua, il mestolo di bambù e due sassi davanti
+  tsukubai(g) {
+    const v = mesh(flatGeo(new THREE.CylinderGeometry(.32, .36, .3, 10)), M(PIETRA_SCURA), g, 0, .15, 0); v.rotation.y = .3;
+    const acqua = new THREE.Mesh(new THREE.CircleGeometry(.2, 20), new THREE.MeshPhongMaterial({ color: 0x6cb6c8, shininess: 90, specular: 0xffffff }));
+    acqua.rotation.x = -PI / 2; acqua.position.set(0, .29, 0); g.add(acqua);
+    // il mestolo appoggiato sopra
+    const manico = mesh(new THREE.CylinderGeometry(.012, .012, .5, 5), M(BAMBU), g, .05, .33, -.08); manico.rotation.z = PI / 2; manico.rotation.y = .4;
+    mesh(new THREE.CylinderGeometry(.05, .045, .07, 8), M(BAMBU), g, -.17, .34, 0);
+    [[.42, .2, .14], [-.38, .26, .11]].forEach(([x, z, r]) => { const s = mesh(flatGeo(new THREE.DodecahedronGeometry(r, 0)), M(PIETRA), g, x, r * .5, z); s.scale.y = .6; });
+    const m = mesh(new THREE.IcosahedronGeometry(.16, 1), M(0x6d9a43), g, -.25, .05, -.2); m.scale.set(1, .3, .8);
+  },
+  // nodate: ombrello rosso sopra una panca col telo rosso
+  ombrellone(g) {
+    [-.38, .38].forEach(x => [-.14, .14].forEach(z => mesh(new THREE.BoxGeometry(.06, .26, .06), M(0x8a5a3a), g, x, .13, z)));
+    mesh(new THREE.BoxGeometry(.95, .05, .4), M(0x9a6a46), g, 0, .28, 0);
+    mesh(new THREE.BoxGeometry(.97, .02, .42), M(0xc8402c), g, 0, .315, 0);
+    mesh(new THREE.CylinderGeometry(.025, .025, 1.55, 6), M(0x8a5a3a), g, .5, .78, -.22);
+    const tela = mesh(new THREE.ConeGeometry(.85, .32, 16, 1, true), new THREE.MeshToonMaterial({ color: 0xd8402c, side: THREE.DoubleSide }), g, .5, 1.42, -.22);
+    tela.castShadow = true;
+    // le stecche sotto l'ombrello
+    for (let i = 0; i < 8; i++) { const a = i / 8 * PI * 2; tube([[.5, 1.3, -.22], [.5 + Math.cos(a) * .8, 1.27, -.22 + Math.sin(a) * .8]], .008, .008, 0xe8d6a8, g, 2); }
+    mesh(new THREE.SphereGeometry(.04, 8, 6), M(0xe8b84a), g, .5, 1.6, -.22);
+  },
+  // piccolo torii rosso: due colonne, due travi, la trave alta curva coi bordi neri
+  torii(g) {
+    const ROSSO = 0xc8402c, NERO = 0x2e2018;
+    [-.55, .55].forEach(x => {
+      mesh(new THREE.CylinderGeometry(.07, .08, 1.35, 10), M(ROSSO), g, x, .67, 0);
+      mesh(new THREE.CylinderGeometry(.1, .1, .1, 10), M(NERO), g, x, .05, 0);
+    });
+    mesh(new THREE.BoxGeometry(1.3, .08, .09), M(ROSSO), g, 0, 1.08, 0);
+    mesh(new THREE.BoxGeometry(.08, .2, .06), M(ROSSO), g, 0, 1.2, 0);
+    const pts = []; for (let i = 0; i <= 10; i++) { const x = -.9 + i * .18; pts.push([x, 1.36 + .06 * (x / .9) ** 2, 0]); }
+    tube(pts, .07, .07, ROSSO, g, 16);
+    tube(pts.map(([x, y, z]) => [x, y + .08, z]), .05, .05, NERO, g, 16);
+  },
+  // pagoda di pietra a cinque tetti, con un po' di muschio
+  pagoda(g) {
+    mesh(flatGeo(new THREE.CylinderGeometry(.26, .3, .22, 4)), M(PIETRA_SCURA), g, 0, .11, 0).rotation.y = PI / 4;
+    let y = .22;
+    for (let i = 0; i < 5; i++) {
+      const k = 1 - i * .12;
+      mesh(new THREE.BoxGeometry(.24 * k, .16, .24 * k), M(PIETRA), g, 0, y + .08, 0);
+      const tetto = mesh(flatGeo(new THREE.CylinderGeometry(.06 * k, .32 * k, .09, 4)), M(i % 2 ? PIETRA_SCURA : 0x8a867a), g, 0, y + .2, 0); tetto.rotation.y = PI / 4;
+      if (i % 2 === 0) { const m = mesh(new THREE.IcosahedronGeometry(.06, 0), M(0x6d9a43), g, .12 * k, y + .24, .1 * k); m.scale.set(1.4, .4, 1); }
+      y += .26;
+    }
+    mesh(new THREE.ConeGeometry(.04, .22, 6), M(PIETRA_SCURA), g, 0, y + .06, 0);
+    mesh(new THREE.SphereGeometry(.045, 8, 6), M(PIETRA), g, 0, y + .2, 0);
+  },
 };
 
 // dove non deve crescere l'erba, per ogni decorazione: [dx, dz, raggio] attorno al suo posto
-const ZONE = { pietre: [[0, 0, .5]], panchina: [[0, 0, .75]], fontana: [[.1, 0, .85]], gatto: [[0, .05, .55]], ponte: [[-1.4, 0, .45], [1.4, 0, .45]] };
+const ZONE = { pietre: [[0, 0, .5]], panchina: [[0, 0, .75]], fontana: [[.1, 0, .85]], gatto: [[0, .05, .55]], ponte: [[-1.4, 0, .45], [1.4, 0, .45]],
+  rana: [[0, 0, .32]], 'lanterna-carta': [[0, 0, .25]], tsukubai: [[0, 0, .55]], ombrellone: [[0, 0, .65]], torii: [[-.55, 0, .2], [.55, 0, .2]], pagoda: [[0, 0, .4]] };
 const RAGGIO = Object.fromEntries(DECORAZIONI.map(d => [d.id, d.raggio]));
 const VERDE = new THREE.Color(0x8fe06a), ROSSO = new THREE.Color(0xff6a4a);
 

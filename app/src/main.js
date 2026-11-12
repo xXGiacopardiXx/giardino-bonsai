@@ -33,6 +33,7 @@ import { creaGuida } from './guida.js';
 import { creaConsigli, RITRATTO } from './consigli.js';
 import { creaSfide, BANDIERINA } from './sfide.js';
 import { creaBastoncini } from './scena/bastoncini.js';
+import { creaMuschio } from './scena/muschio.js';
 import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/maestro.js';
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
@@ -122,7 +123,10 @@ function avvia() {
   // in un dato momento sono v.piante della vista
   const TUTTE = ['acero', 'pino', 'ginepro', 'azalea'];
   // il bastoncino di bambù nel terriccio di ogni pianta, quando c'è l'attrezzo (sezione 7.3)
-  const bastoncini = creaBastoncini({ acero: acero.soil, pino: alberi.cure.pino.soil, ginepro: alberi.cure.ginepro.soil, azalea: alberi.cure.azalea.soil });
+  const terricci = { acero: acero.soil, pino: alberi.cure.pino.soil, ginepro: alberi.cure.ginepro.soil, azalea: alberi.cure.azalea.soil };
+  const bastoncini = creaBastoncini(terricci);
+  // il muschio steso sul terriccio (sezione 6.5)
+  const muschio = creaMuschio(terricci);
   const altreDi = (v) => v.piante.filter(p => p !== 'acero');
   // germogli dell'acero, candele del pino, punte del ginepro, germogli dell'azalea; aghi vecchi del pino
   // e fiori appassiti dell'azalea
@@ -184,6 +188,7 @@ function avvia() {
     negozio?.mostra(v);
     cure?.mostra(v);
     sfide?.mostra(v);
+    muschio.set(Object.fromEntries(Object.entries(v.cura).map(([p, c]) => [p, c.muschio])));
     bastoncini.set(!!v.bastoncino, { acero: v.terriccio, ...Object.fromEntries(Object.entries(v.conifere).map(([p, c]) => [p, c.terriccio])) });
     document.getElementById('sfide').classList.toggle('nuovo', !!(v.sfida && !v.sfida.fatta));
     rinvasoScena.setRinvaso(v.rinvaso);
@@ -462,22 +467,32 @@ function avvia() {
       if (vista(stato).prodotti.find(p => p.id === id)?.tipo === 'terriccio') { cure.chiudi(); rinvasaPianta(pianta, id); return; }
       const esito = usaProdotto(stato, ora(), pianta, id);
       const prodotto = vista(stato).prodotti.find(p => p.id === id), nome = nomiPiante[pianta].toLowerCase();
+      if (esito.esito === 'attivo' && prodotto.tipo === 'tonico') { ui.toast(`Ha già il tonico: fa effetto ancora ${giorniTesto(vista(stato).cura[pianta].tonico)}.`); return; }
       if (esito.esito === 'attivo') { ui.toast(`Ha già il concime: fa effetto ancora ${giorniTesto(vista(stato).cura[pianta].concime.giorni)}.`); return; }
+      if (esito.esito === 'gia') { ui.toast("Il muschio c'è già: resta fino al prossimo rinvaso."); return; }
       if (esito.esito === 'inverno') { ui.toast('D\'inverno le piante riposano: il concime lo darai in primavera.'); return; }
-      if (esito.esito === 'niente') { ui.toast(`Non ci sono afidi ${SULLA[pianta]}: il sapone molle non serve. Ogni tanto guarda da vicino: all\'inizio sono minuscoli.`, 4500); return; }
+      if (esito.esito === 'niente') { ui.toast(`Non ci sono afidi ${SULLA[pianta]}: il ${prodotto.nome.toLowerCase()} non serve. Ogni tanto guarda da vicino: all\'inizio sono minuscoli.`, 4500); return; }
       if (esito.esito === 'finito') { ui.toast(`Hai finito il ${prodotto.nome.toLowerCase()}: lo trovi nel negozio, scheda Cura.`); return; }
       if (esito.esito !== 'ok') return;
       salva(stato); cure.chiudi();
+      // tonico e muschio: niente animazioni, si vede il risultato
+      if (prodotto.tipo === 'tonico' || prodotto.tipo === 'muschio') {
+        suoni.concime(); disegna(); premia(esito, pianta);
+        ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
+          : prodotto.tipo === 'tonico' ? 'Tonico dato: per una stagione la chioma si riprenderà il doppio più in fretta.'
+          : "Muschio steso sul terriccio: è bello e trattiene l'umidità. Ricordati che il vaso asciugherà più piano.", 4500);
+        return;
+      }
       if (prodotto.tipo === 'concime') {
         curaScene[pianta].concima(); suoni.concime(); disegna(); premia(esito, pianta);
         ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
-          : `Concime dato! Per una stagione ${pianta === 'acero' ? 'l\'acero crescerà di più e ' : 'la pianta '}resisterà meglio ai parassiti.`, 4000);
+          : `Concime dato! Per ${giorniTesto(vista(stato).cura[pianta].concime.giorni)} ${pianta === 'acero' ? 'l\'acero crescerà di più e ' : 'la pianta '}resisterà meglio ai parassiti.`, 4000);
         return;
       }
       // trattamento: la telecamera si avvicina alla pianta, per vedere lo spray
       vola(fuocoDi(pianta), baseDist * .45); suoni.spray(); premia(esito, pianta);
       if (esito.tolti) { curaScene[pianta].spruzza(); setTimeout(disegna, 1700); } else disegna();
-      ui.toast(!esito.tolti ? `Olio di neem spruzzato: per una stagione niente afidi ${SULLA[pianta]}.`
+      ui.toast(!esito.tolti ? `${prodotto.nome} spruzzato: per ${giorniTesto(vista(stato).cura[pianta].protezione)} niente afidi ${SULLA[pianta]}.`
         : esito.presto ? `Scoperti prima che si notassero: che occhio! +${esito.semi} Semi`
         : esito.inTempo ? `Via gli afidi, in tempo! +${esito.semi} Semi`
         : `Via gli afidi. Con le cure ${nome === 'acero giapponese' ? 'la chioma si riprenderà' : 'si riprenderà'} in pochi giorni.`, 4000);
