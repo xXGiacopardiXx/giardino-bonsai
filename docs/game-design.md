@@ -431,6 +431,111 @@ Piccoli eventi di qualche giorno che arrivano col calendario di gioco, ogni anno
 - Nel pannello delle sfide, in cima, la scheda del momento speciale con i giorni che restano.
 - Da adesso, di notte, nel cielo si vede anche la luna.
 
+### 7.6 Il quaderno del maestro (modalità didattica)
+
+Deciso il 13/11/2026, da fare. Il gioco insegna già la tecnica mentre si gioca (i consigli di Ren, sezione 7.4). Il quaderno raccoglie quello che si è imparato e lo collega alle **piante vere**, senza diventare una scuola: niente voti, niente lezioni obbligatorie, niente errori puniti. Si impara facendo; il quaderno spiega e ricorda.
+
+**Principi**
+
+- **Prima si fa, poi si legge.** Una pagina si apre quando la tecnica si incontra nel gioco, mai prima: chi legge sa già di cosa si parla.
+- **Sempre il perché**, con la voce di Ren, come nei consigli.
+- **Dal gioco al vero.** Il gioco comprime l'anno in 4 settimane (sezione 3.1): ogni pagina dice anche *quando* si fa con una pianta vera, in mesi reali (clima dell'Italia).
+- **Esatto.** I contenuti devono essere giusti per un bonsaista vero: niente semplificazioni che diventino errori. Quando il gioco semplifica (per esempio una sola malattia per specie), la pagina lo dice.
+- **Facoltativo e tranquillo.** Si può giocare senza aprirlo mai. Nessun senso di colpa per le pagine non lette.
+
+**Dove si apre**
+
+- Nel pannello del maestro, accanto a "Grazie, maestro", c'è **Il quaderno**. Il pulsante del maestro ha un pallino (giallo, diverso dal rosso dei consigli) quando c'è una pagina nuova.
+- Nei consigli di Ren, i punti che hanno una pagina finiscono con "Leggi nel quaderno".
+- Nel pannello Cura di una pianta, il nome della sua malattia porta alla pagina della malattia.
+
+**Com'è fatto**
+
+Un quaderno con la copertina in tela e le pagine color carta di riso, nello stile dell'interfaccia (sezione 9). Quattro parti, come segnalibri:
+
+1. **Tecniche.** Una pagina per ogni tecnica: acqua, troppa acqua, potatura, candele del pino, pizzicatura del ginepro, aghi vecchi, fiori appassiti, filo, rinvaso, terricci, concime, tonici, muschio, afidi, ogni malattia, ogni stile.
+2. **Piante.** Una pagina per ogni specie del giardino (acero, pino, ginepro, azalea, ciliegio): carattere, acqua, luce, cosa teme, e il **calendario vero** mese per mese.
+3. **Prove del maestro.** Piccoli esercizi (vedi sotto).
+4. **Parole.** Il glossario delle parole giapponesi.
+
+**Com'è fatta una pagina di tecnica**
+
+- **Titolo**, con il nome giapponese se c'è (per esempio "Il filo, *harigane*").
+- **Un disegno** nello stile delle icone del gioco: il gesto, non la pianta intera.
+- **Cos'è**: due righe.
+- **Perché**: cosa succede dentro la pianta.
+- **Quando, dal vero**: i mesi, per ogni specie a cui serve.
+- **Come si fa, dal vero**: tre o quattro passi brevi.
+- **L'errore più comune**, e come rimediare.
+- **Nel gioco**: come funziona qui, in una riga, e dove il gioco semplifica.
+
+Esempio, la pagina delle candele del pino: *cos'è*: le candele sono i germogli nuovi della primavera; *perché*: il pino mette tutta la forza dell'anno in un solo scatto, e accorciando le candele quella forza si divide tra gemme più piccole e più vicine al tronco, così gli aghi restano corti; *quando, dal vero*: maggio–giugno; *errore comune*: tagliarle tutte insieme sulla pianta debole; *nel gioco*: si cimano con Pota, in primavera.
+
+**Il calendario vero (pagine delle piante)**
+
+Una tabella da gennaio a dicembre con le cure di ogni mese, per il clima italiano. Prima stesura, da far controllare a un bonsaista:
+
+| Specie | Rinvaso | Potatura | Filo | Concime | Da tenere d'occhio |
+|---|---|---|---|---|---|
+| Acero giapponese | fine febbraio–marzo, alle gemme gonfie | germogli da aprile a giugno, lasciando una o due coppie di foglie | dopo la caduta delle foglie, o a fine primavera sui rami lignificati | marzo–giugno e settembre–ottobre | oidio da maggio a settembre; sole forte d'estate |
+| Pino nero | marzo–aprile, ogni 3–5 anni | candele a maggio–giugno; aghi vecchi a ottobre–novembre | ottobre–febbraio | marzo–ottobre, poco azoto | ruggine nei periodi umidi; troppa acqua |
+| Ginepro | aprile | pizzicare le punte da aprile a settembre, mai tutte insieme | ottobre–marzo | aprile–ottobre | ruggine ad aprile–maggio, dopo le piogge; ragnetto rosso col secco |
+| Azalea Satsuki | subito dopo la fioritura o a inizio primavera, in kanuma | togliere i fiori appassiti a giugno; potare entro luglio | dopo la fioritura | concime acido, aprile–settembre (non in fioritura) | galla in primavera; acqua calcarea |
+| Ciliegio | febbraio–marzo, prima dei fiori | dopo la fioritura, fino a inizio estate | primavera–estate, con cautela | dopo la fioritura e a settembre | corineo in primavera e autunno; rame alla caduta delle foglie |
+
+Le pagine delle piante dicono anche quanto dura un giorno di acqua dal vero (in estate l'acero può volere acqua ogni giorno, il pino ogni due o tre) e che il giardino del gioco vive all'aperto, come i bonsai di queste specie.
+
+**Le prove del maestro**
+
+Brevi esercizi, uno per volta, su una **pianta di pratica**: un piccolo acero (o la specie della prova) su un tavolo da lavoro, separato dal giardino. Le piante del giocatore non si toccano mai.
+
+- **Tipi di prova:**
+  - *Gesto*: "Pota questo germoglio lasciando due coppie di foglie" (si tocca il punto del taglio); "Metti il filo a questo ramo" (si sceglie la direzione).
+  - *Scelta*: "Quale terriccio daresti all'azalea?", "In quale mese si rinvasa il pino, dal vero?" (tre risposte, con i disegni).
+  - *Diagnosi*: "Che cos'ha questa pianta?", con l'aspetto vero di una delle malattie del gioco o della sete, del ristagno, degli afidi.
+- **Ogni risposta ha il suo perché**, anche quella sbagliata ("Quasi: l'akadama va bene per tutte, ma l'azalea vuole un terriccio acido. Ecco perché..."), e si può riprovare subito. Nessun punteggio, nessuna vita persa.
+- **Si aprono** insieme alla pagina della tecnica: chi ha letto la pagina dei terricci trova la prova dei terricci.
+- **Premio**: la prima volta che una prova riesce, 10 Semi. Tutte le prove di una pianta: il suo **sigillo del quaderno**, che si vede sulla pagina della pianta.
+- Nessuna prova serve per andare avanti nel gioco.
+
+**Le parole (glossario)**
+
+Le parole giapponesi che si incontrano nel gioco e nei libri di bonsai, ognuna con la pronuncia semplice e una riga di spiegazione: *bonsai, nebari* (le radici in superficie), *jin* e *shari* (legno secco del ramo e del tronco), *akadama, kanuma, kiryu, harigane* (filo), *mekiri* (taglio delle candele), *tokonoma* (la nicchia dove si espone), *wabi-sabi*, e i nomi di tutti gli stili (*moyogi, shakan, hokidachi, kabudachi, bunjingi, fukinagashi*). Si aprono quando la parola compare la prima volta nel gioco; nei testi del maestro le parole del glossario sono sottolineate.
+
+**Quando si apre una pagina**
+
+| Pagina | Si apre |
+|---|---|
+| Acqua | alla prima annaffiatura |
+| Troppa acqua | la prima volta che il terriccio è zuppo |
+| Potatura, candele, pizzicatura, aghi vecchi, fiori appassiti | al primo uso di quella tecnica |
+| Filo | al primo filo messo |
+| Rinvaso e terricci | alla prima finestra di rinvaso, o al primo terriccio comprato |
+| Concime, tonici, muschio | al primo uso |
+| Afidi | ai primi afidi visti |
+| Ogni malattia | la prima volta che compare (sezione 6.6) |
+| Ogni stile | quando si apre nel gioco (sezione 5.3) |
+| Ogni pianta | quando entra nel giardino |
+
+Una pagina aperta resta per sempre. Ogni pagina nuova si annuncia con un messaggio breve ("Una pagina nuova nel quaderno: il filo") e col pallino giallo; niente pannelli che interrompono.
+
+**Specie e stili nuovi**
+
+Regola: **ogni specie nuova arriva con le sue pagine** (pianta, calendario, tecniche sue, malattia) e almeno una prova; **ogni stile nuovo con la sua pagina**. Così il quaderno cresce col gioco e nessun contenuto arriva senza spiegazione.
+
+**Nel motore**
+
+- Contenuti in un catalogo puro (`gioco/quaderno.js`), come i consigli del maestro: pagine, calendario, prove, parole, con i test.
+- Nel salvataggio: `stato.quaderno = { pagine: [], nuove: [], prove: [], parole: [] }`, da aprire con una migrazione. Per chi gioca già, si aprono subito le pagine delle tecniche che ha usato (dall'inventario, dai fili, dai rinvasi, dalle piante che ha).
+- Le pagine si aprono dalle stesse azioni che già esistono (annaffiare, potare, usare un prodotto...); la vista dice quali ci sono e quali sono nuove.
+
+**In ordine di lavoro**
+
+1. Il quaderno con le pagine delle tecniche e delle piante (calendario compreso) e l'apertura dalle azioni.
+2. Le parole.
+3. Le prove di scelta e di diagnosi.
+4. Le prove di gesto sulla pianta di pratica (la parte più lunga: serve una piccola scena in più).
+
 ## 8. Giardino
 
 - Il giardino è un'**isola fluttuante** in stile diorama, con ghiaia rastrellata, prato, laghetto, lanterna, staccionata di bambù.
@@ -622,7 +727,7 @@ Rimandata. Promessa corretta: *"ricrea il tuo bonsai nel giardino"*, non *"copia
 - Social: visite ai giardini degli amici, mostre stagionali con voti, scambio di talee.
 - Realtà aumentata: il bonsai virtuale sulla propria scrivania.
 - Gemello digitale: promemoria di cura per la pianta vera collegata alla scansione.
-- Modalità didattica sulla tecnica reale del bonsai.
+- Modalità didattica sulla tecnica reale del bonsai: decisa, è il quaderno del maestro (sezione 7.6).
 
 ## 14. Roadmap
 
@@ -653,6 +758,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
 8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Ciliegio giapponese, la quinta pianta (sezione 5.5); momenti speciali delle stagioni (sezione 7.5); vasi per tutte le piante (sezione 8.1.1). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
+   Da fare per la 1.0: il quaderno del maestro, la modalità didattica (sezione 7.6).
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.
@@ -665,3 +771,4 @@ Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un arti
 - Quante piante può avere il giardino iniziale. (Ampliamenti decisi: tre, a 600, 1.000 e 1.600 Semi, sezione 8.5.)
 - Come si calcola la percentuale di stile (confronto della forma con un modello dello stile).
 - Ora delle notifiche: fissa o scelta dal giocatore.
+- Chi controlla i contenuti del quaderno del maestro (sezione 7.6), in particolare il calendario vero: un bonsaista esperto, prima della pubblicazione negli store.
