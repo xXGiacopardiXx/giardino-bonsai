@@ -4,8 +4,9 @@
 // La pianta non viene simulata ad app chiusa: all'apertura avanza() ricostruisce il tempo trascorso.
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
+import { PAGINE } from './quaderno.js';
 
-export const VERSIONE = 29;
+export const VERSIONE = 30;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
 export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50, stagione: 30, rinascita: 50, malattia: 25 };
@@ -510,6 +511,8 @@ export function nuovoStato(ora) {
     diario: {},
     // si comincia annaffiando, perché la pianta ha già sete
     oggi: { giorno: giornoLocale(ora), acqua: false, sfida: { tipo: 'acqua', fatta: false } },
+    // quaderno del maestro (sezione 7.6): pagine aperte e quelle non ancora lette
+    quaderno: { pagine: [], nuove: [] },
     debug: { spostamento: 0 }, // tempo aggiunto dal pannello di prova
   };
 }
@@ -622,6 +625,17 @@ export function migra(stato) {
     for (const c of [stato.albero, ...Object.values(stato.conifere)]) Object.assign(c, { malattia: null, difesa: null });
     stato.inventario.bicarbonato = (stato.inventario.bicarbonato ?? 0) + 1;
     stato.versione = 29;
+  }
+  // quaderno del maestro: si aprono le pagine di quello che il giocatore ha già fatto
+  // (il resto lo apre avanza: piante, stili, afidi, malattie...)
+  if (stato.versione === 29) {
+    stato.quaderno = { pagine: [], nuove: [] };
+    const tutte = [stato.albero, ...Object.values(stato.conifere)];
+    if (tutte.some(c => c.ultimaAcqua)) apriPagina(stato, 'acqua');
+    if (stato.albero.gemme?.length) apriPagina(stato, 'potatura');
+    if (tutte.some(c => c.rami?.some(r => r.filo || r.segno > 0))) apriPagina(stato, 'filo');
+    if (tutte.some(c => c.muschio)) apriPagina(stato, 'muschio');
+    stato.versione = 30;
   }
   return stato.versione === VERSIONE ? stato : null;
 }
@@ -747,7 +761,35 @@ export function avanza(stato, ora) {
       s.interrotta = true;
     }
   }
+  guardaQuaderno(stato, cal);
   return stato;
+}
+
+// Quaderno del maestro (sezione 7.6): una pagina si apre quando la tecnica si incontra nel gioco, e resta.
+// Le pagine aperte e non ancora lette stanno in nuove (il pallino giallo sul pulsante del maestro).
+function apriPagina(stato, id) {
+  const q = stato.quaderno;
+  if (!q || q.pagine.includes(id) || !PAGINE.some(p => p.id === id)) return;
+  q.pagine.push(id); q.nuove.push(id);
+}
+// quello che si vede nel giardino: le piante, il vaso zuppo, afidi e malattie che si notano, il rinvaso, gli stili
+function guardaQuaderno(stato, cal) {
+  if (!stato.quaderno) return;
+  const t = stato.aggiornato, vede = lente(stato), finestra = finestraRinvaso(cal) !== null;
+  for (const p of presenti(stato)) {
+    const c = curaDi(stato, p);
+    apriPagina(stato, 'pianta-' + p);
+    if (c.ristagno > 0) apriPagina(stato, 'troppa-acqua');
+    if (c.parassiti && oreParassiti(c, t) >= ORE_NASCOSTI * vede) apriPagina(stato, 'afidi');
+    if (c.malattia && oreMalattia(c, t) >= ORE_MALATTIA_NASCOSTA * vede) apriPagina(stato, c.malattia.id);
+    if (finestra && rinvasoDovuto(c, cal)) apriPagina(stato, 'rinvaso');
+    for (const st of STILI[p]) if (stileAperto(st, cal.anno, c)) apriPagina(stato, 'stile-' + st.id);
+  }
+}
+// il giocatore ha letto una pagina: non è più nuova
+export function leggiPagina(stato, id) {
+  const q = stato.quaderno;
+  if (q) q.nuove = q.nuove.filter(x => x !== id);
 }
 
 // i ciuffi tagliati ricrescono; a crescita piena tornano parte della chioma
@@ -967,6 +1009,7 @@ export function annaffia(stato, ora, pianta = 'acero', forza = false) {
   a.sete = 0; a.ultimaAcqua = ora; a.eccessi = 0;
   if (pianta === 'acero') stato.oggi.acqua = true;
   const semi = completaSfida(stato, 'acqua', pianta);
+  apriPagina(stato, 'acqua');
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', semi, bonusSerie };
 }
@@ -986,6 +1029,7 @@ export function pota(stato, ora, id, pianta = 'acero') {
   const gemme = pianta !== 'acero' ? 0 : Math.max(0, Math.min(2, GEMME_PER_PUNTA - a.gemme.filter(x => x.punta === g.punta).length));
   for (let k = 0; k < gemme; k++) a.gemme.push({ punta: g.punta, crescita: 0 });
   const semi = completaSfida(stato, 'pota', pianta);
+  apriPagina(stato, { pino: 'candele', ginepro: 'pizzicatura' }[pianta] ?? 'potatura');
   contaSettimana(stato, POTA_SETTIMANA[pianta], pianta);
   const bonusSerie = registraCura(stato, ora);
   return { esito: 'ok', gemme, semi, bonusSerie };
@@ -1002,6 +1046,7 @@ export function mettiFilo(stato, ora, ramo, piega, pianta = 'acero') {
   // la sfida del filo vale su qualunque pianta
   const semi = completaSfida(stato, 'filo', stato.oggi.sfida?.pianta ?? 'acero');
   contaSettimana(stato, 'filo');
+  apriPagina(stato, 'filo');
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
 
@@ -1029,6 +1074,7 @@ export function togliAghi(stato, ora, id, pianta = 'pino') {
   if (i < 0) return { esito: 'nessuno', semi: 0, bonusSerie: 0 };
   c.vecchi.splice(i, 1);
   const semi = completaSfida(stato, 'pota', pianta);
+  apriPagina(stato, { pino: 'aghi-vecchi', azalea: 'fiori-appassiti', ciliegio: 'ciliegine' }[pianta]);
   if (pianta === 'pino') contaSettimana(stato, 'aghi');
   return { esito: 'ok', semi, bonusSerie: registraCura(stato, ora) };
 }
@@ -1048,6 +1094,7 @@ export function rinvasa(stato, ora, pianta, id) {
   if (!p.piante.includes(pianta)) return { esito: 'non-adatto', ...vuoto };
   if (!stato.inventario[id]) return { esito: 'finito', ...vuoto };
   stato.inventario[id] -= 1;
+  apriPagina(stato, 'rinvaso'); apriPagina(stato, 'terricci');
   c.rinvaso = { primavera: finestra, durata: p.durata[pianta], stretto: false };
   // col terriccio nuovo il muschio se ne va
   c.muschio = false;
@@ -1117,6 +1164,7 @@ export function compraProdotto(stato, id) {
   if (stato.semi < p.prezzo) return { esito: 'pochi', mancano: p.prezzo - stato.semi };
   stato.semi -= p.prezzo;
   stato.inventario[id] = (stato.inventario[id] ?? 0) + DOSI_PER_CONFEZIONE;
+  if (p.tipo === 'terriccio') apriPagina(stato, 'terricci');
   return { esito: 'ok', mancano: 0 };
 }
 
@@ -1172,6 +1220,7 @@ export function usaProdotto(stato, ora, pianta, id) {
   }
   stato.inventario[id] -= 1;
   stato.semi += semi;
+  apriPagina(stato, { concime: 'concime', tonico: 'tonici', muschio: 'muschio' }[p.tipo]);
   return { esito: 'ok', semi, inTempo, presto, tolti, bonusSerie: registraCura(stato, ora) };
 }
 
@@ -1657,6 +1706,8 @@ export function vista(stato) {
     parassiti: vistaCura(a, stato.aggiornato, cal.stagione, lente(stato)).parassiti,
     // inventario: tutti i prodotti del catalogo con le dosi che hai
     prodotti: PRODOTTI.map(p => ({ ...p, dosi: stato.inventario[p.id] ?? 0 })),
+    // quaderno del maestro: pagine aperte e quelle ancora da leggere
+    quaderno: { pagine: [...(stato.quaderno?.pagine ?? [])], nuove: [...(stato.quaderno?.nuove ?? [])] },
     nomiPiante: PIANTE,
     puoPotare: a.germogli.some(g => g.lunghezza >= POTABILE_DA),
     // oggi la serie ha già avuto la sua azione di cura (acqua o potatura)

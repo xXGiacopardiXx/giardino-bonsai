@@ -433,7 +433,7 @@ Piccoli eventi di qualche giorno che arrivano col calendario di gioco, ogni anno
 
 ### 7.6 Il quaderno del maestro (modalità didattica)
 
-Deciso il 13/11/2026, da fare. Il gioco insegna già la tecnica mentre si gioca (i consigli di Ren, sezione 7.4). Il quaderno raccoglie quello che si è imparato e lo collega alle **piante vere**, senza diventare una scuola: niente voti, niente lezioni obbligatorie, niente errori puniti. Si impara facendo; il quaderno spiega e ricorda.
+Deciso il 13/11/2026; primo passo fatto (pagine delle tecniche e delle piante, sotto). Il gioco insegna già la tecnica mentre si gioca (i consigli di Ren, sezione 7.4). Il quaderno raccoglie quello che si è imparato e lo collega alle **piante vere**, senza diventare una scuola: niente voti, niente lezioni obbligatorie, niente errori puniti. Si impara facendo; il quaderno spiega e ricorda.
 
 **Principi**
 
@@ -531,7 +531,7 @@ Regola: **ogni specie nuova arriva con le sue pagine** (pianta, calendario, tecn
 
 **In ordine di lavoro**
 
-1. Il quaderno con le pagine delle tecniche e delle piante (calendario compreso) e l'apertura dalle azioni.
+1. Il quaderno con le pagine delle tecniche e delle piante (calendario compreso) e l'apertura dalle azioni. **Fatto (13/11/2026):** 31 pagine (16 tecniche in quattro gruppi: acqua e nutrimento, potatura e forma, radici e vaso, parassiti e malattie; 6 stili; 5 piante col calendario vero, disegnato come una tabella di 12 mesi con i periodi colorati, quelli da tenere d'occhio in arancio). Pulsante "Il quaderno" nel pannello del maestro, accanto a "Grazie, maestro"; pallino giallo sul maestro e la scritta "Nuova" sulle pagine non lette; un avviso breve quando se ne apre una. Le pagine chiuse si vedono come "Da scoprire", con come si aprono; l'indice dice quante pagine su quante. Il collegamento dai consigli di Ren e dal pannello Cura arriverà dopo.
 2. Le parole.
 3. Le prove di scelta e di diagnosi.
 4. Le prove di gesto sulla pianta di pratica (la parte più lunga: serve una piccola scena in più).
@@ -758,7 +758,7 @@ Crescita semplificata (al posto di L-system e *space colonization*): tronco e ra
 6. **Test** con amici tramite il link della PWA (gratis).
 7. **Store:** Capacitor, notifiche locali, Google Play e App Store (a pagamento, sezione 11.4).
 8. **Versione 1.0:** più specie, filo, giardino con decorazioni, stili, diario fotografico. Filo fatto sull'acero (sezione 4.2.1). Diario fotografico fatto (sezione 8.1). Prime 5 decorazioni fatte, da mettere dove si vuole (sezione 8.2). Cura fatta: concime e afidi con trattamento (sezione 6.5). Giorno di riposo della serie, sfida della settimana e attrezzi fatti (sezioni 7.1–7.3). Ampliamento del giardino fatto (sezione 8.5). Ciliegio giapponese, la quinta pianta (sezione 5.5); momenti speciali delle stagioni (sezione 7.5); vasi per tutte le piante (sezione 8.1.1). Pacchetto di oggetti: 6 decorazioni nuove (11 in tutto), 2 vasi nuovi per l'acero (7 in tutto: ovale rosso smaltato 160, esagonale nero 220) e 6 prodotti di cura nuovi, con tonici e muschio (sezioni 6.5 e 8.2).
-   Da fare per la 1.0: il quaderno del maestro, la modalità didattica (sezione 7.6).
+   Quaderno del maestro, la modalità didattica (sezione 7.6): fatte le pagine delle tecniche e delle piante; da fare glossario e prove.
 9. **Versione 2.0:** social, mostre, realtà aumentata, scansione, promemoria per piante vere.
 
 Squadra: per l'MVP basta una persona. Per la grafica definitiva servirà un artista; per la scansione di livello 2 esperienza di computer vision.

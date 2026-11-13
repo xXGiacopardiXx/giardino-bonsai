@@ -18,7 +18,8 @@ export const RITRATTO = `<svg viewBox="0 0 48 48" aria-hidden="true">
 
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-export function creaConsigli() {
+// azioni: quaderno() apre il quaderno del maestro
+export function creaConsigli(azioni = {}) {
   const el = document.createElement('section');
   el.className = 'negozio maestro'; el.hidden = true;
   el.setAttribute('aria-label', 'Il consiglio del maestro');
@@ -31,7 +32,10 @@ export function creaConsigli() {
       <p class="maestro-intro" data-v="intro"></p>
       <div class="negozio-schede" data-v="schede"></div>
       <div class="maestro-pianta" data-v="pianta"></div>
-      <button class="guida-avanti maestro-ok">Grazie, maestro</button>
+      <div class="maestro-fondo">
+        <button class="maestro-quaderno" data-a="quaderno">Il quaderno</button>
+        <button class="guida-avanti maestro-ok">Grazie, maestro</button>
+      </div>
     </div>`;
   document.getElementById('screen').appendChild(el);
   const v = (n) => el.querySelector(`[data-v="${n}"]`);
@@ -50,6 +54,8 @@ export function creaConsigli() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.pianta) mostraPianta(b.dataset.pianta);
     else if (b.classList.contains('maestro-ok')) { el.hidden = true; const f = letto; letto = null; f?.(); }
+    // il quaderno: il consiglio conta come letto, poi si apre l'indice
+    else if (b.dataset.a === 'quaderno') { el.hidden = true; const f = letto; letto = null; f?.(); azioni.quaderno?.(); }
   });
   return {
     get aperto() { return !el.hidden; },

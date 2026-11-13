@@ -28,6 +28,8 @@ import { creaInterfaccia } from './interfaccia.js';
 import { creaPannelloProva } from './pannello-prova.js';
 import { creaNegozio } from './negozio.js';
 import { creaCure } from './cure.js';
+import { creaQuaderno } from './pannello-quaderno.js';
+import { PAGINE } from './gioco/quaderno.js';
 import { creaCura } from './scena/cura.js';
 import { creaGuida } from './guida.js';
 import { creaConsigli, RITRATTO } from './consigli.js';
@@ -39,7 +41,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, eventoDaFesteggiare, festeggiaEvento, premiaMomenti, leggiAvvisoRinascita, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, leggiPagina, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, eventoDaFesteggiare, festeggiaEvento, premiaMomenti, leggiAvvisoRinascita, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -159,6 +161,8 @@ function avvia() {
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
   const avvisati = new Set(), avvisatiMalattia = new Set();
+  // pagine del quaderno già viste in questa apertura (le altre si annunciano)
+  let pagineViste = null, quaderno = null;
   const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro', azalea: "sull'azalea", ciliegio: 'sul ciliegio' };
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
@@ -197,6 +201,17 @@ function avvia() {
     for (const p of ['pino', 'ginepro', 'azalea', 'ciliegio']) alberi.cure[p].setVaso(v.vasiPiante[p]);
     negozio?.mostra(v);
     cure?.mostra(v);
+    quaderno?.mostra(v);
+    // quaderno del maestro: pallino giallo sul maestro per le pagine nuove; un avviso per quelle aperte adesso
+    document.getElementById('maestro').classList.toggle('pagina', v.quaderno.nuove.length > 0);
+    if (giorniAnteprima === 0) {
+      const nuove = pagineViste ? v.quaderno.pagine.filter(id => !pagineViste.has(id)) : [];
+      pagineViste = new Set(v.quaderno.pagine);
+      if (nuove.length) {
+        const nomi = nuove.map(id => PAGINE.find(p => p.id === id)?.titolo).filter(Boolean);
+        setTimeout(() => ui.toast(nomi.length === 1 ? `Una pagina nuova nel quaderno del maestro: ${nomi[0].toLowerCase()}.` : `${nomi.length} pagine nuove nel quaderno del maestro.`, 3500), 2600);
+      }
+    }
     sfide?.mostra(v);
     // la sfida di rinascita è finita (sezione 6.2): festa e premio
     if (giorniAnteprima === 0 && leggiAvvisoRinascita(stato)) {
@@ -448,9 +463,11 @@ function avvia() {
   // --- Il maestro (sezione 7.4): un consiglio nuovo arriva da solo, dopo la guida e quando non c'è
   // altro aperto, uno per volta (se ne ha altri, un pallino rosso sul pulsante); il pulsante col ritratto
   // mostra quello nuovo, o fa rileggere quello della stagione ---
-  const consigli = creaConsigli(), maestroBtn = document.getElementById('maestro');
+  // il quaderno del maestro (sezione 7.6): si apre dal pannello del maestro
+  quaderno = creaQuaderno({ leggi(id) { leggiPagina(stato, id); salva(stato); disegna(); } });
+  const consigli = creaConsigli({ quaderno() { quaderno.apri(); disegna(); } }), maestroBtn = document.getElementById('maestro');
   maestroBtn.innerHTML = RITRATTO;
-  const occupato = () => guida.attiva || consigli.aperto || sfide?.aperto || eventi?.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
+  const occupato = () => guida.attiva || consigli.aperto || quaderno.aperto || sfide?.aperto || eventi?.aperto || negozio?.aperto || cure?.aperto || diario.aperto || potando || filando || stilando || fotografando || spostando || (pannello?.anteprima ?? 0) > 0;
   function maestroParla() {
     if (!stato.guida.fatta) return;
     const c = consiglioMaestro(stato);
