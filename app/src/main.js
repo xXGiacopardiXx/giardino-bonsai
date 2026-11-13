@@ -39,7 +39,7 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './gioco/mae
 import * as suoni from './suoni.js';
 import * as musica from './musica.js';
 import { GIORNO } from './gioco/tempo.js';
-import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, eventoDaFesteggiare, festeggiaEvento, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
+import { nuovoStato, avanza, annaffia, pota, mettiFilo, togliFilo, togliAghi, rinvasa, compraPianta, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, posaPianta, posaElemento, mettiElemento, compraAttrezzo, compraAmpliamento, leggiAvvisoRiposo, eventoDaFesteggiare, festeggiaEvento, premiaMomenti, leggiAvvisoRinascita, ELEMENTI, compra, scegliVaso, vista, VASI } from './gioco/stato.js';
 import { carica, salva, cancella } from './gioco/salvataggio.js';
 import { creaDiario, aggiungi as aggiungiFoto, svuota as svuotaDiario } from './diario.js';
 
@@ -176,6 +176,8 @@ function avvia() {
     // pino, ginepro e azalea: aghi e foglie che ingialliscono, terriccio che schiarisce, anello quando hanno sete
     alberi.setAzalea(!!v.conifere.azalea);
     alberi.setCiliegio(!!v.conifere.ciliegio);
+    // neve sulle chiome, come sul prato (sezione 3.4)
+    alberi.setNeve(v.meteo.neve);
     for (const p of altreDi(v)) {
       if (annaffiature[p].attiva) continue;
       const c = v.conifere[p], pianta = alberi.cure[p];
@@ -196,6 +198,11 @@ function avvia() {
     negozio?.mostra(v);
     cure?.mostra(v);
     sfide?.mostra(v);
+    // la sfida di rinascita è finita (sezione 6.2): festa e premio
+    if (giorniAnteprima === 0 && leggiAvvisoRinascita(stato)) {
+      salva(stato);
+      setTimeout(() => { ui.guadagnaSemi(v.rinascita?.premio ?? 50, stato.semi, 'acero'); suoni.magia(); ui.toast('Rinascita! Tutte le piante sono di nuovo piene di foglie. +50 Semi', 5000); }, 1500);
+    }
     muschio.set(Object.fromEntries(Object.entries(v.cura).map(([p, c]) => [p, c.muschio])));
     bastoncini.set(!!v.bastoncino, { acero: v.terriccio, ...Object.fromEntries(Object.entries(v.conifere).map(([p, c]) => [p, c.terriccio])) });
     document.getElementById('sfide').classList.toggle('nuovo', !!(v.sfida && !v.sfida.fatta));
@@ -291,7 +298,24 @@ function avvia() {
     setTimeout(() => ui.toast(testo, 4000), 900);
   }
 
-  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); avvisaRiposo(); if (!eventoArriva()) maestroParla(); }
+  function aggiornaStato() { avanza(stato, ora()); salva(stato); disegna(); avvisaRiposo(); premiaGiardino(); if (!eventoArriva()) maestroParla(); }
+  // i momenti belli delle piante (sezione 7.3): la fioritura e i primi colori d'autunno, premiati una volta per anno
+  const MOMENTI = {
+    'acero-colori': "L'acero si è acceso di rosso: è il premio di averlo curato bene.",
+    'ciliegio-colori': 'Il ciliegio si fa arancio e rosso: ha fatto le sue riserve per l\'inverno.',
+    'ciliegio-fioritura': 'Il ciliegio è in fiore! Godetevi l\'hanami: dura pochi giorni.',
+    'azalea-fioritura': "L'azalea è tutta fiori: per mesi ha preparato questi boccioli.",
+  };
+  function premiaGiardino(ritardo = 1200) {
+    if ((pannello?.anteprima ?? 0) > 0) return;
+    const m = premiaMomenti(stato);
+    if (!m.length) return;
+    salva(stato);
+    m.forEach((x, i) => setTimeout(() => {
+      ui.guadagnaSemi(x.semi, stato.semi, x.pianta); suoni.semi();
+      ui.toast(`${MOMENTI[x.pianta + '-' + x.tipo]} +${x.semi} Semi`, 4500);
+    }, ritardo + i * 4800));
+  }
   // serie di 7 giorni: i Semi del bonus e, se è arrivato, il giorno di riposo (sezione 7.2)
   function testoSerie(bonus) {
     return `${stato.serie.giorni} giorni di fila: +${bonus} Semi` + (vista(stato).riposoNuovo ? ' e un giorno di riposo, che salva la serie se salti un giorno.' : '!');
@@ -476,8 +500,9 @@ function avvia() {
   document.addEventListener('click', (e) => { if (e.target.closest('.tool, .mp, .vaso-b, .negozio-x, .negozio-vai, .guida-avanti, .suoni-b, .plus, .prova button')) suoni.tocco(); });
 
   // ritorno dopo una lunga assenza: nessun rimprovero (game-design.md, sezione 6.2)
-  if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere.', 4500);
+  if (vista(stato).lungaAssenza) ui.toast('Ti stava aspettando. Un po\' d\'acqua e tornerà a crescere: c\'è una sfida di rinascita, tocca la bandierina.', 5000);
   avvisaRiposo(vista(stato).lungaAssenza ? 4800 : 600);
+  premiaGiardino(2600);
 
   // l'app può restare aperta a lungo: il tempo si aggiorna ogni 30 secondi e al ritorno sull'app
   setInterval(aggiornaStato, 30000);

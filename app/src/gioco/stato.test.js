@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GIORNO, ORA, calendario } from './tempo.js';
-import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, compraAmpliamento, AMPLIAMENTI, eventoDi, eventoDaFesteggiare, festeggiaEvento, EVENTI, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
+import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffia, pota, vista, migra, compra, scegliVaso, mettiFilo, togliFilo, togliAghi, rinvasa, tagliaCiuffi, scegliStile, sigillaStile, usaProdotto, compraProdotto, fotografa, compraDecorazione, mettiDecorazione, posaDecorazione, postoLibero, compraPianta, posaPianta, posaElemento, mettiElemento, compraAttrezzo, leggiAvvisoRiposo, compraAmpliamento, AMPLIAMENTI, eventoDi, eventoDaFesteggiare, festeggiaEvento, EVENTI, premiaMomenti, leggiAvvisoRinascita, ELEMENTI, DECORAZIONI, PRODOTTI, DOSI_PER_CONFEZIONE, SEMI, VASI, VERSIONE, RAMI } from './stato.js';
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
@@ -1561,4 +1561,57 @@ test('un salvataggio della versione 26 riceve i momenti speciali', () => {
   const s = migra(vecchio);
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.eventi, { festeggiati: [] });
+});
+
+test('i primi colori d autunno dell acero valgono un premio, una volta per anno, se la pianta sta bene', () => {
+  const s = nuovoStato(T0);
+  avanza(s, dopo(13.5));
+  assert.deepEqual(premiaMomenti(s), [], 'in estate niente');
+  s.albero.sete = 0; avanza(s, dopo(14.5)); s.albero.salute = 1;
+  const semi = s.semi;
+  assert.deepEqual(premiaMomenti(s), [{ pianta: 'acero', tipo: 'colori', semi: SEMI.stagione }]);
+  assert.equal(s.semi, semi + SEMI.stagione);
+  assert.deepEqual(premiaMomenti(s), [], 'una volta sola');
+  // l'anno dopo di nuovo, ma non se la chioma è troppo rada
+  avanza(s, dopo(28 + 14.5)); s.albero.salute = .4;
+  assert.deepEqual(premiaMomenti(s), []);
+  s.albero.salute = .9;
+  assert.equal(premiaMomenti(s).length, 1);
+});
+
+test('la fioritura del ciliegio e dell azalea vale un premio', () => {
+  const s = nuovoStato(T0); s.semi = 5000;
+  compraPianta(s, T0, 'ciliegio'); compraPianta(s, T0, 'azalea');
+  avanza(s, dopo(3.5)); for (const p of ['ciliegio', 'azalea']) Object.assign(s.conifere[p], { salute: 1, sete: 0 });
+  const m = premiaMomenti(s).map(x => x.pianta + '-' + x.tipo);
+  assert.ok(m.includes('ciliegio-fioritura'));
+  assert.ok(m.includes('azalea-fioritura'));
+});
+
+test('dopo una lunga assenza arriva la sfida di rinascita, e si completa riportando le piante in salute', () => {
+  const s = nuovoStato(T0);
+  annaffia(s, T0);
+  avanza(s, dopo(.5));
+  assert.equal(vista(s).rinascita, null);
+  avanza(s, dopo(12)); // dodici giorni senz'acqua
+  assert.equal(vista(s).rinascita.fatta, false);
+  assert.ok(vista(s).rinascita.chioma < .8);
+  // si annaffia tutti i giorni finché la chioma torna piena
+  let g = 12;
+  while (!vista(s).rinascita.fatta && g < 30) {
+    for (const p of vista(s).piante) { const c = p === 'acero' ? s.albero : s.conifere[p]; if (c.sete >= .5) annaffia(s, dopo(g), p); if (c.parassiti) usaProdotto(pieno(s), dopo(g), p, 'sapone-molle'); }
+    g += 1; avanza(s, dopo(g));
+  }
+  assert.equal(vista(s).rinascita.fatta, true);
+  assert.equal(leggiAvvisoRinascita(s), true);
+  assert.equal(leggiAvvisoRinascita(s), false);
+});
+
+test('un salvataggio della versione 27 riceve premi e rinascita', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 27; delete vecchio.premiStagione; delete vecchio.rinascita;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.deepEqual(s.premiStagione, []);
+  assert.equal(s.rinascita, null);
 });

@@ -8,13 +8,13 @@ const SEME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.5 3 6
 export const BANDIERINA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21V3.5" stroke="#3b2716" stroke-width="2" stroke-linecap="round"/><path d="M7.5 4h10.5l-2.6 3.6L18 11.2H7.5Z" fill="#e2483a" stroke="#3b2716" stroke-width="1.6" stroke-linejoin="round"/><ellipse cx="7" cy="21" rx="3.4" ry="1.2" fill="#6fae3e" stroke="#3b2716" stroke-width="1.2"/></svg>';
 
 // una sfida: titolo, testo, premio, barra e com'è andata
-function scheda({ tipo, titolo, testo, premio, fatti, obiettivo, nota, fatta }) {
+function scheda({ tipo, titolo, testo, premio, fatti, obiettivo, nota, fatta, etichetta }) {
   const p = Math.round(Math.min(1, fatti / obiettivo) * 100);
   return `<div class="sfida-scheda ${tipo}${fatta ? ' fatta' : ''}">
     <span class="sfida-titolo">${titolo}</span>
     <span class="sfida-testo">${testo}</span>
     <span class="sfida-premio">+${premio}${SEME}</span>
-    <span class="qbar"><i style="width:${p}%"></i><span>${fatta ? 'Fatta!' : `${Math.min(fatti, obiettivo)}/${obiettivo}`}</span></span>
+    <span class="qbar"><i style="width:${p}%"></i><span>${fatta ? 'Fatta!' : etichetta ?? `${Math.min(fatti, obiettivo)}/${obiettivo}`}</span></span>
     ${nota ? `<span class="sfida-nota">${nota}</span>` : ''}
   </div>`;
 }
@@ -53,6 +53,12 @@ export function creaSfide() {
           <span class="sfida-testo">${e.nome}: ${e.sottotitolo.toLowerCase()}</span>
           <span class="sfida-nota">${deco && !deco.tua ? `Nel negozio, solo adesso: ${deco.nome}.` : 'Torna ogni anno, in questi giorni.'}</span></div>`);
       }
+      // sfida di rinascita (sezione 6.2), finché non è fatta
+      const r = v.rinascita;
+      if (r && !r.fatta) parti.push(scheda({ tipo: 'rinascita', titolo: 'Sfida di rinascita', testo: 'Riporta tutte le piante in salute', premio: r.premio,
+        fatti: Math.round(Math.min(r.chioma / r.obiettivo, 1) * 100), obiettivo: 100, fatta: false, etichetta: `chioma ${Math.round(r.chioma * 100)}%`,
+        nota: r.sete ? 'Prima di tutto l\'acqua: qualche pianta ha ancora sete. Poi la chioma ricresce da sola, giorno dopo giorno.'
+          : `La chioma più rada è al ${Math.round(r.chioma * 100)}%: serve almeno l'${Math.round(r.obiettivo * 100)}%. Acqua quando serve, via gli afidi, e un po' di concime aiuta.` }));
       if (s) parti.push(scheda({ tipo: 'giorno', titolo: 'Sfida del giorno', testo: s.testo, premio: s.premio, fatti: s.fatta ? 1 : 0, obiettivo: 1, fatta: s.fatta,
         nota: s.fatta ? 'Domani ne arriva una nuova.' : 'Una cosa sola, sempre fattibile oggi.' }));
       if (w) parti.push(scheda({ tipo: 'settimana', titolo: 'Sfida della settimana', testo: w.testo, premio: w.premio, fatti: w.fatti, obiettivo: w.obiettivo, fatta: w.fatta,

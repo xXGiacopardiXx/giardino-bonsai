@@ -9,12 +9,16 @@ export function creaGiardino(world, { reduce, prato }) {
   const spostabili = {};
   // Laghetto: tutto in un gruppo, carpe comprese, così si sposta insieme
   const koi = [];
+  // il laghetto: l'acqua, che d'inverno con la neve gela, e il fiore di loto
+  let acquaStagno, lotoStagno;
+  const ACQUA = new THREE.Color(0x6cb6c8), GHIACCIO = new THREE.Color(0xdcedf2);
   {
     const stagno = new THREE.Group(); stagno.position.set(-2.3, 0, 3.45); world.add(stagno);
     spostabili.laghetto = stagno;
     const cx = 0, cz = 0;
     const basin = mesh(new THREE.CylinderGeometry(1.3, 1.3, .04, 48), M(0x587a64), stagno, cx, .005, cz, false); basin.scale.z = .85; basin.receiveShadow = true;
     const water = new THREE.Mesh(new THREE.CircleGeometry(1.18, 48), new THREE.MeshPhongMaterial({ color: 0x6cb6c8, shininess: 90, specular: 0xffffff }));
+    acquaStagno = water;
     water.rotation.x = -PI / 2; water.scale.y = .85; water.position.set(cx, .03, cz); water.receiveShadow = true; stagno.add(water);
     const shine = new THREE.Mesh(new THREE.RingGeometry(.55, .62, 40, 1, .4, 1.6), new THREE.MeshBasicMaterial({ color: 0xd6f2f6, transparent: true, opacity: .7 }));
     shine.rotation.x = -PI / 2; shine.position.set(cx, .034, cz); stagno.add(shine);
@@ -26,6 +30,7 @@ export function creaGiardino(world, { reduce, prato }) {
     // ninfee e un fiore di loto
     [[.35, -.3], [-.5, .15], [.1, .42]].forEach(([x, z]) => { const p = mesh(new THREE.CylinderGeometry(.17, .17, .012, 18, 1, false, 0, 5.5), M(0x5c9645), stagno, cx + x, .04, cz + z, false); p.rotation.y = R(0, 6); });
     const lot = new THREE.Group(); lot.position.set(cx + .35, .06, cz - .3); stagno.add(lot);
+    lotoStagno = lot;
     for (let i = 0; i < 6; i++) { const pe = mesh(new THREE.SphereGeometry(.05, 8, 6), M(0xf4a9c0), lot, Math.cos(i) * .045, .02, Math.sin(i) * .045, false); pe.scale.set(.7, 1.4, .7); }
     mesh(new THREE.SphereGeometry(.03, 8, 6), M(0xffe27a), lot, 0, .05, 0, false);
     // due carpe koi che girano in tondo
@@ -252,6 +257,11 @@ export function creaGiardino(world, { reduce, prato }) {
     }
     fiori.forEach(f => { f.visible = !f.userData.sotto && k < .3; });
     lanterna.cappello.visible = k > .03; lanterna.cappello.scale.set(1, .3 + .7 * k, 1);
+    // con la neve il laghetto gela: l'acqua si fa bianco-azzurra e opaca, le carpe stanno sotto il ghiaccio
+    const gelo = Math.min(1, Math.max(0, (k - .3) / .5));
+    acquaStagno.material.color.copy(ACQUA).lerp(GHIACCIO, gelo); acquaStagno.material.shininess = 90 - 60 * gelo;
+    koi.forEach(o => { o.k.visible = gelo < .5; });
+    lotoStagno.visible = k < .2;
   }
   return {
     lanterna,

@@ -392,3 +392,7 @@ button{touch-action:manipulation}
 .sfida-scheda.evento-scheda .sfida-titolo{color:#b8406a}
 .vaso.a-tempo{box-shadow:0 0 0 .6cqw #f4b0c8}
 .evento-per{color:#b8406a}
+
+/* sfida di rinascita: verde tenero, come una gemma */
+.sfida-scheda.rinascita{background:#eef8e4}
+.sfida-scheda.rinascita .sfida-titolo{color:#4f7a2e}

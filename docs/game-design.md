@@ -1,6 +1,6 @@
 # Giardino Bonsai: documento di game design
 
-Ultimo aggiornamento: 14/11/2026
+Ultimo aggiornamento: 15/11/2026
 Stato: concept validato, prototipo di stile della homepage completato. Deciso l'MVP (sezione 14.1) e la tecnologia web (sezione 11.4); avviato il progetto dell'app in `app/`.
 
 Questo documento raccoglie tutte le decisioni prese sul gioco. È la fonte di riferimento per design, grafica e sviluppo: quando una decisione cambia, si aggiorna qui.
@@ -61,7 +61,8 @@ Il giardino segue **l'ora vera del telefono** e ha un suo **meteo**, che come l'
 - **Temporali:** d'estate il 40% dei giorni di pioggia è un temporale: pioggia più fitta, ogni 6–16 secondi un lampo (due bagliori ravvicinati) e qualche istante dopo il tuono, più o meno lontano. Per le piante è una pioggia come le altre.
 - **Come si vede:** pioggia a trattini inclinati e cielo grigio; neve a fiocchi che ondeggiano e cielo bianco-azzurro; di notte il cielo coperto è più scuro. Accanto al nome della stagione un'icona: sole, luna, pioggia, temporale o neve.
 - **Avvisi:** la prima pioggia e la prima neve le spiega il maestro (sezione 7.4: perché quel giorno l'acqua non serve, perché la neve protegge le radici); dopo, una scritta breve una volta al giorno ("Piove: la pioggia annaffia tutte le piante", "Oggi ha piovuto: le piante hanno già bevuto").
-- Più avanti: la neve anche sulle chiome dei bonsai e sulle decorazioni, il laghetto ghiacciato, cerchi d'acqua nelle pozzanghere.
+- **Neve sulle chiome e laghetto ghiacciato (15/11/2026):** con la neve a terra le piante che d'inverno tengono le foglie (pino, ginepro, azalea) hanno un cappello bianco su ogni cuscinetto, che cresce con la neve e si piega col filo; acero e ciliegio sono spogli. Con la neve alta il laghetto gela: l'acqua si fa bianco-azzurra e opaca, le carpe stanno sotto il ghiaccio e il fiore di loto non c'è.
+- Più avanti: la neve sulle decorazioni, cerchi d'acqua nelle pozzanghere.
 
 ## 4. Azioni di cura
 
@@ -253,7 +254,7 @@ Principio: cura **realistica**, con esigenze diverse per specie (e più avanti p
 
 - All'apertura una breve sequenza: la gemma verde in evidenza e il messaggio *"Ti stava aspettando"*. Nessun rimprovero.
 - Ripresa guidata in circa 5–7 giorni reali: acqua, potatura dei rami secchi, concime. La chioma torna in modo visibile giorno dopo giorno.
-- Una **sfida di rinascita** con ricompensa.
+- Una **sfida di rinascita** con ricompensa. Nell'app: comincia quando una pianta arriva allo stress forte (una lunga assenza) e si vede in cima al pannello delle sfide; si completa quando tutte le piante sono senza sete e con la chioma almeno all'80% (acqua, via gli afidi, e il concime aiuta). La barra mostra la chioma della pianta più rada; completata vale 50 Semi. Il messaggio all'apertura dopo l'assenza la ricorda.
 - Tronco e rami principali restano intatti: chi torna non riparte da zero.
 
 ### 6.3 Troppa acqua
@@ -339,7 +340,8 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
 | Rinvaso nella stagione giusta | 40 |
 | Prima foto di una pianta in una stagione (diario) | 5 |
-| Fioritura o primi colori autunnali | 30 |
+| Fioritura o primi colori autunnali (acero, ciliegio, azalea; una volta per anno e per pianta, se la chioma è almeno al 60%) | 30 |
+| Sfida di rinascita (sezione 6.2) | 50 |
 | Stile completato | 300–500 |
 
 | Come si spende | Semi |

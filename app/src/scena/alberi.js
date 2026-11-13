@@ -5,7 +5,7 @@
 // I dettagli non consumano numeri della sequenza col seme.
 import * as THREE from 'three';
 import { creaFilo } from './filo.js';
-import { PI, R, M, toon, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza, conSeme } from './strumenti.js';
+import { PI, R, M, toon, toonGradient, flatGeo, mesh, tube, foliage, ciuffoAghi, ciuffoFoglie, ciuffoSquame, fogliaAcero, corteccia, rametti, sequenza, conSeme } from './strumenti.js';
 
 const SOIL_WET = new THREE.Color(0x4a3628), SOIL_DRY = new THREE.Color(0xc9ad80);
 // Troppa acqua (game-design.md, sezione 6.3): terriccio fradicio, quasi nero, con un velo d'acqua che luccica
@@ -144,6 +144,19 @@ function vasoCambiabile(t, soil, iniziale, { kx = 1, ky = 1 } = {}) {
   metti(iniziale, false);
   // il primo vaso (quello del salvataggio) si mette senza stelline
   return { scintille, setVaso(id) { metti(id, pronto); pronto = true; } };
+}
+
+// Neve sulle chiome (sezione 3.4): un cappello bianco schiacciato sopra ogni cuscinetto delle piante che
+// d'inverno tengono le foglie (pino, ginepro, azalea); sta nel gruppo del ramo, così si piega col filo.
+// Niente numeri casuali: la sequenza della scena non cambia.
+const neveMat = new THREE.MeshToonMaterial({ color: 0xf4f7fa, gradientMap: toonGradient });
+function cappelliNeve(tr, pads, gruppoPad) {
+  return pads.map(([x, y, z, r], i) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r * .78, 14, 8, 0, PI * 2, 0, PI / 2), neveMat);
+    m.position.set(x, y + r * .28, z); m.scale.set(1, .32, .9); m.rotation.y = i; m.visible = false; m.receiveShadow = true;
+    (gruppoPad[i] ?? tr).add(m);
+    return m;
+  });
 }
 
 export function creaAlberi(world) {
@@ -321,6 +334,7 @@ export function creaAlberi(world) {
   }
 
   let ginepro, vasoGin, vasoPino;
+  const neviChiome = [];
   // Ginepro su una lastra di pietra, con legno secco (jin) chiaro
   {
     const t = new THREE.Group(); t.position.set(-2.3, 0, .6); world.add(t);
@@ -343,6 +357,7 @@ export function creaAlberi(world) {
     const fg = foliage(tr, padsG,
       { palette: ['#24574a', '#2e6754', '#38775e', '#448667', '#529571', '#64a57c'], density: 92, size: .44, flat: .5, detail: 1, geo: ciuffoSquame({ n: 34, lunghezza: .8, larghezza: .3, nucleo: .3, seme: 3 }) });
     const rametG = rametti(pad => gG.gruppoPad[pad] ?? tr, padsG, legnoG, 13);
+    neviChiome.push(...cappelliNeve(tr, padsG, gG.gruppoPad));
     trees.ginepro = { g: tr, radice: t, tag: new THREE.Vector3(-2.3, .58 + 2.35, .6), ph: 1.7 };
     cure.ginepro = assetabile(curabile(fg, tr, new THREE.Vector3(-2.3, .61, .6), .6, gG.gruppoPad), {
       t, soil: soilG, raggioAnello: 1.08, annaffiatoio: new THREE.Vector3(.95, 1.1, .75),
@@ -405,6 +420,7 @@ export function creaAlberi(world) {
     const fp = foliage(tr, pads,
       { palette: ['#304a24', '#3c5a2b', '#4a6c34', '#587c3c', '#688d46'], density: 125, size: .29, flat: .62, detail: 0, geo: ciuffoAghi({ n: 80, lunghezza: 1.3, larghezza: .04, nucleo: .14, apertura: -.45 }), stress: ['#cdb84a', '#d6a440', '#bfae55', '#a8873a', '#d9c25e'], stressRatio: .42 });
     const rametP = rametti(pad => gP.gruppoPad[pad] ?? tr, pads, legnoP, 5);
+    neviChiome.push(...cappelliNeve(tr, pads, gP.gruppoPad));
     trees.pino = { g: tr, radice: t, tag: new THREE.Vector3(2.6, .6 + 2.3, 2.0), ph: 3.1 };
     // con la sete gli aghi ingialliscono a chiazze: i colori "stressed" preparati nella chioma
     const cp = new THREE.Color();
@@ -456,6 +472,7 @@ export function creaAlberi(world) {
     const fa = foliage(tr, padsA, { palette: ['#2b5426', '#36632c', '#417233', '#4e823b', '#5c9044'], density: 92, size: .36, flat: .66, detail: 1,
       geo: ciuffoFoglie({ n: 11, seme: 23, lobi: 3, incavo: .62, grandezza: .34, nucleo: .5 }) });
     const rametA = rametti(pad => gA.gruppoPad[pad] ?? tr, padsA, legnoA, 9);
+    neviChiome.push(...cappelliNeve(tr, padsA, gA.gruppoPad));
     trees.azalea = { g: tr, radice: t, tag: new THREE.Vector3(3.4, .48 + 2.5, -1.05), ph: 2.4 };
     // con la sete le foglie si spengono verso un verde oliva e poi bruno; con troppa acqua impallidiscono
     const rs = sequenza(77), seccoA = fa.toni.map(() => rs() < .55 ? new THREE.Color(['#7d7a3a', '#8a6e36', '#6e6a34'][Math.floor(rs() * 3)]) : null);
@@ -712,6 +729,8 @@ export function creaAlberi(world) {
     setAzalea(si) { azalea.radice.visible = si; },
     // e così il ciliegio
     setCiliegio(si) { ciliegio.radice.visible = si; },
+    // neve a terra (0..1): le chiome sempreverdi si coprono di un cappello bianco
+    setNeve(k) { for (const m of neviChiome) { m.visible = k > .08; m.scale.set(.6 + .4 * k, .12 + .22 * k, .9 * (.6 + .4 * k)); } },
     // quale pianta (vaso e supporto compresi) è sotto il dito: 'acero', 'ginepro', 'pino', 'azalea' oppure null
     tocca(raycaster) {
       let meglio = null, d = Infinity;

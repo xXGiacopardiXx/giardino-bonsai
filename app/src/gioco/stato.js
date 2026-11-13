@@ -5,10 +5,18 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 27;
+export const VERSIONE = 28;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50 };
+export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50, stagione: 30, rinascita: 50 };
+
+// I momenti belli di ogni pianta (sezione 7.3): la prima fioritura dell'anno (azalea, ciliegio) e i primi colori
+// d'autunno (acero, ciliegio) valgono SEMI.stagione, una volta per anno e per pianta, se la pianta sta bene
+// (chioma almeno CHIOMA_PER_PREMIO): è il premio di averla curata, non di aver aperto il gioco.
+const CHIOMA_PER_PREMIO = 0.6;
+// Sfida di rinascita (sezione 6.2): chi torna dopo una lunga assenza (una pianta in stress forte) riceve una sfida:
+// riportare tutte le piante a una chioma piena almeno a CHIOMA_RINASCITA, senza sete. Completata, SEMI.rinascita.
+const CHIOMA_RINASCITA = 0.8;
 
 // Giorno di riposo (sezione 7.2): ogni 7 giorni di fila se ne guadagna uno (se ne tiene uno solo alla
 // volta, così protegge la serie al massimo una volta a settimana). Se si salta un giorno, il giorno di
@@ -420,6 +428,9 @@ export function nuovoStato(ora) {
     giardino: { ampliamenti: 0 },
     // momenti speciali già festeggiati ("hanami-2": l'hanami del secondo anno)
     eventi: { festeggiati: [] },
+    // premi dei momenti belli delle piante già dati ("acero-colori-2"), e la sfida di rinascita (o null)
+    premiStagione: [],
+    rinascita: null,
     // vasi comprati, quello dell'acero (scelto) e quello delle altre piante
     vasi: { posseduti: vasiGratis(), scelto: VASI[0].id, piante: { pino: 'cotto', ginepro: 'bruno-rett', azalea: 'bruno', ciliegio: 'grigio' } },
     // decorazioni comprate e quelle messe nel giardino
@@ -549,6 +560,8 @@ export function migra(stato) {
   }
   // momenti speciali: nessuno ancora festeggiato
   if (stato.versione === 26) { stato.eventi = { festeggiati: [] }; stato.versione = 27; }
+  // premi della fioritura e dei colori d'autunno, sfida di rinascita: niente ancora
+  if (stato.versione === 27) { stato.premiStagione = []; stato.rinascita = null; stato.versione = 28; }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -651,6 +664,7 @@ export function avanza(stato, ora) {
     if (a.sete >= SETE_MASSIMA && a.salute <= SALUTE_MINIMA) t = ora;
   }
   stato.aggiornato = Math.max(stato.aggiornato, ora);
+  controllaRinascita(stato);
 
   const oggi = giornoLocale(ora);
   if (stato.oggi.giorno !== oggi) nuovoGiorno(stato, ora);
@@ -1082,6 +1096,46 @@ export function compraAmpliamento(stato) {
   return { esito: 'ok', mancano: 0, ampliamenti: n + 1 };
 }
 
+// I momenti belli delle piante di adesso, non ancora premiati: [{ pianta, tipo: 'fioritura' | 'colori', chiave }]
+function momentiBelli(stato) {
+  const cal = calendario(stato.inizio, stato.aggiornato), { anno, stagione } = cal, fatti = stato.premiStagione ?? [], m = [];
+  const aggiungi = (pianta, tipo) => {
+    const c = curaDi(stato, pianta), chiave = `${pianta}-${tipo}-${anno}`;
+    if (c && c.salute >= CHIOMA_PER_PREMIO && !fatti.includes(chiave)) m.push({ pianta, tipo, chiave });
+  };
+  if (stagione === 2) { aggiungi('acero', 'colori'); aggiungi('ciliegio', 'colori'); }
+  if (fiorituraCiliegio(cal).fiori >= .5 && stato.conifere.ciliegio?.fiori > 0) aggiungi('ciliegio', 'fioritura');
+  if (fiorituraDi(cal).fiori >= .5 && stato.conifere.azalea?.fiori > 0) aggiungi('azalea', 'fioritura');
+  return m;
+}
+// Dà i premi dei momenti belli di adesso e li restituisce ([{ pianta, tipo, semi }]): da chiamare all'apertura
+export function premiaMomenti(stato) {
+  const m = momentiBelli(stato);
+  for (const x of m) { stato.premiStagione = [...(stato.premiStagione ?? []), x.chiave].slice(-20); stato.semi += SEMI.stagione; }
+  return m.map(({ pianta, tipo }) => ({ pianta, tipo, semi: SEMI.stagione }));
+}
+
+// Sfida di rinascita (sezione 6.2): comincia quando una pianta arriva allo stress forte (una lunga assenza),
+// finisce quando tutte le piante sono di nuovo senza sete e con la chioma piena; allora il premio.
+function controllaRinascita(stato) {
+  const piante = presenti(stato).map(p => curaDi(stato, p));
+  const r = stato.rinascita;
+  if (!r || r.fatta) {
+    if (piante.some(c => c.sete >= FASI[4].da)) stato.rinascita = { fatta: false, avviso: false };
+    return;
+  }
+  if (piante.every(c => c.sete < FASI[1].da && c.salute >= CHIOMA_RINASCITA)) {
+    r.fatta = true; r.avviso = true;
+    stato.semi += SEMI.rinascita;
+  }
+}
+// La sfida di rinascita è appena finita: true una volta sola, per dirlo al giocatore
+export function leggiAvvisoRinascita(stato) {
+  const si = !!stato.rinascita?.avviso;
+  if (si) stato.rinascita.avviso = false;
+  return si;
+}
+
 // Il momento speciale di adesso (o null): { ...evento, anno, giorniRimasti }. t: un istante (di solito stato.aggiornato)
 export function eventoDi(stato, t) {
   const cal = calendario(stato.inizio, t), { anno, stagione, giornoStagione: g } = cal;
@@ -1460,6 +1514,10 @@ export function vista(stato) {
     // 0 = terriccio scuro e umido, 1 = chiaro e secco
     terriccio: limita(a.sete / 1.5),
     lungaAssenza: a.sete >= FASI[4].da,
+    // sfida di rinascita (o null): fatta, e quanto manca (la chioma più bassa tra le piante, da 0 a 1)
+    rinascita: stato.rinascita ? { fatta: stato.rinascita.fatta, premio: SEMI.rinascita, obiettivo: CHIOMA_RINASCITA,
+      chioma: Math.min(...presenti(stato).map(p => curaDi(stato, p).salute)),
+      sete: presenti(stato).some(p => curaDi(stato, p).sete >= FASI[1].da) } : null,
     germogli: a.germogli.map(g => ({ ...g, potabile: g.lunghezza >= POTABILE_DA })),
     gemme: a.gemme.map(g => ({ ...g })),
     // rami da legare: piega attuale (col filo, quella voluta), stato del filo e segni sulla corteccia
