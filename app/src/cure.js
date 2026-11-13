@@ -5,7 +5,7 @@
 // specifici. Cosa si può fare lo decide il motore; le azioni le fa main.js.
 import { iconaProdotto, perChi } from './icone-cura.js';
 
-const GRUPPI = [['concime', 'Concimi'], ['tonico', 'Tonici'], ['trattamento', 'Trattamenti'], ['muschio', 'Per il vaso'], ['terriccio', 'Terricci per il rinvaso']];
+const GRUPPI = [['concime', 'Concimi'], ['tonico', 'Tonici'], ['trattamento', 'Contro gli afidi'], ['fungicida', 'Contro le malattie'], ['muschio', 'Per il vaso'], ['terriccio', 'Terricci per il rinvaso']];
 
 // azioni: usa(pianta, id), negozio()
 export function creaCure(azioni) {
@@ -79,6 +79,10 @@ export function creaCure(azioni) {
       righe.push(r.dovuto && r.finestra ? '<span class="male">Le radici escono dal vaso: è il momento del rinvaso</span>'
         : r.dovuto ? `<span class="male">Vaso stretto: si rinvasa a fine inverno, tra ${giorni(r.giorniAllaFinestra)}</span>`
         : `<span>Radici a posto: prossimo rinvaso tra ${r.anniMancanti === 1 ? 'un anno' : r.anniMancanti + ' anni'} di gioco</span>`);
+      // la malattia tipica della pianta: se c'è, quanto manca; se no il suo nome, così si sa cosa guardare
+      righe.splice(1, 0, c.malattia?.visibili ? `<span class="male">${c.malattia.nome}: ${c.malattia.segni}. ${c.malattia.danno ? 'Sta facendo danni' : `Curala entro ${c.malattia.oreInTempo} ore`}</span>`
+        : c.difesa ? `<span>Protetta da ${c.tipica.nome.toLowerCase()} per ${giorni(c.difesa)}</span>`
+        : `<span title="${c.tipica.descrizione}">Nessuna malattia in vista (la sua è ${c.tipica.nome.toLowerCase()})</span>`);
       if (c.protezione) righe.push(`<span>Protetta dagli afidi per ${giorni(c.protezione)}</span>`);
       if (c.tonico) righe.push(`<span>Tonico alle alghe: la chioma si riprende più in fretta per ${giorni(c.tonico)}</span>`);
       if (c.muschio) righe.push('<span>Muschio sul terriccio: il vaso asciuga più piano</span>');

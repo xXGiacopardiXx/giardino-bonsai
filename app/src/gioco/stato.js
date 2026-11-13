@@ -5,10 +5,10 @@
 import { ORA, GIORNO, FATTORE_SETE, STAGIONI, calendario, giornoLocale, giorniTra, giornoDopo } from './tempo.js';
 import { STILI, STILE_INIZIALE, COMPLETATO_DA, stileDi, stileAperto } from './stili.js';
 
-export const VERSIONE = 28;
+export const VERSIONE = 29;
 
 // Ricompense in Semi (game-design.md, sezione 7.3)
-export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50, stagione: 30, rinascita: 50 };
+export const SEMI = { iniziali: 50, sfida: 10, serie7: 50, filo: 10, parassiti: 20, scoperti: 10, rinvaso: 40, foto: 5, settimana: 50, stagione: 30, rinascita: 50, malattia: 25 };
 
 // I momenti belli di ogni pianta (sezione 7.3): la prima fioritura dell'anno (azalea, ciliegio) e i primi colori
 // d'autunno (acero, ciliegio) valgono SEMI.stagione, una volta per anno e per pianta, se la pianta sta bene
@@ -51,6 +51,8 @@ export const ATTREZZI = [
     descrizione: 'Taglia il filo a pezzetti invece di svolgerlo: i segni sulla corteccia spariscono il doppio più in fretta, e il filo tolto con un po\' di ritardo vale ancora il premio.' },
   { id: 'forbici', nome: 'Forbici concave', prezzo: 250, effetto: 'Gemme più rapide',
     descrizione: 'Lasciano un taglio pulito e un po\' incavato che si chiude presto: dopo la potatura le gemme dell\'acero crescono più in fretta.' },
+  { id: 'lente', nome: 'Lente del giardiniere', prezzo: 180, effetto: 'Malattie viste prima',
+    descrizione: 'Guardando da vicino foglie e aghi, afidi e malattie si notano al primo segno: l\'avviso arriva in metà del tempo, quando sono ancora facili da curare.' },
 ];
 // Ampliamento del giardino (sezione 8.5): il prato dell'isola si allarga tutto intorno, in tre passi a
 // prezzo crescente, e c'è più posto per piante e decorazioni. crescita: di quanto si allarga il raggio
@@ -252,6 +254,32 @@ export const POSTI_PARASSITI = 5;      // cuscinetti della chioma dove possono c
 const PROBABILITA_PARASSITI = [0.12, 0.12, 0.06, 0]; // al giorno: primavera, estate, autunno, inverno
 const PROBABILITA_CONIFERE = 0.6;      // le conifere, robuste e sempre ben curate, ne prendono meno
 
+// Malattie (sezione 6.6): ogni pianta ha la sua, un fungo che arriva nella sua stagione, il doppio delle volte
+// quando trova le condizioni giuste (l'umidità dopo la pioggia o col terriccio zuppo; per l'oidio dell'acero
+// la chioma fitta, con due o più germogli lunghi da potare). Al massimo una alla volta per pianta, insieme o
+// no agli afidi. È più lenta degli afidi: per un giorno i segni sono piccoli e si vedono solo da vicino (o con
+// la lente), poi arriva l'avviso; curata entro tre giorni dà Semi. Dopo rallenta la crescita e dirada la
+// chioma, mai sotto il 60%: la pianta non muore. Si cura col rimedio specifico (che poi la tiene lontana per
+// una stagione) o col bicarbonato, per tutte; il macerato di equiseto non cura ma previene.
+export const MALATTIE = {
+  acero: { id: 'oidio', nome: 'Oidio', breve: 'Ha l\'oidio', segni: 'una polvere bianca sulle foglie', stagioni: [0.05, 0.08, 0.02, 0], causa: 'fitta',
+    descrizione: 'Il mal bianco: un fungo che copre le foglie di una polvere bianca, come farina. Arriva col caldo umido e l\'aria ferma, quando la chioma è troppo fitta.' },
+  pino: { id: 'ruggine-pino', nome: 'Ruggine degli aghi', breve: 'Ha la ruggine', segni: 'puntini arancioni sugli aghi', stagioni: [0.04, 0.02, 0.05, 0], causa: 'umido',
+    descrizione: 'Un fungo che fa piccole pustole arancioni sugli aghi, che poi ingialliscono. Arriva nelle settimane umide di primavera e d\'autunno.' },
+  ginepro: { id: 'ruggine-ginepro', nome: 'Ruggine del ginepro', breve: 'Ha la ruggine', segni: 'galle arancioni tra le squame', stagioni: [0.08, 0, 0.02, 0], causa: 'umido',
+    descrizione: 'Dopo le piogge di primavera, tra le squame spuntano galle arancioni e gelatinose, come piccole corna: sono le spore di un fungo.' },
+  azalea: { id: 'galla', nome: 'Galla delle foglie', breve: 'Ha la galla', segni: 'foglie gonfie, bianco-rosa', stagioni: [0.06, 0.03, 0, 0], causa: 'umido',
+    descrizione: 'Un fungo delle azalee: le foglie nuove si gonfiano, carnose e bianco-rosa. Arriva con l\'umidità, quando la pianta mette i germogli.' },
+  ciliegio: { id: 'corineo', nome: 'Corineo', breve: 'Ha il corineo', segni: 'macchie rosso-brune sulle foglie', stagioni: [0.05, 0.02, 0.05, 0], causa: 'umido',
+    descrizione: 'Il fungo dei ciliegi: macchioline rosso-brune sulle foglie, che poi seccano e lasciano dei buchini, come impallinate. Ama le piogge.' },
+};
+const ORE_MALATTIA_NASCOSTA = 24;      // prima dell'avviso: si scopre da vicino
+const ORE_MALATTIA_IN_TEMPO = 72;      // curata entro tre giorni: nessun danno e Semi
+const DANNO_MALATTIA = 0.04;           // chioma persa al giorno, dopo i tre giorni
+const SALUTE_CON_MALATTIA = 0.6;       // da sola non la dirada oltre il 60%
+const VIGORE_MALATA = 0.7;             // e la pianta cresce un po' meno
+const UMIDO_ORE = 48;                  // per due giorni dopo la pioggia l'aria resta umida
+
 // Azalea Satsuki (sezione 5.4): la quarta pianta, da comprare coi Semi. Vuole il terriccio sempre un po'
 // umido (asciuga poco meno dell'acero) e acido (kanuma). A fine primavera fiorisce; all'inizio dell'estate
 // i fiori appassiscono e vanno tolti, uno per uno ("vecchi", come gli aghi del pino): se restano, la pianta
@@ -317,6 +345,27 @@ export const PRODOTTI = [
   // muschio: copre il terriccio fino al rinvaso, è bello e trattiene l'umidità
   { id: 'muschio', nome: 'Muschio per il vaso', tipo: 'muschio', piante: TUTTE, prezzo: 20,
     descrizione: "Un tappeto verde sul terriccio: trattiene l'umidità, così il vaso asciuga un po' più piano. Resta fino al rinvaso." },
+  // contro le malattie (sezione 6.6): un rimedio specifico per ogni pianta, che cura la sua malattia e poi la
+  // tiene lontana per una stagione; il bicarbonato cura tutte senza proteggere; l'equiseto previene soltanto
+  { id: 'zolfo', nome: 'Zolfo bagnabile', tipo: 'fungicida', piante: ['acero'], malattie: ['oidio'], protezione: DURATA_PROTEZIONE, prezzo: 30,
+    descrizione: "Il rimedio antico contro l'oidio dell'acero: lo cura e lo tiene lontano per una stagione." },
+  { id: 'rame', nome: 'Ossicloruro di rame', tipo: 'fungicida', piante: ['pino', 'ginepro'], malattie: ['ruggine-pino', 'ruggine-ginepro'], protezione: DURATA_PROTEZIONE, prezzo: 30,
+    descrizione: 'Polvere azzurra da sciogliere in acqua: cura la ruggine di pino e ginepro e la tiene lontana per una stagione.' },
+  { id: 'propoli', nome: 'Spray alla propoli', tipo: 'fungicida', piante: ['azalea'], malattie: ['galla'], protezione: DURATA_PROTEZIONE, prezzo: 30,
+    descrizione: "La resina delle api, delicata sui fiori: cura la galla dell'azalea e la tiene lontana per una stagione." },
+  { id: 'poltiglia', nome: 'Poltiglia bordolese', tipo: 'fungicida', piante: ['ciliegio'], malattie: ['corineo'], protezione: DURATA_PROTEZIONE, prezzo: 30,
+    descrizione: 'Rame e calce, la cura classica degli alberi da frutto: guarisce il corineo del ciliegio e lo tiene lontano per una stagione.' },
+  { id: 'bicarbonato', nome: 'Bicarbonato di potassio', tipo: 'fungicida', piante: TUTTE, protezione: 0, prezzo: 20,
+    descrizione: 'Cura la malattia di ogni pianta, ma non la tiene lontana: va bene per le emergenze.' },
+  { id: 'equiseto', nome: 'Macerato di equiseto', tipo: 'fungicida', piante: TUTTE, cura: false, protezione: 5, prezzo: 25,
+    descrizione: 'Rinforza foglie e aghi: per cinque giorni le malattie non attaccano. Non cura quelle già arrivate.' },
+  // concime e tonici specifici
+  { id: 'concime-ciliegio', nome: 'Concime per alberi da fiore', tipo: 'concime', piante: ['ciliegio'], spinta: 1.6, prezzo: 30,
+    descrizione: 'Con potassio e fosforo: rami robusti e boccioli pieni per la primavera.' },
+  { id: 'chelato', nome: 'Chelato di ferro', tipo: 'tonico', piante: ['acero', 'azalea', 'ciliegio'], giorni: 7, ripresa: 2.5, prezzo: 40,
+    descrizione: 'Ferro che le radici assorbono subito: foglie di nuovo verdi e chioma che si riprende due volte e mezzo più in fretta, per una stagione.' },
+  { id: 'ortica', nome: 'Macerato di ortica', tipo: 'tonico', piante: ['pino', 'ginepro'], giorni: 7, ripresa: 2.5, prezzo: 35,
+    descrizione: 'Ricco di azoto e minerali: aghi e squame si rifanno due volte e mezzo più in fretta, per una stagione.' },
   // terricci per il rinvaso: durata = anni di gioco prima del rinvaso successivo, per specie
   { id: 'akadama', nome: 'Akadama', tipo: 'terriccio', piante: TUTTE, durata: { acero: 1, pino: 2, ginepro: 2, azalea: 1, ciliegio: 1 }, prezzo: 25,
     descrizione: 'Argilla giapponese in granuli: drena e trattiene il giusto. Va bene per tutti i bonsai.' },
@@ -328,7 +377,7 @@ export const PRODOTTI = [
     descrizione: 'Akadama, pomice e lapillo: molto drenante, le radici delle conifere ci stanno bene più a lungo.' },
 ];
 // il kit con cui si comincia
-const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2, akadama: 1 };
+const INVENTARIO_INIZIALE = { 'concime-universale': 2, 'sapone-molle': 2, bicarbonato: 1, akadama: 1 };
 
 // Rinvaso (sezione 4.4): si fa tra la fine dell'inverno (dal 4° giorno) e l'inizio della primavera
 // (fino al 3° giorno), quando le gemme si gonfiano. L'acero giovane ogni anno, le conifere ogni 2
@@ -393,10 +442,16 @@ function caso(testo) {
 const concimeAttivo = (a, t) => !!a.concime && t < a.concime.fino;
 // il tonico alle alghe: la chioma si riprende il doppio più in fretta
 const tonicoAttivo = (a, t) => !!a.tonico && t < a.tonico.fino;
-const tonico = (a, t) => tonicoAttivo(a, t) ? TONICO_RIPRESA : 1;
+const tonico = (a, t) => tonicoAttivo(a, t) ? a.tonico.ripresa ?? TONICO_RIPRESA : 1;
 const spinta = (a, t) => concimeAttivo(a, t) ? a.concime.spinta ?? 1.5 : 1;
 const protetta = (a, t) => !!a.protezione && t < a.protezione.fino;
-const curaNuova = () => ({ concime: null, parassiti: null, protezione: null });
+const curaNuova = () => ({ concime: null, parassiti: null, protezione: null, malattia: null, difesa: null });
+// malattie: difesa attiva (rimedio specifico o equiseto), ore dall'arrivo, se fa già danno
+const difesa = (a, t) => !!a.difesa && t < a.difesa.fino;
+const oreMalattia = (a, t) => a.malattia ? (t - a.malattia.da) / ORA : 0;
+const malata = (a, t) => oreMalattia(a, t) > ORE_MALATTIA_IN_TEMPO;
+// con la lente afidi e malattie si notano in metà del tempo
+const lente = (stato) => ha(stato, 'lente') ? 0.5 : 1;
 // pino e ginepro: cura e acqua (si comincia con il terriccio ancora un po' umido)
 const coniferaNuova = (p) => ({ ...curaNuova(), sete: 0.3, ristagno: 0, avvisatoUmido: false, ultimaAcqua: null, salute: 1, ...potaturaConifera(p), rinvaso: { primavera: 1, durata: DURATA_RINVASO[p], stretto: false }, ...stileNuovo(p) });
 // germogli (candele o punte), aghi vecchi e rami da legare di una conifera
@@ -562,6 +617,12 @@ export function migra(stato) {
   if (stato.versione === 26) { stato.eventi = { festeggiati: [] }; stato.versione = 27; }
   // premi della fioritura e dei colori d'autunno, sfida di rinascita: niente ancora
   if (stato.versione === 27) { stato.premiStagione = []; stato.rinascita = null; stato.versione = 28; }
+  // malattie: nessuna ancora, e un bicarbonato nel kit per la prima
+  if (stato.versione === 28) {
+    for (const c of [stato.albero, ...Object.values(stato.conifere)]) Object.assign(c, { malattia: null, difesa: null });
+    stato.inventario.bicarbonato = (stato.inventario.bicarbonato ?? 0) + 1;
+    stato.versione = 29;
+  }
   return stato.versione === VERSIONE ? stato : null;
 }
 
@@ -582,7 +643,7 @@ function vigore(stagione, sete) {
 }
 // la crescita vera: il concime la spinge, i parassiti non curati la frenano
 function vigoreDi(a, stagione, t) {
-  return vigore(stagione, a.sete) * fradicio(a) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1) * (a.rinvaso?.stretto ? VIGORE_VASO_STRETTO : 1);
+  return vigore(stagione, a.sete) * fradicio(a) * spinta(a, t) * (oreParassiti(a, t) > ORE_IN_TEMPO ? 0.5 : 1) * (malata(a, t) ? VIGORE_MALATA : 1) * (a.rinvaso?.stretto ? VIGORE_VASO_STRETTO : 1);
 }
 
 // con le radici fradice la pianta cresce meno (foglie flosce) o niente (radici che marciscono)
@@ -638,8 +699,9 @@ export function avanza(stato, ora) {
     }
     const max = Math.min(saluteMassima(a.sete), saluteRistagno(a.ristagno));
     if (a.salute > max) a.salute = Math.max(max, a.salute - giorni * PERDITA_AL_GIORNO);
-    else if (a.sete < 2 && a.ristagno < FLOSCE_DA && oreParassiti(a, t) <= ORE_IN_TEMPO) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t) * tonico(a, t));
+    else if (a.sete < 2 && a.ristagno < FLOSCE_DA && oreParassiti(a, t) <= ORE_IN_TEMPO && !malata(a, t)) a.salute = Math.min(1, a.salute + giorni * RIPRESA_AL_GIORNO * spinta(a, t) * tonico(a, t));
     if (oreParassiti(a, t) > ORE_IN_TEMPO && a.salute > SALUTE_CON_PARASSITI) a.salute = Math.max(SALUTE_CON_PARASSITI, a.salute - giorni * DANNO_PARASSITI);
+    if (malata(a, t) && a.salute > SALUTE_CON_MALATTIA) a.salute = Math.max(SALUTE_CON_MALATTIA, a.salute - giorni * DANNO_MALATTIA);
     const v = giorni * vigoreDi(a, stagione, t);
     for (const g of a.germogli) g.lunghezza = Math.min(1, g.lunghezza + v * CRESCITA_GERMOGLIO);
     for (const g of a.gemme) g.crescita = Math.min(1, g.crescita + v * CRESCITA_GEMMA * (ha(stato, 'forbici') ? FORBICI_GEMME : 1));
@@ -651,8 +713,9 @@ export function avanza(stato, ora) {
       // chioma: come l'acero (sete lunga e afidi la diradano, le cure la rifanno), ma più lenta
       const maxC = Math.min(saluteMassima(c.sete), saluteRistagno(c.ristagno));
       if (c.salute > maxC) c.salute = Math.max(maxC, c.salute - giorni * PERDITA_AL_GIORNO * k);
-      else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t) * tonico(c, t));
+      else if (c.sete < 2 && c.ristagno < FLOSCE_DA && oreParassiti(c, t) <= ORE_IN_TEMPO && !malata(c, t)) c.salute = Math.min(1, c.salute + giorni * RIPRESA_AL_GIORNO * k * spinta(c, t) * tonico(c, t));
       if (oreParassiti(c, t) > ORE_IN_TEMPO && c.salute > SALUTE_CON_PARASSITI) c.salute = Math.max(SALUTE_CON_PARASSITI, c.salute - giorni * DANNO_PARASSITI * k);
+      if (malata(c, t) && c.salute > SALUTE_CON_MALATTIA) c.salute = Math.max(SALUTE_CON_MALATTIA, c.salute - giorni * DANNO_MALATTIA * k);
       for (const g of c.germogli) g.lunghezza = Math.min(1, g.lunghezza + vc * CRESCITA_GERMOGLIO);
       cresceFilo(c.rami, vc * PRESA_AL_GIORNO * PRESA_SPECIE[p], giorni, svanisce);
       ricresce(c.tagli, vc * RICRESCITA_CIUFFO * k);
@@ -765,6 +828,21 @@ function nuovoGiorno(stato, ora) {
     const p = PROBABILITA_PARASSITI[stagione] * (pianta === 'acero' ? (a.sete >= 2 ? 2 : 1) : PROBABILITA_CONIFERE) * (concimeAttivo(c, ora) ? 0.5 : 1);
     const giorno = stato.inizio + ':' + giornoLocale(ora) + (pianta === 'acero' ? '' : ':' + pianta);
     if (caso(giorno) < p) c.parassiti = { posto: Math.floor(caso(giorno + ':posto') * POSTI_PARASSITI), da: ora };
+  }
+  // malattie: ognuna nella sua stagione, il doppio quando trova le sue condizioni; mai con la difesa attiva
+  const piovuto = stato.meteo?.ultimaPioggia != null && ora - stato.meteo.ultimaPioggia < UMIDO_ORE * ORA;
+  for (const pianta of presenti(stato)) {
+    const c = curaDi(stato, pianta), m = MALATTIE[pianta];
+    if (c.difesa && ora >= c.difesa.fino) c.difesa = null;
+    if (c.malattia || difesa(c, ora)) continue;
+    const favorita = m.causa === 'fitta' ? c.germogli.filter(g => g.lunghezza >= POTABILE_DA).length >= 2 : piovuto || c.ristagno > 0;
+    const seme = stato.inizio + ':malattia:' + giornoLocale(ora) + ':' + pianta;
+    if (caso(seme) < m.stagioni[stagione] * (favorita ? 2 : 1)) {
+      // su un cuscinetto diverso da quello degli afidi, se ci sono
+      let posto = Math.floor(caso(seme + ':posto') * POSTI_PARASSITI);
+      if (c.parassiti?.posto === posto) posto = (posto + 2) % POSTI_PARASSITI;
+      c.malattia = { id: m.id, posto, da: ora };
+    }
   }
   // la sfida si sceglie quando il giocatore vede il giorno (alla fine di avanza)
   stato.oggi = { giorno: giornoLocale(ora), acqua: false, sfida: null };
@@ -1066,11 +1144,22 @@ export function usaProdotto(stato, ora, pianta, id) {
   } else if (p.tipo === 'tonico') {
     // il tonico va bene anche d'inverno: aiuta la chioma a riprendersi, non spinge la crescita
     if (tonicoAttivo(c, ora)) return { esito: 'attivo', ...vuoto };
-    c.tonico = { fino: ora + p.giorni * GIORNO };
+    c.tonico = { fino: ora + p.giorni * GIORNO, ripresa: p.ripresa ?? TONICO_RIPRESA };
   } else if (p.tipo === 'muschio') {
     // il muschio resta sul terriccio fino al prossimo rinvaso
     if (c.muschio) return { esito: 'gia', ...vuoto };
     c.muschio = true;
+  } else if (p.tipo === 'fungicida') {
+    // l'equiseto non cura: previene soltanto
+    if (c.malattia && p.cura === false) return { esito: 'non-cura', ...vuoto };
+    if (!c.malattia && !p.protezione) return { esito: 'niente', ...vuoto };
+    if (c.malattia) {
+      const ore = oreMalattia(c, ora);
+      presto = ore < ORE_MALATTIA_NASCOSTA; inTempo = ore <= ORE_MALATTIA_IN_TEMPO; tolti = true;
+      semi += (inTempo ? SEMI.malattia : 0) + (presto ? SEMI.scoperti : 0);
+      c.malattia = null;
+    }
+    if (p.protezione) c.difesa = { fino: ora + p.protezione * GIORNO };
   } else {
     if (!c.parassiti && !p.protezione) return { esito: 'niente', ...vuoto };
     if (c.parassiti) {
@@ -1430,8 +1519,8 @@ const asciugaAlGiorno = (c, p, stagione) => FATTORE_SETE[stagione] * scoloSpecie
 // giorni (interi, per eccesso) che mancano all'inizio dell'anno di gioco indicato
 const giorniAllAnno = (stato, anno) => Math.max(1, Math.ceil(((anno - 1) * 28 * GIORNO - (stato.aggiornato - stato.inizio)) / GIORNO - 1e-9));
 const giorniFino = (fino, t) => Math.ceil((fino - t) / GIORNO - 1e-9);
-function vistaCura(c, t, stagione) {
-  const ore = oreParassiti(c, t);
+function vistaCura(c, t, stagione, vede = 1, pianta = 'acero') {
+  const ore = oreParassiti(c, t), om = oreMalattia(c, t), m = MALATTIE[pianta];
   return {
     // concime: attivo per altri N giorni; si può dare fuori dall'inverno se non ce n'è già
     concime: {
@@ -1444,10 +1533,22 @@ function vistaCura(c, t, stagione) {
     parassiti: c.parassiti ? {
       posto: c.parassiti.posto,
       grandezza: limita(ore / 48),
-      visibili: ore >= ORE_NASCOSTI,
+      visibili: ore >= ORE_NASCOSTI * vede,
       danno: ore > ORE_IN_TEMPO,
       oreInTempo: Math.max(0, Math.ceil(ORE_IN_TEMPO - ore)),
     } : null,
+    // malattia: quale, dove, quanto si è estesa (0..1), se c'è già l'avviso, se fa danno
+    malattia: c.malattia ? {
+      id: c.malattia.id, nome: m.nome, breve: m.breve, segni: m.segni,
+      posto: c.malattia.posto,
+      grandezza: limita(om / 96),
+      visibili: om >= ORE_MALATTIA_NASCOSTA * vede,
+      danno: om > ORE_MALATTIA_IN_TEMPO,
+      oreInTempo: Math.max(0, Math.ceil(ORE_MALATTIA_IN_TEMPO - om)),
+    } : null,
+    // la malattia tipica della pianta e i giorni di difesa (rimedio specifico o equiseto)
+    tipica: { id: m.id, nome: m.nome, descrizione: m.descrizione },
+    difesa: difesa(c, t) ? giorniFino(c.difesa.fino, t) : 0,
     // olio di neem: giorni di protezione dai parassiti
     protezione: protetta(c, t) ? giorniFino(c.protezione.fino, t) : 0,
     // tonico alle alghe: giorni che restano; muschio sul terriccio
@@ -1534,7 +1635,7 @@ export function vista(stato) {
     // gli elementi messi da parte, da rimettere dal negozio
     elementiDaParte: ELEMENTI.filter(e => tolto(stato, e.id)).map(e => ({ id: e.id, nome: e.nome })),
     pianteNegozio: PIANTE_NEGOZIO.map(p => ({ ...p, tua: !!stato.conifere[p.id] })),
-    cura: Object.fromEntries(presenti(stato).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione)])),
+    cura: Object.fromEntries(presenti(stato).map(p => [p, vistaCura(curaDi(stato, p), stato.aggiornato, cal.stagione, lente(stato), p)])),
     // stile di ogni pianta: quello scelto, i compatibili, i sigilli già presi, i ciuffi tagliati che ricrescono
     stile: Object.fromEntries(presenti(stato).map(p => {
       const c = curaDi(stato, p);
@@ -1553,7 +1654,7 @@ export function vista(stato) {
       }];
     })),
     concime: vistaCura(a, stato.aggiornato, cal.stagione).concime,
-    parassiti: vistaCura(a, stato.aggiornato, cal.stagione).parassiti,
+    parassiti: vistaCura(a, stato.aggiornato, cal.stagione, lente(stato)).parassiti,
     // inventario: tutti i prodotti del catalogo con le dosi che hai
     prodotti: PRODOTTI.map(p => ({ ...p, dosi: stato.inventario[p.id] ?? 0 })),
     nomiPiante: PIANTE,

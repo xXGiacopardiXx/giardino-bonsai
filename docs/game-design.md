@@ -295,10 +295,21 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 | Tonico alle alghe | tutte | tonico: per una stagione la chioma diradata si riprende il doppio più in fretta; va bene anche d'inverno, non si somma con sé stesso | 35 |
 | Muschio per il vaso | tutte | copre il terriccio fino al prossimo rinvaso (si vede nella scena): il vaso asciuga più piano (sete ×0,85) | 20 |
 | Kiryu | pino, ginepro, azalea | terriccio: sabbia vulcanica dura; rinvaso ogni 3 anni per pino e ginepro, 2 per l'azalea | 30 |
+| Zolfo bagnabile | acero | rimedio: cura l'oidio e lo tiene lontano per una stagione (sezione 6.6) | 30 |
+| Ossicloruro di rame | pino e ginepro | rimedio: cura la ruggine e la tiene lontana per una stagione | 30 |
+| Spray alla propoli | azalea | rimedio: cura la galla delle foglie e la tiene lontana per una stagione | 30 |
+| Poltiglia bordolese | ciliegio | rimedio: cura il corineo e lo tiene lontano per una stagione | 30 |
+| Bicarbonato di potassio | tutte | rimedio generale: cura la malattia di ogni pianta, senza protezione | 20 |
+| Macerato di equiseto | tutte | prevenzione: per 5 giorni nessuna malattia; non cura | 25 |
+| Concime per alberi da fiore | ciliegio | concime, crescita ×1,6 | 30 |
+| Chelato di ferro | acero, azalea, ciliegio | tonico: chioma che si riprende ×2,5 per una stagione | 40 |
+| Macerato di ortica | pino e ginepro | tonico: chioma che si riprende ×2,5 per una stagione | 35 |
+
+**Prodotti per ogni pianta (13/11/2026):** ogni pianta ha ora i suoi prodotti di tipi diversi, oltre a quelli per tutte: acero (concime per aceri, chelato di ferro, zolfo), pino e ginepro (concime per conifere, macerato di ortica, ossicloruro di rame, kiryu e miscela per conifere), azalea (concime per azalee, chelato di ferro, spray alla propoli, kanuma e kiryu), ciliegio (concime per alberi da fiore, chelato di ferro, poltiglia bordolese). Nel negozio, scheda Cura, le categorie sono Concimi, Afidi, Malattie, Terricci e Attrezzi (scorrono di lato); nel pannello di una pianta i rimedi stanno nel gruppo "Contro le malattie".
 
 **Tipologie di cura (12/11/2026):** oltre a concimi, trattamenti e terricci ci sono i **tonici** (aiutano la ripresa, non la crescita) e il **muschio** (bello, e cambia il ritmo dell'acqua: va ricordato, e il bastoncino lo dice). Nel negozio i tonici stanno coi concimi e il muschio coi terricci; nella cura della pianta ognuno ha il suo gruppo, e lo stato della pianta dice se ha il tonico (per quanti giorni) e il muschio.
 
-  Si comincia con un kit: 2 dosi di concime universale e 2 di sapone molle.
+  Si comincia con un kit: 2 dosi di concime universale, 2 di sapone molle e 1 di bicarbonato (chi aveva già una partita riceve il bicarbonato con l'aggiornamento).
 - **Inventario:** **Cura** nella barra in basso apre l'inventario: i prodotti che hai, divisi tra concimi e trattamenti, con le dosi rimaste, e un pulsante per il negozio. Da qui non si usano: servono a sapere cosa c'è.
 - **Curare una pianta:** si tocca la pianta e nella sua tendina si sceglie **Cura** (pino e ginepro hanno per ora solo questa voce). Il pannello dice come sta (afidi, concime, protezione) e mostra solo i prodotti adatti a lei, prima gli specifici, con il pulsante Usa e le dosi; quelli che non hai sono spenti.
 - **Concime** (granuli a lenta cessione color crema, che si vedono sul terriccio della pianta e si consumano con i giorni): dura una stagione (7 giorni). Sull'acero germogli, gemme e presa del filo crescono più in fretta (×1,6 con il concime per aceri, ×1,3 con l'universale) e la chioma si riprende più in fretta; su tutte le piante i parassiti arrivano la metà delle volte. D'inverno la pianta riposa e il concime non serve; finché fa effetto non se ne può dare altro. Conta come cura del giorno. In autunno, a giorni alterni, la sfida del giorno può essere "Concima l'acero" (sezione 4.1).
@@ -307,6 +318,28 @@ Si curano tutte e tre le piante: l'acero e le due conifere (pino e ginepro). Anc
 - **Trattamento:** la telecamera si avvicina, lo spray fa una nuvola fine sul cuscinetto e gli afidi cadono e spariscono. Entro 24 ore: +20 Semi; scoperti prima dell'avviso: +10 in più. Il sapone molle senza afidi non si spreca (un messaggio invita a guardare da vicino ogni tanto); l'olio di neem invece si può dare anche prima, come protezione.
 - **Se restano:** dopo un giorno la crescita rallenta a metà, la chioma non si riprende e si dirada piano (6% al giorno sull'acero, 3% sulle conifere), mai sotto la metà: la pianta non muore. Trattati tardi non danno Semi, senza rimproveri.
 - Concimi e trattamenti su qualunque pianta contano come cura del giorno per la serie.
+
+### 6.6 Malattie: una per ogni pianta
+
+Deciso il 13/11/2026. Accanto agli afidi, uguali per tutte, ogni pianta ha **la sua malattia**, un fungo vero dei bonsai di quella specie, con la sua stagione, le sue condizioni e il suo rimedio. Insegna che ogni pianta va conosciuta, come per l'acqua (sezione 6.1.4).
+
+| Pianta | Malattia | Come si vede | Probabilità al giorno (prim./est./aut./inv.) | Raddoppia se | Rimedio specifico |
+|---|---|---|---|---|---|
+| Acero | Oidio (mal bianco) | chiazze di polvere bianca sulle foglie | 5% / 8% / 2% / 0 | la chioma è fitta: due o più germogli lunghi da potare | Zolfo bagnabile |
+| Pino | Ruggine degli aghi | pustole arancioni minute sugli aghi | 4% / 2% / 5% / 0 | è umido | Ossicloruro di rame |
+| Ginepro | Ruggine del ginepro | galle arancioni gelatinose, a cornetto, tra le squame | 8% / 0 / 2% / 0 | è umido | Ossicloruro di rame |
+| Azalea | Galla delle foglie | foglie gonfie, carnose, bianco-rosa | 6% / 3% / 0 / 0 | è umido | Spray alla propoli |
+| Ciliegio | Corineo | macchioline rosso-brune sulle foglie | 5% / 2% / 5% / 0 | è umido | Poltiglia bordolese |
+
+- **Umido** vuol dire: ha piovuto nelle ultime 48 ore (sezione 3.4) oppure il terriccio della pianta è zuppo (troppa acqua, sezione 6.3). Così il meteo e l'acqua giusta contano anche qui, e per l'acero conta la potatura (l'aria che passa tra le foglie).
+- Al massimo una malattia alla volta per pianta, insieme o no agli afidi (su un altro cuscinetto). Il caso è prevedibile come per gli afidi. Non arriva mentre la pianta è **difesa** (rimedio specifico o equiseto).
+- **Più lenta degli afidi:** per 24 ore i segni sono piccoli e si scoprono solo da vicino; poi l'etichetta dice "Ha l'oidio", "Ha la ruggine", "Ha la galla", "Ha il corineo", sul pulsante Cura compare il "!" e un messaggio gentile avvisa ("Il ginepro ha la ruggine: galle arancioni tra le squame"). I segni crescono di numero e grandezza in 4 giorni.
+- **Cura:** entro 3 giorni +25 Semi; presa prima dell'avviso +10 in più. Il rimedio specifico poi difende la pianta per una stagione (7 giorni); il bicarbonato cura qualunque malattia ma non difende; il macerato di equiseto non cura (un messaggio lo spiega e indica il rimedio giusto) ma difende per 5 giorni, e si dà anche prima. Nella scena la telecamera si avvicina, lo spray fa la nuvola e i segni sbiadiscono.
+- **Se resta:** dopo 3 giorni la pianta cresce al 70%, la chioma non si riprende e si dirada piano (4% al giorno sull'acero, meno sulle piante col ritmo più lento), mai sotto il 60%: la pianta non muore. Curata tardi non dà Semi, senza rimproveri.
+- **Pannello Cura della pianta:** dice la malattia in corso (segni e ore che restano), oppure i giorni di difesa, oppure "Nessuna malattia in vista (la sua è l'oidio)", così si sa cosa guardare.
+- **Maestro:** "come si sente" racconta la malattia dalla parte della pianta; la prima volta che arriva ogni malattia il maestro spiega cos'è, come si cura e come prevenirla (una volta sola per malattia).
+- **Lente del giardiniere** (attrezzo, 180 Semi): afidi e malattie si notano in metà del tempo (avviso dopo 6 ore per gli afidi, 12 per le malattie): curati così presto valgono anche il premio "scoperti prima".
+- **Economia:** la simulazione (sezione 7.3) cura le malattie col bicarbonato; il giocatore costante passa da circa 31 a circa 33,5 Semi al giorno, dentro la regola di bilanciamento.
 
 ## 7. Sfide, serie ed economia
 
@@ -338,6 +371,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Filo tolto al momento giusto | 10 |
 | Serie di 7 giorni | 50 |
 | Parassiti eliminati in tempo (entro 24 ore; +10 se scoperti prima dell'avviso) | 20 |
+| Malattia curata in tempo (entro 3 giorni; +10 se presa prima dell'avviso) | 25 |
 | Rinvaso nella stagione giusta | 40 |
 | Prima foto di una pianta in una stagione (diario) | 5 |
 | Fioritura o primi colori autunnali (acero, ciliegio, azalea; una volta per anno e per pianta, se la chioma è almeno al 60%) | 30 |
@@ -359,6 +393,7 @@ Una sola moneta guadagnata giocando. Un'eventuale moneta a pagamento si valuter�
 | Bastoncino di bambù | 150 | Infilato nel terriccio resta scuro finché è umido (il trucco vero dei bonsaisti): sull'etichetta di ogni pianta che sta bene, al posto di "Sta bene", compare fra quanto annaffiarla ("Acqua fra 15 ore", "Acqua domani", "Acqua fra 3 giorni"), con il tempo sereno. Il bastoncino si vede anche nella scena, infilato nel terriccio di ogni pianta: la parte vicino alla terra è scura finché il terriccio è umido e torna color bambù quando è asciutto. Aiuta a non dare troppa acqua. |
 | Tronchesino per filo | 200 | Il filo si taglia a pezzetti invece di svolgerlo: i segni sulla corteccia spariscono il doppio più in fretta, e il filo tolto con un po' di ritardo (segno leggero) vale ancora il premio. |
 | Forbici concave | 250 | Taglio pulito che si chiude presto: dopo la potatura le gemme dell'acero crescono il 40% più in fretta. |
+| Lente del giardiniere | 180 | Afidi e malattie si notano in metà del tempo, quando sono ancora facili da curare (sezione 6.6). |
 
 **Regola di bilanciamento:** un giocatore costante deve potersi permettere una cosa piccola ogni 2–3 giorni e una grande ogni 3–4 settimane.
 

@@ -158,7 +158,7 @@ function avvia() {
   // ridisegna scena e interfaccia; con l'anteprima del pannello mostra il futuro senza toccare la partita
   // azione della barra in attesa che si tocchi una pianta: 'acqua', 'pota', 'filo' (oppure null)
   let scelta = null;
-  const avvisati = new Set();
+  const avvisati = new Set(), avvisatiMalattia = new Set();
   const SULLA = { acero: 'sull' + "'" + 'acero', pino: 'sul pino', ginepro: 'sul ginepro', azalea: "sull'azalea", ciliegio: 'sul ciliegio' };
   function disegna() {
     const giorniAnteprima = pannello?.anteprima ?? 0;
@@ -225,16 +225,28 @@ function avvia() {
     for (const p in curaScene) {
       const c = v.cura[p];
       if (!c) continue;
-      curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime);
+      curaScene[p].setParassiti(c.parassiti); curaScene[p].setConcime(c.concime); curaScene[p].setMalattia(c.malattia);
+      // la prima volta che la malattia si nota, un avviso gentile col suo nome
+      if (c.malattia?.visibili && !avvisatiMalattia.has(p) && giorniAnteprima === 0) {
+        avvisatiMalattia.add(p);
+        const il = { acero: "L'acero", pino: 'Il pino', ginepro: 'Il ginepro', azalea: "L'azalea", ciliegio: 'Il ciliegio' }[p];
+        setTimeout(() => ui.toast(`${il} ${c.malattia.breve.toLowerCase()}: ${c.malattia.segni}. Tocca la pianta e scegli Cura.`, 4500), 1200);
+      }
+      if (!c.malattia) avvisatiMalattia.delete(p);
       // la prima volta che gli afidi diventano evidenti, un avviso gentile
       if (c.parassiti?.visibili && !avvisati.has(p) && giorniAnteprima === 0) {
         avvisati.add(p);
         setTimeout(() => ui.toast(`Ci sono degli afidi ${SULLA[p]}! Tocca la pianta e scegli Cura.`, 4000), 600);
       }
       if (!c.parassiti) avvisati.delete(p);
-      if (p !== 'acero') document.getElementById(p + '-afidi').hidden = !c.parassiti?.visibili;
+      if (p !== 'acero') {
+        // sull'etichetta: la malattia (più lenta ma più seria) o gli afidi
+        const el = document.getElementById(p + '-afidi');
+        el.hidden = !c.parassiti?.visibili && !c.malattia?.visibili;
+        el.textContent = c.malattia?.visibili ? c.malattia.breve : 'Ha gli afidi';
+      }
     }
-    document.getElementById('t-care').classList.toggle('needs', Object.values(v.cura).some(c => c.parassiti?.visibili));
+    document.getElementById('t-care').classList.toggle('needs', Object.values(v.cura).some(c => c.parassiti?.visibili || c.malattia?.visibili));
     // punto dell'anno, giorno per giorno: colori dell'acero e foglie che cadono
     // meteo e ora del giorno (sezione 3.4): la scena, l'icona accanto alla stagione e un avviso se ha piovuto
     meteoAdesso = { cade: v.meteo.adesso, stagione: v.stagione, ora: ora() + giorniAnteprima * GIORNO, temporale: !!v.meteo.temporale, neve: v.meteo.neve, pozze: v.meteo.pozze, evento: v.evento?.id ?? null }; meteoPreso = Date.now();
@@ -529,6 +541,8 @@ function avvia() {
       if (esito.esito === 'attivo') { ui.toast(`Ha già il concime: fa effetto ancora ${giorniTesto(vista(stato).cura[pianta].concime.giorni)}.`); return; }
       if (esito.esito === 'gia') { ui.toast("Il muschio c'è già: resta fino al prossimo rinvaso."); return; }
       if (esito.esito === 'inverno') { ui.toast('D\'inverno le piante riposano: il concime lo darai in primavera.'); return; }
+      if (esito.esito === 'non-cura') { ui.toast(`${prodotto.nome} previene ma non cura: per ${vista(stato).cura[pianta].malattia.nome.toLowerCase()} usa il rimedio specifico o il bicarbonato.`, 4500); return; }
+      if (esito.esito === 'niente' && prodotto.tipo === 'fungicida') { ui.toast(`Nessuna malattia ${SULLA[pianta]}: il ${prodotto.nome.toLowerCase()} non serve. Contro ${vista(stato).cura[pianta].tipica.nome.toLowerCase()} i rimedi specifici e l'equiseto si possono dare anche prima.`, 4500); return; }
       if (esito.esito === 'niente') { ui.toast(`Non ci sono afidi ${SULLA[pianta]}: il ${prodotto.nome.toLowerCase()} non serve. Ogni tanto guarda da vicino: all\'inizio sono minuscoli.`, 4500); return; }
       if (esito.esito === 'finito') { ui.toast(`Hai finito il ${prodotto.nome.toLowerCase()}: lo trovi nel negozio, scheda Cura.`); return; }
       if (esito.esito !== 'ok') return;
@@ -545,6 +559,17 @@ function avvia() {
         curaScene[pianta].concima(); suoni.concime(); disegna(); premia(esito, pianta);
         ui.toast(esito.bonusSerie ? testoSerie(esito.bonusSerie)
           : `Concime dato! Per ${giorniTesto(vista(stato).cura[pianta].concime.giorni)} ${pianta === 'acero' ? 'l\'acero crescerà di più e ' : 'la pianta '}resisterà meglio ai parassiti.`, 4000);
+        return;
+      }
+      // rimedio contro la malattia: come lo spray contro gli afidi, i segni svaniscono
+      if (prodotto.tipo === 'fungicida') {
+        const nomeMalattia = vista(stato).cura[pianta].tipica.nome.toLowerCase(), difesa = vista(stato).cura[pianta].difesa;
+        vola(fuocoDi(pianta), baseDist * .45); suoni.spray(); premia(esito, pianta);
+        if (esito.tolti) { curaScene[pianta].spruzza('malattia'); setTimeout(disegna, 2000); } else disegna();
+        ui.toast(!esito.tolti ? `${prodotto.nome} dato: per ${giorniTesto(difesa)} niente ${nomeMalattia} ${SULLA[pianta]}.`
+          : esito.presto ? `Presa al primo segno: che occhio! +${esito.semi} Semi`
+          : esito.inTempo ? `Curata in tempo! +${esito.semi} Semi${difesa ? `. E per ${giorniTesto(difesa)} resta protetta.` : ''}`
+          : 'Curata. Con le cure la chioma si riprenderà piano piano.', 4500);
         return;
       }
       // trattamento: la telecamera si avvicina alla pianta, per vedere lo spray

@@ -36,6 +36,8 @@ export function simula(giorni = 56, inizio = new Date(2026, 9, 26, 12).getTime()
       const c = p === 'acero' ? v : v.conifere[p];
       if (c.haSete) conta(() => annaffia(s, t + ORA, p));
       if (v.cura[p]?.parassiti?.visibili) { serve('sapone-molle'); conta(() => usaProdotto(s, t + ORA, p, 'sapone-molle')); }
+      // le malattie col bicarbonato, che va bene per tutte
+      if (v.cura[p]?.malattia?.visibili) { serve('bicarbonato'); conta(() => usaProdotto(s, t + ORA, p, 'bicarbonato')); }
       (c.rami ?? []).forEach((r, i) => { if (r.pronto) conta(() => togliFilo(s, t + ORA, i, p)); });
       const cc = p === 'acero' ? s.albero : s.conifere[p];
       for (const x of cc.germogli.filter(q => q.lunghezza >= .7)) conta(() => pota(s, t + 2 * ORA, x.id, p));

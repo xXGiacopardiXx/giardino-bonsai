@@ -7,7 +7,8 @@ import { consiglioMaestro, consiglioStagione, segnaConsiglio } from './maestro.j
 
 const T0 = new Date(2026, 9, 26, 12).getTime();
 const dopo = (giorni) => T0 + giorni * GIORNO;
-const nuovoStato = (t) => { const s = nuovoStatoVero(t); s.meteo.attivo = false; return s; };
+// niente meteo e niente malattie (hanno il loro test): la difesa dura per sempre
+const nuovoStato = (t) => { const s = nuovoStatoVero(t); s.meteo.attivo = false; for (const c of [s.albero, ...Object.values(s.conifere)]) c.difesa = { fino: Infinity }; return s; };
 
 test('il maestro dà il consiglio della stagione una volta sola, e cambia con la stagione', () => {
   const s = nuovoStato(T0);
@@ -119,4 +120,20 @@ test('con l\'azalea comprata il maestro ha una scheda anche per lei, e spiega la
   assert.equal(c.id, 'fioritura');
   assert.match(c.piante[0].punti[1].fai, /appassiscono/);
   assert.match(c.piante[0].sente, /fioritura/);
+});
+
+test('la prima volta che arriva una malattia il maestro spiega cos\'è e come si cura', () => {
+  const s = nuovoStato(T0);
+  segnaConsiglio(s, consiglioMaestro(s).id);
+  s.albero.difesa = null;
+  s.albero.malattia = { id: 'oidio', posto: 0, da: T0 };
+  annaffia(s, T0 + GIORNO);
+  avanza(s, T0 + GIORNO * 1.1);
+  const c = consiglioMaestro(s);
+  assert.equal(c.id, 'malattia-oidio');
+  assert.equal(c.titolo, 'Oidio');
+  assert.match(c.piante[0].sente, /oidio/);
+  assert.ok(c.piante[0].punti.some(x => /zolfo/.test(x.fai)));
+  segnaConsiglio(s, c.id);
+  assert.notEqual(consiglioMaestro(s)?.id, 'malattia-oidio');
 });

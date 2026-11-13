@@ -114,6 +114,7 @@ function sente(v, p) {
   if (c.ristagno > 0) return 'Il terriccio è zuppo: le radici sono circondate d\'acqua e hanno poca aria. Non soffre ancora, ma sta scomoda.';
   if (c.fase >= 3) return 'Ha sete da giorni: per non perdere acqua chiude le foglie e smette di crescere. Le punte più esterne cominciano a seccare.';
   if (c.haSete) return 'Comincia ad avere sete: il terriccio si è asciugato e le radici cercano umidità.';
+  if (cura.malattia?.visibili) return MALATA[p];
   if (cura.parassiti?.visibili) return 'Ha gli afidi sui germogli: le succhiano la linfa delle punte tenere, e si sente stanca.';
   if (vaso.stretto) return 'Le radici hanno riempito il vaso e girano in tondo: non trovano più spazio né nutrimento, e la crescita rallenta.';
   if (c.salute < .7) return 'La chioma si è diradata: sta ricostruendo i rametti persi, piano, con le forze che ha.';
@@ -126,6 +127,28 @@ function sente(v, p) {
   if (v.meteo.piovutoOggi) return 'Oggi ha piovuto: il terriccio è ancora fresco e le radici hanno bevuto.';
   return STA_BENE[p][v.stagione];
 }
+
+// come si sente una pianta con la sua malattia
+const MALATA = {
+  acero: 'Ha l\'oidio: la polvere bianca copre le foglie e le toglie la luce. Respira a fatica, e cresce meno.',
+  pino: 'Ha la ruggine sugli aghi: dove ci sono le pustole arancioni l\'ago si ammala e poi ingiallisce.',
+  ginepro: 'Ha la ruggine: le galle arancioni sono il fungo che fa le spore, e il vento le porterebbe lontano.',
+  azalea: 'Ha la galla: le foglie nuove si sono gonfiate e non fanno più il loro lavoro. Le altre la sostengono.',
+  ciliegio: 'Ha il corineo: le macchioline sulle foglie seccano e lasciano dei buchini. Con meno foglia, ha meno forza.',
+};
+// cosa fare la prima volta che arriva la malattia di una pianta (una volta sola per malattia)
+const CURE_MALATTIE = {
+  acero: [{ fai: 'Cura l\'acero con lo zolfo bagnabile (o il bicarbonato): tocca l\'acero e scegli Cura.', perche: 'Lo zolfo ferma il fungo sulla foglia e, per una settimana, non lo lascia tornare.' },
+    { fai: 'Pota i germogli lunghi.', perche: 'L\'oidio ama l\'aria ferma di una chioma troppo fitta: con la potatura tra le foglie passa il vento, e il fungo arriva la metà delle volte.' }],
+  pino: [{ fai: 'Curalo con l\'ossicloruro di rame (o il bicarbonato).', perche: 'Il rame blocca le spore sugli aghi. Preso entro tre giorni, il pino non perde niente.' },
+    { fai: 'Dopo la pioggia, non aggiungere acqua.', perche: 'I funghi crescono nell\'umido: un terriccio zuppo e l\'aria bagnata li aiutano.' }],
+  ginepro: [{ fai: 'Curalo con l\'ossicloruro di rame (o il bicarbonato).', perche: 'Le galle arancioni sono piene di spore: curandole subito non si spargono.' },
+    { fai: 'In primavera, dopo le piogge, guardalo da vicino.', perche: 'È il momento in cui la ruggine del ginepro si sveglia: le prime galle sono piccole e si vedono a fatica.' }],
+  azalea: [{ fai: 'Curala con lo spray alla propoli (o il bicarbonato).', perche: 'La propoli è delicata e non rovina i fiori. Le foglie gonfie non torneranno come prima, ma il fungo si ferma.' },
+    { fai: 'Non bagnare troppo il terriccio.', perche: 'La galla arriva con l\'umidità, quando la pianta mette le foglie nuove e tenere.' }],
+  ciliegio: [{ fai: 'Curalo con la poltiglia bordolese (o il bicarbonato).', perche: 'È la cura classica dei ciliegi: il rame chiude la strada al fungo nelle foglie sane.' },
+    { fai: 'In primavera e in autunno, dopo la pioggia, puoi darla anche prima.', perche: 'Sono le stagioni del corineo: prevenire costa meno che curare.' }],
+};
 
 // i consigli dei momenti chiave, in ordine di importanza; null se non è il momento
 const MOMENTI = [
@@ -190,6 +213,15 @@ const MOMENTI = [
         { fai: 'Salta l\'acqua finché il terriccio non torna chiaro.', perche: 'Solo asciugando gli spazi tra i granelli si riempiono di nuovo d\'aria, e le radici ricominciano a respirare. La pianta si riprende da sola.' },
         { fai: 'Prima di annaffiare, guarda sempre il terriccio.', perche: 'Scuro vuol dire ancora umido: la pianta non ha sete. L\'acqua si dà quando serve, non a orario.' },
       ] })) } : null;
+  },
+  // la prima volta che arriva la malattia di una pianta: cos'è e come si cura
+  (v) => {
+    const p = ordine(v).find(q => v.cura[q].malattia?.visibili);
+    if (!p) return null;
+    const m = v.cura[p].malattia;
+    return { id: 'malattia-' + m.id, titolo: m.nome,
+      intro: v.cura[p].tipica.descrizione + ' Ogni pianta ha la sua malattia, come ogni pianta ha la sua acqua: conoscerla è metà della cura.',
+      piante: [{ id: p, nome: NOMI[p], sente: sente(v, p), punti: CURE_MALATTIE[p] }] };
   },
 ];
 

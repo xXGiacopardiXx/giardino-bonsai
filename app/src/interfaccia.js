@@ -140,7 +140,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
   const fraQuanto = (g) => g * 24 < 20 ? `Acqua fra ${Math.max(1, Math.round(g * 24))} ${Math.round(g * 24) <= 1 ? 'ora' : 'ore'}`
     : Math.round(g) <= 1 ? 'Acqua domani' : `Acqua fra ${Math.round(g)} giorni`;
   const conBastoncino = (el, c, giorni) => {
-    if (giorni > 0 && c.fase === 0 && !c.ristagno && !c.parassiti?.visibili) { el.textContent = fraQuanto(giorni); el.dataset.livello = 'bene'; }
+    if (giorni > 0 && c.fase === 0 && !c.ristagno && !c.parassiti?.visibili && !c.malattia?.visibili) { el.textContent = fraQuanto(giorni); el.dataset.livello = 'bene'; }
   };
   return {
     toast,
@@ -170,7 +170,10 @@ export function creaInterfaccia(screenEl, camera, trees) {
       $('acero-fase').dataset.livello = livello(v);
       // gli afidi evidenti si segnalano sull'etichetta (quelli appena arrivati si scoprono solo da vicino)
       if (v.parassiti?.visibili && v.fase < 4) { $('acero-fase').textContent = 'Ha gli afidi'; $('acero-fase').dataset.livello = 'stress'; }
-      if (v.bastoncino) conBastoncino($('acero-fase'), v, v.bastoncino.acero);
+      // la malattia si segnala allo stesso modo, e ha la precedenza
+      const malAcero = v.cura?.acero?.malattia;
+      if (malAcero?.visibili && v.fase < 4) { $('acero-fase').textContent = malAcero.breve; $('acero-fase').dataset.livello = 'stress'; }
+      if (v.bastoncino) conBastoncino($('acero-fase'), { ...v, malattia: malAcero }, v.bastoncino.acero);
       $('acero-salute').textContent = salute;
       $('acero-barra').style.width = salute;
       $('acero-acqua').style.width = Math.round(v.acqua * 100) + '%';
@@ -182,7 +185,7 @@ export function creaInterfaccia(screenEl, camera, trees) {
         const c = v.conifere[p];
         $(p + '-fase').textContent = c.nomeFase;
         $(p + '-fase').dataset.livello = livello(c);
-        if (v.bastoncino) conBastoncino($(p + '-fase'), { ...c, parassiti: v.cura[p]?.parassiti }, v.bastoncino[p]);
+        if (v.bastoncino) conBastoncino($(p + '-fase'), { ...c, parassiti: v.cura[p]?.parassiti, malattia: v.cura[p]?.malattia }, v.bastoncino[p]);
         $(p + '-acqua').style.width = Math.round(c.acqua * 100) + '%';
         $(p + '-acqua').parentElement.dataset.livello = livelloAcqua(c);
         // chioma: come quella dell'acero, con la percentuale

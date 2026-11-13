@@ -6,9 +6,11 @@ import { nuovoStato as nuovoStatoVero, meteoDelGiorno, cadeAlle, avanza, annaffi
 import { valutaStile, stileDi } from './stili.js';
 
 // concime e trattamento sull'acero, con l'inventario sempre pieno (i test delle confezioni sono più sotto)
-const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; return s; };
+const pieno = (s) => { s.inventario['concime-universale'] = 99; s.inventario['sapone-molle'] = 99; s.inventario.bicarbonato = 99; return s; };
 const concima = (s, t) => usaProdotto(pieno(s), t, 'acero', 'concime-universale');
 const tratta = (s, t) => usaProdotto(pieno(s), t, 'acero', 'sapone-molle');
+// cura la malattia di una pianta, se c'è (col bicarbonato, che va bene per tutte)
+const guarisci = (s, t, p = 'acero') => usaProdotto(pieno(s), t, p, 'bicarbonato');
 
 // mezzogiorno locale, così i giorni del calendario non dipendono dal fuso orario
 const T0 = new Date(2026, 9, 26, 12).getTime();
@@ -94,7 +96,7 @@ test('dopo una lunga assenza la chioma si riprende in circa una settimana di cur
   avanza(s, dopo(40));
   assert.equal(vista(s).lungaAssenza, true);
   // le cure di ogni giorno: acqua e, se sono arrivati durante l'assenza, via i parassiti
-  for (let g = 40; g <= 47; g++) { annaffia(s, dopo(g)); tratta(s, dopo(g)); }
+  for (let g = 40; g <= 47; g++) { annaffia(s, dopo(g)); tratta(s, dopo(g)); guarisci(s, dopo(g)); }
   assert.equal(s.albero.salute, 1);
 });
 
@@ -1473,7 +1475,7 @@ test('il ciliegio si compra coi Semi e fiorisce a inizio primavera, prima delle 
   assert.ok(vista(s).piante.includes('ciliegio'));
   assert.ok(vista(s).stile.ciliegio && vista(s).rinvaso.ciliegio);
   // un anno dopo (curato bene, senza ciliegine rimaste): boccioli il primo giorno di primavera, fiori pieni il quarto, petali via dal quinto
-  avanza(s, dopo(27.9)); Object.assign(s.conifere.ciliegio, { salute: 1, fiori: 1, sete: 0 });
+  avanza(s, dopo(27.9)); Object.assign(s.conifere.ciliegio, { salute: 1, fiori: 1, sete: 0, malattia: null, difesa: { fino: dopo(40) } });
   const giorno = (g) => { const t = dopo(28 + g - .5); s.conifere.ciliegio.sete = 0; avanza(s, t); return vista(s).conifere.ciliegio; };
   assert.ok(giorno(1).boccioli > 0);
   assert.ok(giorno(4).fioritura > .9);
@@ -1599,7 +1601,7 @@ test('dopo una lunga assenza arriva la sfida di rinascita, e si completa riporta
   // si annaffia tutti i giorni finché la chioma torna piena
   let g = 12;
   while (!vista(s).rinascita.fatta && g < 30) {
-    for (const p of vista(s).piante) { const c = p === 'acero' ? s.albero : s.conifere[p]; if (c.sete >= .5) annaffia(s, dopo(g), p); if (c.parassiti) usaProdotto(pieno(s), dopo(g), p, 'sapone-molle'); }
+    for (const p of vista(s).piante) { const c = p === 'acero' ? s.albero : s.conifere[p]; if (c.sete >= .5) annaffia(s, dopo(g), p); if (c.parassiti) usaProdotto(pieno(s), dopo(g), p, 'sapone-molle'); if (c.malattia) guarisci(s, dopo(g), p); }
     g += 1; avanza(s, dopo(g));
   }
   assert.equal(vista(s).rinascita.fatta, true);
@@ -1614,4 +1616,98 @@ test('un salvataggio della versione 27 riceve premi e rinascita', () => {
   assert.equal(s.versione, VERSIONE);
   assert.deepEqual(s.premiStagione, []);
   assert.equal(s.rinascita, null);
+});
+
+test('ogni pianta ha la sua malattia: arriva nella sua stagione, si vede dopo un giorno e curata in tempo dà Semi', () => {
+  const s = nuovoStato(T0);
+  let g = 0;
+  while (!s.albero.malattia && g < 60) { annaffia(s, dopo(g)); tratta(s, dopo(g)); g++; avanza(s, dopo(g - 0.42)); }
+  assert.ok(s.albero.malattia, 'in due mesi arriva');
+  assert.equal(s.albero.malattia.id, 'oidio');
+  const da = s.albero.malattia.da;
+  assert.equal(vista(s).cura.acero.malattia.visibili, false);
+  assert.equal(vista(avanza(s, da + 25 * ORA)).cura.acero.malattia.visibili, true);
+  assert.equal(vista(s).cura.acero.malattia.nome, 'Oidio');
+  // il sapone molle non serve contro i funghi; lo zolfo sì, e poi la tiene lontana
+  s.inventario.zolfo = 1;
+  const esito = usaProdotto(s, da + 26 * ORA, 'acero', 'zolfo');
+  assert.equal(esito.esito, 'ok');
+  assert.equal(esito.semi, SEMI.malattia);
+  assert.equal(vista(s).cura.acero.malattia, null);
+  assert.ok(vista(s).cura.acero.difesa > 0);
+});
+
+test('le malattie hanno nomi diversi per ogni pianta e i rimedi specifici vanno solo sulla loro', () => {
+  const s = nuovoStato(T0); s.semi = 2000;
+  compraPianta(s, T0, 'azalea'); compraPianta(s, T0, 'ciliegio');
+  const v = vista(s);
+  assert.deepEqual(Object.fromEntries(v.piante.map(p => [p, v.cura[p].tipica.id])),
+    { acero: 'oidio', pino: 'ruggine-pino', ginepro: 'ruggine-ginepro', azalea: 'galla', ciliegio: 'corineo' });
+  for (const id of ['zolfo', 'rame', 'propoli', 'poltiglia']) s.inventario[id] = 3;
+  assert.equal(usaProdotto(s, T0, 'pino', 'zolfo').esito, 'non-adatto');
+  assert.equal(usaProdotto(s, T0, 'acero', 'poltiglia').esito, 'non-adatto');
+  // senza malattia il rimedio specifico si dà come prevenzione
+  assert.equal(usaProdotto(s, T0, 'ginepro', 'rame').esito, 'ok');
+  assert.equal(vista(s).cura.ginepro.difesa, 7);
+});
+
+test('una malattia lasciata lì rallenta la crescita e dirada la chioma, ma non sotto il 60%', () => {
+  const s = nuovoStato(T0);
+  s.conifere.pino.malattia = { id: 'ruggine-pino', posto: 1, da: T0 };
+  s.conifere.pino.difesa = null;
+  s.conifere.pino.protezione = { fino: dopo(99) }; // niente afidi: si misura solo la malattia
+  for (let g = 1; g <= 30; g++) { s.albero.sete = 0; s.conifere.pino.sete = 0; s.conifere.ginepro.sete = 0; avanza(s, dopo(g)); }
+  assert.ok(vista(s).cura.pino.malattia.danno);
+  assert.ok(Math.abs(s.conifere.pino.salute - .6) < 1e-9);
+  // il bicarbonato la cura (ormai senza premio) ma non protegge
+  const esito = guarisci(s, dopo(30), 'pino');
+  assert.equal(esito.esito, 'ok');
+  assert.equal(esito.semi, 0);
+  assert.equal(vista(s).cura.pino.difesa, 0);
+});
+
+test("l'equiseto previene le malattie ma non le cura", () => {
+  const s = nuovoStato(T0);
+  s.inventario.equiseto = 3;
+  s.albero.malattia = { id: 'oidio', posto: 0, da: T0 };
+  assert.equal(usaProdotto(s, T0 + ORA, 'acero', 'equiseto').esito, 'non-cura');
+  s.albero.malattia = null;
+  assert.equal(usaProdotto(s, T0 + ORA, 'acero', 'equiseto').esito, 'ok');
+  assert.equal(vista(s).cura.acero.difesa, 5);
+  // con la difesa attiva per cinque giorni non arriva niente
+  for (let g = 1; g <= 4; g++) { s.albero.sete = 0; avanza(s, dopo(g)); assert.equal(s.albero.malattia, null); }
+});
+
+test('con la lente afidi e malattie si vedono in metà del tempo', () => {
+  const s = nuovoStato(T0); s.semi = 500;
+  s.albero.malattia = { id: 'oidio', posto: 0, da: T0 };
+  s.albero.parassiti = { posto: 1, da: T0 };
+  avanza(s, T0 + 13 * ORA);
+  assert.equal(vista(s).cura.acero.malattia.visibili, false);
+  assert.equal(compraAttrezzo(s, 'lente').esito, 'ok');
+  assert.equal(vista(s).cura.acero.malattia.visibili, true);
+  assert.equal(vista(s).cura.acero.parassiti.visibili, true);
+});
+
+test('il chelato di ferro fa riprendere la chioma più in fretta del tonico alle alghe', () => {
+  const prova = (id) => {
+    const s = nuovoStato(T0); s.inventario[id] = 1;
+    s.albero.salute = .5; s.albero.sete = 0;
+    usaProdotto(s, T0, 'acero', id);
+    s.albero.sete = 0; avanza(s, T0 + 12 * ORA);
+    return s.albero.salute;
+  };
+  assert.ok(prova('chelato') > prova('alghe'));
+  const s = nuovoStato(T0); s.inventario.chelato = 1;
+  assert.equal(usaProdotto(s, T0, 'pino', 'chelato').esito, 'non-adatto');
+});
+
+test('un salvataggio della versione 28 riceve le malattie e un bicarbonato', () => {
+  const vecchio = nuovoStato(T0);
+  vecchio.versione = 28; delete vecchio.albero.malattia; delete vecchio.inventario.bicarbonato;
+  const s = migra(vecchio);
+  assert.equal(s.versione, VERSIONE);
+  assert.equal(s.albero.malattia, null);
+  assert.equal(s.inventario.bicarbonato, 1);
+  assert.equal(vista(s).cura.acero.malattia, null);
 });
